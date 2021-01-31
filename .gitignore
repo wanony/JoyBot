@@ -1,0 +1,11 @@
+.vscode/
+backupgfys/backupgfys.json
+backupgfys/backuplvls.json
+cogs/__pycache__/
+jsons/*
+cogs/directories.json
+directories.json
+test.py
+.git
+.idea
+__pycache__/
