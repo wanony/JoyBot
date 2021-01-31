@@ -19,5 +19,3 @@ with open(direc_dict["contri"], 'r') as cont:
     contri_dict = json.load(cont)
 with open(direc_dict["reddit"], 'r') as redd:
     reddit_dict = json.load(redd)
-with open(direc_dict["twitch"], 'r') as twit:
-    twitch_dict = json.load(twit)

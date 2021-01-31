@@ -1,7 +1,6 @@
 from discord.ext import commands
 from data import custom_dict
 from data import command_prefix
-from data import apis_dict
 
 
 class Events(commands.Cog):
@@ -10,7 +9,6 @@ class Events(commands.Cog):
     """
     def __init__(self, disclient):
         self.disclient = disclient
-        self.mid = apis_dict["twitch_role_channel"]
 
     @commands.Cog.listener()
     @commands.has_permissions(manage_messages=True)
