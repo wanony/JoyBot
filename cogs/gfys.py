@@ -1095,7 +1095,7 @@ class Fun(commands.Cog):
 
     async def audit_channel(self, group, idol, link, author):
         audcha = self.disclient.get_channel(783763824637378560)
-        s = f'{author} added: `{group}`, `{idol}`: {link}'
+        s = f'added: `{group}`, `{idol}`: {link}'
         await audcha.send(s)
 
 # --- End of Class --- #
