@@ -4,6 +4,7 @@ import json
 import asyncio
 from data import direc_dict
 from data import users
+from data import contri_dict
 
 
 class Levels(commands.Cog):
@@ -77,6 +78,7 @@ class Levels(commands.Cog):
         This leaderboard is made from all contributers across
         every server the bot is connected to.
         """
+        users = contri_dict
         leads = [
             [users[m]["cont"],
              await self.disclient.fetch_user(m)] for m in users
