@@ -1,15 +1,11 @@
 import discord
 import json
-import praw
+import asyncpraw
 from discord.ext import commands
 import asyncio
 from data import direc_dict
 from data import apis_dict
 from data import reddit_dict
-
-reddit = praw.Reddit(client_id=apis_dict["reddit_id"],
-                     client_secret=apis_dict["reddit_secret"],
-                     user_agent="idk what this is")
 
 
 class Reddits(commands.Cog):
@@ -19,6 +15,9 @@ class Reddits(commands.Cog):
         self.disclient = disclient
         self.disclient.loop.create_task(self.post_new())
         self.disclient.loop.create_task(self.write_reddit())
+        self.reddit = asyncpraw.Reddit(client_id=apis_dict["reddit_id"],
+                                       client_secret=apis_dict["reddit_secret"],
+                                       user_agent="idk what this is")
 
     @commands.Cog.listener()
     async def write_reddit(self):
@@ -32,12 +31,10 @@ class Reddits(commands.Cog):
     async def post_new(self):
         await self.disclient.wait_until_ready()
         while not self.disclient.is_closed():
-            for channels in reddit_dict:
-                for subs in reddit_dict[channels]:
-                    channel = self.disclient.get_channel(int(channels))
-                    chanid = str(channel.id)
-                    sub = reddit.subreddit(subs).new(limit=3)
-                    for subm in sub:
+            try:
+                for subs in reddit_dict:
+                    sub = await self.reddit.subreddit(subs)
+                    async for subm in sub.new(limit=5):
                         titl = subm.title
                         if "/r/" in subm.url:
                             url = ""
@@ -52,67 +49,72 @@ class Reddits(commands.Cog):
                             "https://www.redgifs.com/",
                             "https://www.gifdeliverynetwork.com/"
                         )
-                        lp = reddit_dict[chanid][subs]["last_post"]
-                        if perm in lp:
-                            pass
-                        else:
-                            soy = "https://reddit.com"
-                            lp.append(perm)
-                            if len(lp) > 5:
-                                del lp[0]
-                            desc = f"Posted by {auth} in **/r/{subs}**"
-                            clr = discord.Color.blurple()
-                            embed = discord.Embed(title=titl,
-                                                  description=desc,
-                                                  color=clr)
-                            if url:
-                                val = f"{soy}{perm} \n**{url}**"
-                                if url.endswith(fts) or "gallery" in url:
-                                    embed.set_image(url=url)
-                                    embed.add_field(name="Post Permalink",
-                                                    value=val)
-                                    try:
-                                        await channel.send(embed=embed)
-                                    except AttributeError:
-                                        print("Channel deleted")
-                                elif url.startswith(gifs):
-                                    embed.add_field(name="Post Permalink",
-                                                    value=val)
-                                    try:
-                                        await channel.send(embed=embed)
-                                        await channel.send(url)
-                                    except AttributeError:
-                                        print("Channel deleted")
+                        for channels in reddit_dict[subs]["channels"]:
+                            lp = reddit_dict[subs]["last_post"]
+                            channel = self.disclient.get_channel(int(channels))
+                            if perm in lp:
+                                pass
+                            else:
+                                soy = "https://reddit.com"
+                                lp.append(perm)
+                                if len(lp) > 10:
+                                    del lp[0]
+                                #  Embeds from this point
+                                desc = f"Posted by {auth} in **/r/{subs}**"
+                                clr = discord.Color.blurple()
+                                embed = discord.Embed(title=titl,
+                                                      description=desc,
+                                                      color=clr)
+                                if url:
+                                    val = f"{soy}{perm} \n**{url}**"
+                                    if url.endswith(fts) or "gallery" in url:
+                                        embed.set_image(url=url)
+                                        embed.add_field(name="Post Permalink",
+                                                        value=val)
+                                        try:
+                                            await channel.send(embed=embed)
+                                        except AttributeError:
+                                            print("Channel deleted")
+                                    elif url.startswith(gifs):
+                                        embed.add_field(name="Post Permalink",
+                                                        value=val)
+                                        try:
+                                            await channel.send(embed=embed)
+                                            await channel.send(url)
+                                        except AttributeError:
+                                            print("Channel deleted")
+                                    else:
+                                        val = f"{soy}{perm}"
+                                        embed.add_field(name="Post Permalink",
+                                                        value=val)
+                                        try:
+                                            await channel.send(embed=embed)
+                                            await channel.send(url)
+                                        except AttributeError:
+                                            print("Channel deleted")
                                 else:
                                     val = f"{soy}{perm}"
                                     embed.add_field(name="Post Permalink",
                                                     value=val)
                                     try:
                                         await channel.send(embed=embed)
-                                        await channel.send(url)
                                     except AttributeError:
                                         print("Channel deleted")
-                            else:
-                                val = f"{soy}{perm}"
-                                embed.add_field(name="Post Permalink",
-                                                value=val)
-                                try:
-                                    await channel.send(embed=embed)
-                                except AttributeError:
-                                    print("Channel deleted")
-            await asyncio.sleep(210)
-            # print("calling reddit")
+            except Exception as e:
+                print(e)
+            await asyncio.sleep(600)
+        # print("calling reddit")
 
     @commands.command()
     async def unfollow_subreddit(self, ctx, subreddit):
         """Unfollow a previously followed subreddit"""
-        channel = str(ctx.channel.id)
+        channel = ctx.channel.id
         subreddit = subreddit.lower()
-        if channel in reddit_dict:
-            if subreddit in reddit_dict[channel]:
-                del reddit_dict[channel][subreddit]
-                if not reddit_dict[channel]:
-                    del reddit_dict[channel]
+        if subreddit in reddit_dict:
+            if channel in reddit_dict[subreddit]["channels"]:
+                reddit_dict[subreddit]["channels"].remove(channel)
+                if not reddit_dict[subreddit]["channels"]:
+                    del reddit_dict[subreddit]
                 msg = f"Unfollowed {subreddit} in this channel!"
                 embed = discord.Embed(title="Success",
                                       description=msg,
@@ -125,7 +127,7 @@ class Reddits(commands.Cog):
                                       color=discord.Color.red())
                 await ctx.send(embed=embed)
         else:
-            msg = "No subreddits are followed in this channel"
+            msg = f"{subreddit} is not followed in this channel"
             embed = discord.Embed(title="Error",
                                   description=msg,
                                   color=discord.Color.red())
@@ -136,25 +138,24 @@ class Reddits(commands.Cog):
         """Add a subreddit to follow in this server!
         The channel this command is invoked in will be used
         to post the new submission to the sub"""
-        channel = str(ctx.channel.id)
+        channel = ctx.channel.id
         subreddit = subreddit.lower()
-        if channel in reddit_dict:
-            if subreddit in reddit_dict[channel]:
+        if subreddit in reddit_dict:
+            if channel in reddit_dict[subreddit]["channels"]:
                 msg = f"Already added {subreddit} to this channel!"
                 embed = discord.Embed(title="Error",
                                       description=msg,
                                       color=discord.Color.red())
                 await ctx.send(embed=embed)
             else:
-                updater = {subreddit: {"last_post": []}}
-                reddit_dict[channel].update(updater)
+                reddit_dict[subreddit]["channels"].append(channel)
                 msg = f"Added {subreddit} to this channel!"
                 embed = discord.Embed(title="Success",
                                       description=msg,
                                       color=discord.Color.green())
                 await ctx.send(embed=embed)
         else:
-            updater = {channel: {subreddit: {"last_post": []}}}
+            updater = {subreddit: {"channels": [channel], "last_post": []}}
             reddit_dict.update(updater)
             msg = f"Added {subreddit} to this channel!"
             embed = discord.Embed(title="Success",
