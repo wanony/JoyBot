@@ -56,7 +56,6 @@ class Reddits(commands.Cog):
                                 pass
                             else:
                                 soy = "https://reddit.com"
-                                lp.append(perm)
                                 if len(lp) > 10:
                                     del lp[0]
                                 #  Embeds from this point
@@ -100,6 +99,7 @@ class Reddits(commands.Cog):
                                         await channel.send(embed=embed)
                                     except AttributeError:
                                         print("Channel deleted")
+                        lp.append(perm)
             except Exception as e:
                 print(e)
             await asyncio.sleep(600)
