@@ -53,7 +53,6 @@ class Levels(commands.Cog):
     @commands.command(aliases=['xp'])
     async def level(self, ctx, member: discord.Member = None):
         """Returns information of the users level"""
-        print("called level command")
         if member:
             member = member
         else:
@@ -78,11 +77,9 @@ class Levels(commands.Cog):
         This leaderboard is made from all contributers across
         every server the bot is connected to.
         """
-        users = contri_dict
-        leads = [
-            [users[m]["cont"],
-             await self.disclient.fetch_user(m)] for m in users
-            ]
+        leads = []
+        for usr in contri_dict:
+            leads.append((contri_dict[usr]["cont"], await self.disclient.fetch_user(usr)))
         leads.sort(reverse=True)
         embed = discord.Embed(title="Contribution Leaderboard",
                               description="",

@@ -37,8 +37,6 @@ class Custom(commands.Cog):
     @commands.command(aliases=['commands'])
     async def command_list(self, ctx):
         """Sends a list of all the custom commands"""
-        with open(direc_dict["custom"], 'r') as cus:
-            custom_dict = json.load(cus)
         arrr = custom_dict["command_list"]
         await ctx.send(f"`{format_list(arrr)}`")
 

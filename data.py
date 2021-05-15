@@ -19,3 +19,7 @@ with open(direc_dict["contri"], 'r') as cont:
     contri_dict = json.load(cont)
 with open(direc_dict["reddit"], 'r') as redd:
     reddit_dict = json.load(redd)
+with open(direc_dict["mods"], 'r') as mods:
+    mods_dict = json.load(mods)
+with open(direc_dict["auditing"], 'r') as auditing:
+    auditing_dict = json.load(auditing)

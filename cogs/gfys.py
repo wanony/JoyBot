@@ -7,6 +7,7 @@ from data import direc_dict
 from data import gfys_dict
 from data import recent_dict
 from data import contri_dict
+from data import auditing_dict
 
 
 class Fun(commands.Cog):
@@ -44,163 +45,6 @@ class Fun(commands.Cog):
             with open(direc_dict["gfys"], 'w') as gfys:
                 json.dump(gfys_dict, gfys, indent=4)
             await asyncio.sleep(5)
-
-# --- Moderator Commands --- #
-
-    @commands.command(aliases=['removetag'])
-    @commands.has_any_role('Moderator', 'Admin')
-    async def remove_tag(self, ctx, link, *tags):
-        """
-        MOD: Removes tag(s) from a link previously added
-        Example: <link> <tag> <tag> <tag>
-        Any number of tags can be removed in one command.
-        """
-        tags_list = tags
-        for tag in tags_list:
-            tag = tag.lower()
-            if link in gfys_dict["tags"][tag]:
-                gfys_dict["tags"][tag].remove(link)
-                await ctx.send(f"Removed `{tag}` from the link!")
-            else:
-                await ctx.send(f"Gfy doesn't have `{tag}`!")
-
-    @commands.command(aliases=['deletetag', 'deltag'])
-    @commands.has_any_role('Moderator', 'Admin')
-    async def delete_tag(self, ctx, tag):
-        """
-        MOD: Completely deletes a tag
-        All links with this tag, will no longer have this tag
-        """
-        tag = tag.lower()
-        if tag in gfys_dict["tags"]:
-            if tag in gfys_dict["grave"]:
-                tag = tag + "(copy)"
-            grave = gfys_dict["grave"]
-            updater = {tag: gfys_dict["tags"][tag]}
-            grave.update(updater)
-            del gfys_dict["tags"][tag]
-            await ctx.send(f"Deleted tag: `{tag}`.")
-        else:
-            await ctx.send(f"No tag: `{tag}`.")
-
-    @commands.command(aliases=['delfancam'])
-    @commands.has_any_role('Moderator', 'Admin')
-    async def delete_fancam(self, ctx, group, idol, *links):
-        """
-        MOD: Deletes a fancam link from the specified idol
-        Example: .delete_fancam <group> <idol> <fancam_link>
-        """
-        group = group.lower()
-        idol = idol.lower()
-        for link in links:
-            if link.startswith("https://www.youtu"):
-                if link in gfys_dict["groups"][group][idol]:
-                    gfys_dict["groups"][group][idol].remove(link)
-                    await ctx.send(f"Removed link from {idol}")
-                else:
-                    await ctx.send(f"Link not in `{group} {idol}`")
-            else:
-                await ctx.send("Link is not valid")
-
-    @commands.command(aliases=['delimage'])
-    @commands.has_any_role('Moderator', 'Admin')
-    async def delete_image(self, ctx, group, idol, *links):
-        """
-        MOD: Deletes an image link from the specified idol
-        Example .delete_image <group> <idol> <image_link>
-        """
-        group = group.lower()
-        idol = idol.lower()
-        for link in links:
-            fts = (".JPG", ".jpg", ".JPEG", ".jpeg", ".PNG", ".png")
-            if link.endswith(fts):
-                if link in gfys_dict["groups"][group][idol]:
-                    gfys_dict["groups"][group][idol].remove(link)
-                    await ctx.send(f"Removed link from {idol}")
-                else:
-                    await ctx.send(f"Link not in `{group} {idol}`")
-            elif link.startswith("https://pbs.twimg"):
-                if link in gfys_dict["groups"][group][idol]:
-                    gfys_dict["groups"][group][idol].remove(link)
-                    await ctx.send(f"Removed link from {idol}")
-                else:
-                    await ctx.send(f"Link not in `{group} {idol}`")
-            else:
-                await ctx.send("Link is not valid")
-
-    @commands.command(aliases=['delgfy'])
-    @commands.has_any_role('Moderator', 'Admin')
-    async def delete_gfy(self, ctx, group, idol, *links):
-        """
-        MOD: Deletes a gfy from the specified idol
-        Example: .delete_gfy <group> <idol> <gfy_link>
-        """
-        group = group.lower()
-        idol = idol.lower()
-        for link in links:
-            if group in gfys_dict["groups"]:
-                group_dict = gfys_dict["groups"][group]
-                if idol in group_dict:
-                    if link in group_dict[idol]:
-                        group_dict[idol].remove(link)
-                        await ctx.send(
-                            "Removed gfy from `" + idol.title() + "`!")
-                    else:
-                        await ctx.send(
-                            f"No link matching `{idol.title()}` in `{group}`.")
-                else:
-                    await ctx.send(
-                            f"No content for `{idol.title()}` in `{group}`")
-            else:
-                await ctx.send(f"No group named `{group}`.")
-
-    @commands.command(aliases=['delgroup'])
-    @commands.has_any_role('Moderator', 'Admin')
-    async def delete_group(self, ctx, group):
-        """
-        MOD: Deletes an entire group and all idols within
-        Example: .delete_group <group>
-        """
-        group = group.lower()
-        if group in gfys_dict["groups"]:
-            grave = gfys_dict["grave"]
-            updater = {group: gfys_dict["groups"][group]}
-            grave.update(updater)
-            del gfys_dict["groups"][group]
-            await ctx.send("Deleted group `" + group + "`.")
-        else:
-            await ctx.send("Group doesn't exist!")
-
-    @commands.command(aliases=['delidol', 'delidols'])
-    @commands.has_any_role('Moderator', 'Admin')
-    async def delete_idols(self, ctx, group, *args):
-        """
-        MOD: Deletes all idol(s) specified in a group
-        Example: .delete_idols <group> <idol_1> <idol_2>
-        """
-        group = group.lower()
-        idol_list = args
-        if group.lower() not in gfys_dict["groups"]:
-            await ctx.send(
-                "Group doesn't exist, create the group first with `.addgroup`")
-        else:
-            if not idol_list:
-                await ctx.send("No idol(s) provided.")
-            else:
-                for idol in idol_list:
-                    idol = idol.lower()
-                    sub_dict = gfys_dict["groups"][group]
-                    if idol in sub_dict:
-                        grave = gfys_dict["grave"]
-                        updater = {idol: gfys_dict["groups"][group][idol]}
-                        grave.update(updater)
-                        del sub_dict[idol]
-                        await ctx.send(
-                                    f"Removed `{idol.title()}` from `{group}`")
-                    else:
-                        await ctx.send(f"No `{idol.title()}` in `{group}`")
-
-# --- Image Commands --- #
 
     @commands.command()
     async def image(self, ctx, group, idol, *tags):
@@ -471,6 +315,9 @@ class Fun(commands.Cog):
                     gfy = gfy[:-1]
                 if gfy.startswith("https://gfycat.com/"):
                     split = gfy.split("/")
+                    if "-" in split[-1]:
+                        split[-1] = split[-1].split("-")
+                        split[-1] = split[-1][0]
                     gfy = "https://gfycat.com/" + split[-1]
                     currentlink = gfy
                 elif gfy.startswith("https://www.redgifs.com/"):
@@ -793,48 +640,6 @@ class Fun(commands.Cog):
 
 # --- Adding Groups and Idols --- #
 
-    @commands.command(aliases=['addgroups'])
-    @commands.has_any_role('Moderator', 'Admin')
-    async def addgroup(self, ctx, *args):
-        """MOD: Adds a group"""
-        group_list = args
-        if not group_list:
-            await ctx.send("No group arguement(s) given.")
-        else:
-            for groups in group_list:
-                if groups in gfys_dict["groups"]:
-                    await ctx.send("Group `" + groups + "` already exists.")
-                else:
-                    updater = {str(groups).lower(): {}}
-                    gfys_dict["groups"].update(updater)
-                    await ctx.send("Added group `" + groups + "`!")
-
-    @commands.command(aliases=['addidol'])
-    @commands.has_any_role('Moderator', 'Admin')
-    async def addidols(self, ctx, group, *args):
-        """MOD: Adds an idol to an already existing group"""
-        group = group.lower()
-        idol_list = args
-        if not group:
-            await ctx.send("No group arguement given.")
-        elif group.lower() not in gfys_dict["groups"]:
-            await ctx.send(
-                "Group doesn't exist, create the group first with `.addgroup`")
-        else:
-            if not idol_list:
-                await ctx.send("No idol(s) provided.")
-            else:
-                for idol in idol_list:
-                    idol = idol.lower()
-                    sub_dict = gfys_dict["groups"][group]
-                    if idol in sub_dict:
-                        await ctx.send(
-                            f"`{idol.title()}` already in `{group}`.")
-                    else:
-                        updater = {idol: []}
-                        sub_dict.update(updater)
-                        await ctx.send(f"Added `{idol.title()}` to `{group}`.")
-
 # --- Timer Commands --- #
 
     @commands.command(aliases=['nohands'])
@@ -902,7 +707,7 @@ class Fun(commands.Cog):
                 self.loops[element] = 0
                 del self.loops[element]
                 i += 1
-            await ctx.send("Stopped all {i} timers for `{author}`")
+            await ctx.send(f"Stopped all {i} timers for `{author}`")
         elif len(checklist) == 1:
             self.loops[checklist[0]] = 0
             del self.loops[checklist[0]]
@@ -1034,7 +839,7 @@ class Fun(commands.Cog):
                         await ctx.message.author.send(elem)
                 else:
                     await ctx.message.add_reaction(emoji='✉')
-                    await ctx.message.author.send(send)
+                    await ctx.message.author.send(sen)
             else:
                 des = f"No group named {group}!"
                 er = discord.Embed(title='Error!',
@@ -1094,9 +899,22 @@ class Fun(commands.Cog):
 # --- Auditing --- #
 
     async def audit_channel(self, group, idol, link, author):
-        audcha = self.disclient.get_channel(759579438458339339)
+        """To keep gfycat links safe and within rules of what can be added
+        main channel is in the official discord, other auditing channels can
+        be made by mods, author names will be omitted in those."""
+        main_audcha = self.disclient.get_channel(auditing_dict["main_channel"])
         s = f'`{author}` added:\n`{group}`, `{idol}`: {link}'
-        await audcha.send(s)
+        await main_audcha.send(s)
+        if auditing_dict["auditing_channels"]:
+            for chan in auditing_dict["auditing_channels"]:
+                channel = self.disclient.get_channel(chan)
+                fstr = f'Added: `{group}`, `{idol}`: {link}'
+                try:
+                    await channel.send(fstr)
+                except AttributeError:
+                    print("channel deleted")
+                    contri_dict["auditing_channels"].remove(chan)
+
 
 # --- End of Class --- #
 

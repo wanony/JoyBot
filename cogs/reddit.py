@@ -73,7 +73,9 @@ class Reddits(commands.Cog):
                                         try:
                                             await channel.send(embed=embed)
                                         except AttributeError:
+                                            reddit_dict[subs]["channels"].remove(channels)
                                             print("Channel deleted")
+
                                     elif url.startswith(gifs):
                                         embed.add_field(name="Post Permalink",
                                                         value=val)
@@ -81,6 +83,7 @@ class Reddits(commands.Cog):
                                             await channel.send(embed=embed)
                                             await channel.send(url)
                                         except AttributeError:
+                                            reddit_dict[subs]["channels"].remove(channels)
                                             print("Channel deleted")
                                     else:
                                         val = f"{soy}{perm}"
@@ -90,6 +93,7 @@ class Reddits(commands.Cog):
                                             await channel.send(embed=embed)
                                             await channel.send(url)
                                         except AttributeError:
+                                            reddit_dict[subs]["channels"].remove(channels)
                                             print("Channel deleted")
                                 else:
                                     val = f"{soy}{perm}"
@@ -98,10 +102,11 @@ class Reddits(commands.Cog):
                                     try:
                                         await channel.send(embed=embed)
                                     except AttributeError:
+                                        reddit_dict[subs]["channels"].remove(channels)
                                         print("Channel deleted")
                         lp.append(perm)
             except Exception as e:
-                print(e)
+                print(f'Exception: {e}')
             await asyncio.sleep(600)
         # print("calling reddit")
 
