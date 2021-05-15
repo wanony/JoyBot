@@ -6,6 +6,7 @@ from data import mods_dict
 from data import auditing_dict
 from data import gfys_dict
 from data import direc_dict
+from data import custom_dict
 
 
 def check_user_is_mod(ctx):
@@ -40,7 +41,7 @@ class Owner(commands.Cog):
             mods_dict["mods"].remove(member.id)
             embed = discord.Embed(title='Success!',
                                   description=f'{member} removed from the moderator list!',
-                                  color=discord.Color.red())
+                                  color=discord.Color.green())
             await ctx.send(embed=embed)
         else:
             embed = discord.Embed(title='Error!',
@@ -61,7 +62,7 @@ class Owner(commands.Cog):
             mods_dict["mods"].append(member.id)
             embed = discord.Embed(title='Success!',
                                   description=f'{member} added to moderator list!',
-                                  color=discord.Color.red())
+                                  color=discord.Color.green())
             await ctx.send(embed=embed)
         else:
             embed = discord.Embed(title='Error!',
@@ -375,6 +376,12 @@ class Moderation(commands.Cog):
         """Adds auditing from this channel, as links are added to
         the bot, they will also be posted here so all new additions
         can be viewed."""
+        if not check_user_is_mod(ctx):
+            embed = discord.Embed(title='Error!',
+                                  description='Permission denied!',
+                                  color=discord.Color.red())
+            await ctx.send(embed=embed)
+            return
         if ctx.channel.id not in auditing_dict["auditing_channels"]:
             auditing_dict["auditing_channels"].append(ctx.channel.id)
             des = 'Added this channel to the auditing list!'
@@ -392,6 +399,12 @@ class Moderation(commands.Cog):
     @commands.command(aliases=['removeauditing'])
     async def remove_auditing(self, ctx):
         """Removes auditing from this channel!"""
+        if not check_user_is_mod(ctx):
+            embed = discord.Embed(title='Error!',
+                                  description='Permission denied!',
+                                  color=discord.Color.red())
+            await ctx.send(embed=embed)
+            return
         if ctx.channel.id in auditing_dict["auditing_channels"]:
             auditing_dict["auditing_channels"].remove(ctx.channel.id)
             des = 'Removed this channel from the auditing list!'
@@ -405,6 +418,22 @@ class Moderation(commands.Cog):
                                   description=des,
                                   color=discord.Color.red())
             await ctx.send(embed=embed)
+
+    @commands.command(aliases=['delcommand', 'dc'])
+    async def delete_command(self, ctx, command):
+        """Removes a custom command created previously"""
+        if not check_user_is_mod(ctx):
+            embed = discord.Embed(title='Error!',
+                                  description='Permission denied!',
+                                  color=discord.Color.red())
+            await ctx.send(embed=embed)
+            return
+        command = command.lower()
+        if command in custom_dict["command_list"]:
+            custom_dict["command_list"].remove(command)
+            com_dict = custom_dict["commands"]
+            del com_dict[command]
+            await ctx.send("Custom command: `" + command + "` removed.")
 
 
 def setup(disclient):

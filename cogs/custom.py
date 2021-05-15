@@ -23,17 +23,6 @@ class Custom(commands.Cog):
                 json.dump(custom_dict, cus, indent=4)
             await asyncio.sleep(5)
 
-    @commands.command(aliases=['delcommand', 'dc'])
-    @commands.has_any_role('Moderator', 'Admin')
-    async def delete_command(self, ctx, command):
-        """MOD: Removes a custom command created previously"""
-        command = command.lower()
-        if command in custom_dict["command_list"]:
-            custom_dict["command_list"].remove(command)
-            com_dict = custom_dict["commands"]
-            del com_dict[command]
-            await ctx.send("Custom command: `" + command + "` removed.")
-
     @commands.command(aliases=['commands'])
     async def command_list(self, ctx):
         """Sends a list of all the custom commands"""
