@@ -643,7 +643,7 @@ class Fun(commands.Cog):
 # --- Timer Commands --- #
 
     @commands.command(aliases=['nohands'])
-    async def timer(self, ctx, duration, interval, group, idol, *tags):
+    async def timer(self, ctx, *args):
         """
         Sends a gfy in the channel every user defined interval in seconds
         (minimum is 10 seconds) for a duration (maximum of 30 minutes) of time.
@@ -653,18 +653,35 @@ class Fun(commands.Cog):
         This command can also be invoked with tags after <idol> add, <tag>
         """
         await self.disclient.wait_until_ready()
+        no_interval = False
+        try:
+            int(args[1])
+        except ValueError:
+            no_interval = True
+
+        duration = int(args[0])
+
+        if no_interval:
+            group = args[1]
+            idol = args[2]
+            tags = args[3:]
+            interval = 10
+        else:
+            interval = int(args[1])
+            group = args[2]
+            idol = args[3]
+            tags = args[4:]
+
         if group not in gfys_dict["groups"]:
             await ctx.send(f"Nothing for {group}")
         elif idol not in gfys_dict["groups"][group]:
             await ctx.send(f"Nothing for {idol} in {group}")
         else:
-            interval = int(interval)
-            duration = int(duration)
-            if interval <= 10:
+            if interval < 10:
                 interval = 10
-            if duration >= 30:
+            if duration > 30:
                 duration = 30
-            loops = int((duration * 60) / interval)
+            loops = int((duration * 60) // interval)
             author = str(ctx.author)
             checklist = []
             for keys in self.loops:
@@ -682,7 +699,7 @@ class Fun(commands.Cog):
                 self.loops[author] -= 1
                 if self.loops[author] <= 0:
                     await ctx.send("Timer finished.")
-                    del self.loops[author]
+                    self.loops.pop(author)
                 await asyncio.sleep(interval)
 
     @commands.command(aliases=['stop'])
@@ -700,17 +717,17 @@ class Fun(commands.Cog):
         for keys in self.loops:
             if keys.startswith(author):
                 checklist.append(keys)
-        #  doesn't work at "all"
+
         if str(timer_number) == 'all':
             i = 0
             for element in checklist:
                 self.loops[element] = 0
-                del self.loops[element]
+                self.loops.pop(element)
                 i += 1
             await ctx.send(f"Stopped all {i} timers for `{author}`")
         elif len(checklist) == 1:
             self.loops[checklist[0]] = 0
-            del self.loops[checklist[0]]
+            self.loops.pop(checklist[0])
             await ctx.send(f"Stopped timer for `{author}`.")
         elif len(checklist) > 1:
             to_stop = len(author) + timer_number - 1
@@ -721,7 +738,7 @@ class Fun(commands.Cog):
             self.loops[author] = 0
             await ctx.send(
                     f"Stopped timer `{timer_number}` for `{ctx.author}`.")
-            del self.loops[author]
+            self.loops.pop(author)
             print(f"deleted {author} from loops")
         else:
             await ctx.send(f"No timers running for `{ctx.author}`.")
