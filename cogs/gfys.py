@@ -415,6 +415,7 @@ class Fun(commands.Cog):
                         break
                 if tags:
                     for tag in tags:
+                        tag = tag.lower()
                         for element in gfys_dict["tags"][tag]:
                             try:
                                 if element in to_sent:
@@ -662,14 +663,14 @@ class Fun(commands.Cog):
         duration = int(args[0])
 
         if no_interval:
-            group = args[1]
-            idol = args[2]
+            group = args[1].lower()
+            idol = args[2].lower()
             tags = args[3:]
             interval = 10
         else:
             interval = int(args[1])
-            group = args[2]
-            idol = args[3]
+            group = args[2].lower()
+            idol = args[3].lower()
             tags = args[4:]
 
         if group not in gfys_dict["groups"]:
