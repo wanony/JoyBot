@@ -22,8 +22,11 @@ disclient.remove_command('help')
 
 @disclient.event
 async def on_ready():
-    await disclient.change_presence(status=discord.Status.online)
-    print(f"bot is online as {disclient.user.name}!")
+    await disclient.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="for .help"),
+                                    status=discord.Status.online)
+    print(f"bot is online as {disclient.user.name} in:")
+    for guild in disclient.guilds:
+        print(f'{guild.name}: (ID: {guild.id})')
 
 
 def backup_gfy_file():

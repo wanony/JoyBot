@@ -1,10 +1,7 @@
 import discord
 from discord.ext import commands
-import json
-import asyncio
-from data import direc_dict
-from data import users
-from data import contri_dict
+from data import find_user, add_user, add_user_xp
+from data import get_leaderboard
 
 
 class Levels(commands.Cog):
@@ -14,15 +11,6 @@ class Levels(commands.Cog):
     """
     def __init__(self, disclient):
         self.disclient = disclient
-        self.disclient.loop.create_task(self.write_people())
-
-    @commands.Cog.listener()
-    async def write_people(self):
-        await self.disclient.wait_until_ready()
-        while not self.disclient.is_closed():
-            with open(direc_dict["levels"], 'w') as lev:
-                json.dump(users, lev, indent=4)
-            await asyncio.sleep(5)
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -31,24 +19,11 @@ class Levels(commands.Cog):
         if message.author.bot:
             return
         author = str(message.author.id)
-        if author not in users:
-            users[author] = {}
-            users[author]['level'] = 1
-            users[author]['xp'] = 0
-        users[author]['xp'] += 1
-        if self.level_up(author):
-            embed = discord.Embed(colour=message.author.colour,
-                                  title="Level Up!!")
-            embed.set_thumbnail(url=message.author.avatar_url)
-            embed.add_field(name="Level:", value=users[author]['level'])
-            embed.add_field(name="XP:", value=users[author]['xp'])
-            await message.channel.send(embed=embed)
-
-    def level_up(self, author):
-        current_xp = users[author]['xp']
-        current_lvl = users[author]['level']
-        if current_xp >= current_lvl * 100:
-            users[author]['level'] += 1
+        found = find_user(author)
+        if not found:
+            add_user(author)
+        add_user_xp(author)
+        # add better leveling system in the future
 
     @commands.command(aliases=['xp'])
     async def level(self, ctx, member: discord.Member = None):
@@ -57,43 +32,52 @@ class Levels(commands.Cog):
             member = member
         else:
             member = ctx.author
-        if str(member.id) in users:
+        user = find_user(member.id)
+        if user:
+            xp = user[1]
+            cont = user[2]
             embed = discord.Embed(colour=member.colour, title="Level & XP")
             embed.set_author(name=member)
             embed.set_thumbnail(url=member.avatar_url)
             embed.set_footer(text=f"Requested by {ctx.author}",
                              icon_url=ctx.author.avatar_url)
-            embed.add_field(name="Level:",
-                            value=users[str(member.id)]['level'])
-            embed.add_field(name="XP:", value=users[str(member.id)]['xp'])
+            # need to update level later
+            embed.add_field(name="Level:", value=xp // 100)
+            embed.add_field(name="XP:", value=xp)
+            embed.add_field(name="Contribution:", value=cont)
             await ctx.send(embed=embed)
         else:
             await ctx.send("Member has no XP!")
 
     @commands.command()
-    async def leaderboard(self, ctx):
+    async def leaderboard(self, ctx, number_of_users=10):
         """
         Returns a leaderboard of the top 10 contributers!
         This leaderboard is made from all contributers across
         every server the bot is connected to.
         """
-        leads = []
-        for usr in contri_dict:
-            leads.append((contri_dict[usr]["cont"], await self.disclient.fetch_user(usr)))
-        leads.sort(reverse=True)
-        embed = discord.Embed(title="Contribution Leaderboard",
-                              description="",
-                              color=discord.Color.blurple())
-        for idx, pair in enumerate(leads[:10], start=1):
-            name = pair[1].name + '#' + pair[1].discriminator
-            elem = f"`{idx}. {name}{' ' * (29 - len(name))}{pair[0]}`"
-            embed.add_field(name="-", value=elem, inline=False)
-        await ctx.send(embed=embed)
-
-
-def format_list(array):
-    formatted = ''.join(array)
-    return formatted
+        async with ctx.channel.typing():
+            lb = get_leaderboard(number_of_users)
+            one_str = ""
+            suffix = 'st.'
+            for i, pair in enumerate(lb, start=1):
+                if i == 2:
+                    suffix = 'nd.'
+                elif i == 3:
+                    suffix = 'rd.'
+                elif i > 3:
+                    suffix = 'th.'
+                user = await self.disclient.fetch_user(pair[0])
+                name = user.name + '#' + user.discriminator
+                spacing = 40 - len(str(i) + suffix + name)
+                elem = f"`{i}{suffix} {name}{' ' * spacing}{pair[1]}`\n"
+                one_str = one_str + elem
+                # possibly make this string all in one field?
+                # embed.add_field(name="-", value=elem, inline=False)
+            embed = discord.Embed(title="Contribution Leaderboard",
+                                  description=one_str,
+                                  color=discord.Color.blurple())
+            await ctx.send(embed=embed)
 
 
 def setup(disclient):

@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from data import users
+from data import find_user, check_user_is_mod, check_user_is_owner
 
 
 class General(commands.Cog):
@@ -75,7 +75,7 @@ class General(commands.Cog):
                                              description=errr,
                                              color=discord.Color.red())
                 else:
-                    titl = f"{arg} Command List"
+                    titl = f"{arg.capitalize()} Command List"
                     halp = discord.Embed(title=titl,
                                          description=cog.__doc__,
                                          color=discord.Color.blurple())
@@ -95,8 +95,7 @@ class General(commands.Cog):
         else:
             member = ctx.author
         embed = discord.Embed(colour=member.colour)
-        embed.set_author(name=f"{member}")
-        # embed.set_thumbnail(url=member.avatar_url)
+        embed.set_author(name=member)
         embed.set_footer(text=f"requested by {ctx.author}",
                          icon_url=ctx.author.avatar_url)
         embed.set_image(url=member.avatar_url_as(size=512))
@@ -110,6 +109,9 @@ class General(commands.Cog):
         else:
             member = ctx.author
         print(member)
+        user = find_user(member.id)
+        xp = user[1]
+        cont = user[2]
         cr_at = member.created_at.strftime("%a, %#d %B %Y, %I:%M%p UTC")
         jo_at = member.joined_at.strftime("%a, %#d %B %Y, %I:%M%p UTC")
         embed = discord.Embed(colour=member.colour)
@@ -117,9 +119,10 @@ class General(commands.Cog):
         embed.set_thumbnail(url=member.avatar_url)
         embed.set_footer(text=f"Requested by {ctx.author}",
                          icon_url=ctx.author.avatar_url)
-        embed.add_field(name="Level:",
-                        value=users[str(member.id)]['level'])
-        embed.add_field(name="XP:", value=users[str(member.id)]['xp'])
+        # need better level system
+        embed.add_field(name="Level:", value=xp // 100)
+        embed.add_field(name="XP:", value=xp)
+        embed.add_field(name="Contribution:", value=cont)
         embed.add_field(name="ID:", value=member.id)
         embed.add_field(name="Account Created:", value=cr_at)
         embed.add_field(name="Joined Server:", value=jo_at)

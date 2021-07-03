@@ -1,9 +1,9 @@
-# import discord
 from discord.ext import commands
-import json
-import asyncio
-from data import custom_dict
-from data import direc_dict
+from data import get_commands
+from data import add_command
+from data import find_command
+from embeds import error_embed
+from embeds import success_embed
 
 
 class Custom(commands.Cog):
@@ -13,27 +13,21 @@ class Custom(commands.Cog):
     """
     def __init__(self, disclient):
         self.disclient = disclient
-        self.disclient.loop.create_task(self.write_custom())
-
-    @commands.Cog.listener()
-    async def write_custom(self):
-        await self.disclient.wait_until_ready()
-        while not self.disclient.is_closed():
-            with open(direc_dict["custom"], 'w') as cus:
-                json.dump(custom_dict, cus, indent=4)
-            await asyncio.sleep(5)
 
     @commands.command(aliases=['commands'])
     async def command_list(self, ctx):
         """Sends a list of all the custom commands"""
-        arrr = custom_dict["command_list"]
-        await ctx.send(f"`{format_list(arrr)}`")
+        arrr = get_commands()
+        if len(arrr) == 0:
+            await ctx.send(embed=error_embed('No commands added... Yet!'))
+        else:
+            await ctx.send(f"`{format_list(arrr.keys())}`")
 
     @commands.command(aliases=['ac', 'addcommand'])
     async def add_command(self, ctx, name, gfy):
         """
         Adds a custom command with a valid gfy/red/gif link!
-        Example: .addcommand fun <link>
+        Example: .addcommand <name> <link>
         You can now call this command with .fun
         """
         name = name.lower()
@@ -43,19 +37,14 @@ class Custom(commands.Cog):
             "https://redgifs.com/",
             "https://www.gifdeliverynetwork.com/"
         )
-        if name in custom_dict["command_list"]:
-            await ctx.send(
-                "Command name already exists! Try a different name.")
-        elif "." in name:
-            await ctx.send("Illegal character `.` in command name!")
-        elif gfy.startswith(valid):
-            custom_dict["command_list"].append(name)
-            new_command = {name: gfy}
-            custom_dict["commands"].update(new_command)
-            await ctx.send(f"Command: `.{name}` added!")
+        if gfy.startswith(valid):
+            added = add_command(name, gfy, ctx.author.id)
+            if added:
+                await ctx.send(embed=success_embed(f'Added command `{name}`!'))
+            else:
+                await ctx.send(embed=error_embed(f'Something went wrong!'))
         else:
-            await ctx.send(
-                "Link invalid, use gfycat, redgifs, gifdeliverynet or youtube")
+            await ctx.send(embed=error_embed(f'Invalid link!'))
 
 
 def format_list(array):
