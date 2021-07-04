@@ -1,24 +1,24 @@
-CREATE TABLE `users` (
+CREATE TABLE users (
   `UserId` bigint NOT NULL,
   `Xp` int NOT NULL,
   `Cont` int NOT NULL,
   PRIMARY KEY (`UserId`)
 );
 
-CREATE TABLE `moderators` (
+CREATE TABLE moderators (
   `UserId` bigint NOT NULL,
   PRIMARY KEY (`UserId`),
   CONSTRAINT `moderators_ibfk_1` FOREIGN KEY (`UserId`) REFERENCES `users` (`UserId`)
 );
 
-CREATE TABLE `groupz` (
+CREATE TABLE groupz (
   `GroupId` int NOT NULL AUTO_INCREMENT,
   `RomanName` varchar(255) NOT NULL,
   `AddedBy` bigint DEFAULT NULL,
   PRIMARY KEY (`GroupId`)
 );
 
-CREATE TABLE `groupz_aliases` (
+CREATE TABLE groupz_aliases (
   `AliasID` int NOT NULL AUTO_INCREMENT,
   `GroupId` int NOT NULL,
   `Alias` varchar(255) DEFAULT NULL,
@@ -27,7 +27,7 @@ CREATE TABLE `groupz_aliases` (
   CONSTRAINT `groupz_aliases_ibfk_1` FOREIGN KEY (`GroupId`) REFERENCES `groupz` (`GroupId`) ON DELETE CASCADE
 );
 
-CREATE TABLE `members` (
+CREATE TABLE members (
   `MemberId` int NOT NULL AUTO_INCREMENT,
   `GroupId` int NOT NULL,
   `RomanName` varchar(255) NOT NULL,
@@ -37,7 +37,7 @@ CREATE TABLE `members` (
   CONSTRAINT `members_ibfk_1` FOREIGN KEY (`GroupId`) REFERENCES `groupz` (`GroupId`) ON DELETE CASCADE
 );
 
-CREATE TABLE `member_aliases` (
+CREATE TABLE member_aliases (
   `AliasID` int NOT NULL AUTO_INCREMENT,
   `MemberId` int NOT NULL,
   `Alias` varchar(255) DEFAULT NULL,
@@ -46,14 +46,14 @@ CREATE TABLE `member_aliases` (
   CONSTRAINT `member_aliases_ibfk_1` FOREIGN KEY (`MemberId`) REFERENCES `members` (`MemberId`) ON DELETE CASCADE
 );
 
-CREATE TABLE `tags` (
+CREATE TABLE tags (
   `TagId` int NOT NULL AUTO_INCREMENT,
   `TagName` varchar(255) NOT NULL,
   `AddedBy` bigint DEFAULT NULL,
   PRIMARY KEY (`TagId`)
 );
 
-CREATE TABLE `tag_aliases` (
+CREATE TABLE tag_aliases (
   `AliasID` int NOT NULL AUTO_INCREMENT,
   `TagId` int NOT NULL,
   `Alias` varchar(255) DEFAULT NULL,
@@ -62,14 +62,14 @@ CREATE TABLE `tag_aliases` (
   CONSTRAINT `tag_aliases_ibfk_1` FOREIGN KEY (`TagId`) REFERENCES `tags` (`TagId`) ON DELETE CASCADE
 );
 
-CREATE TABLE `links` (
+CREATE TABLE links (
   `LinkId` int NOT NULL AUTO_INCREMENT,
   `Link` varchar(255) NOT NULL,
   `AddedBy` bigint DEFAULT NULL,
   PRIMARY KEY (`LinkId`)
 );
 
-CREATE TABLE `link_tags` (
+CREATE TABLE link_tags (
   `LinkId` int NOT NULL,
   `TagId` int NOT NULL,
   PRIMARY KEY (`LinkId`,`TagId`),
@@ -78,7 +78,7 @@ CREATE TABLE `link_tags` (
   CONSTRAINT `link_tags_ibfk_2` FOREIGN KEY (`TagId`) REFERENCES `tags` (`TagId`) ON DELETE CASCADE
 );
 
-CREATE TABLE `link_members` (
+CREATE TABLE link_members (
   `LinkId` int NOT NULL,
   `MemberId` int NOT NULL,
   PRIMARY KEY (`LinkId`,`MemberId`),
@@ -87,25 +87,25 @@ CREATE TABLE `link_members` (
   CONSTRAINT `link_members_ibfk_2` FOREIGN KEY (`MemberId`) REFERENCES `members` (`MemberId`) ON DELETE CASCADE
 );
 
-CREATE TABLE `custom_commands` (
+CREATE TABLE custom_commands (
   `CommandName` varchar(255) CHARACTER SET utf32 COLLATE utf32_general_ci DEFAULT NULL,
   `Command` varchar(255) CHARACTER SET utf32 COLLATE utf32_general_ci DEFAULT NULL,
   `AddedBy` bigint DEFAULT NULL
 );
 
-CREATE TABLE `channels` (
+CREATE TABLE channels (
   `ChannelId` int NOT NULL AUTO_INCREMENT,
   `Channel` bigint NOT NULL,
   PRIMARY KEY (`ChannelId`)
 );
 
-CREATE TABLE `reddit` (
+CREATE TABLE reddit (
   `RedditId` int NOT NULL AUTO_INCREMENT,
   `RedditName` varchar(255) NOT NULL,
   PRIMARY KEY (`RedditId`)
 );
 
-CREATE TABLE `reddit_channels` (
+CREATE TABLE reddit_channels (
   `ChannelId` int NOT NULL,
   `RedditId` int NOT NULL,
   PRIMARY KEY (`ChannelId`,`RedditId`),
@@ -114,7 +114,7 @@ CREATE TABLE `reddit_channels` (
   CONSTRAINT `reddit_channels_ibfk_2` FOREIGN KEY (`RedditId`) REFERENCES `reddit` (`RedditId`)
 );
 
-CREATE TABLE `auditing_channels` (
+CREATE TABLE auditing_channels (
   `ChannelId` int NOT NULL,
   PRIMARY KEY (`ChannelId`),
   CONSTRAINT `auditing_channels_ibfk_1` FOREIGN KEY (`ChannelId`) REFERENCES `channels` (`ChannelId`)
