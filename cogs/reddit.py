@@ -80,7 +80,7 @@ class Reddits(commands.Cog):
                                         try:
                                             await channel.send(embed=embed)
                                         except AttributeError:
-                                            self.recent_posts[subs].remove(channels)
+                                            self.recent_posts[subs].pop(channels)
                                             print("Channel deleted")
 
                                     elif url.startswith(gifs):
@@ -90,7 +90,7 @@ class Reddits(commands.Cog):
                                             await channel.send(embed=embed)
                                             await channel.send(url)
                                         except AttributeError:
-                                            self.recent_posts[subs].remove(channels)
+                                            self.recent_posts[subs].pop(channels)
                                             print("Channel deleted")
                                     else:
                                         val = f"{soy}{perm}"
@@ -100,7 +100,7 @@ class Reddits(commands.Cog):
                                             await channel.send(embed=embed)
                                             await channel.send(url)
                                         except AttributeError:
-                                            self.recent_posts[subs].remove(channels)
+                                            self.recent_posts[subs].pop(channels)
                                             print("Channel deleted")
                                 else:
                                     val = f"{soy}{perm}"
@@ -109,7 +109,7 @@ class Reddits(commands.Cog):
                                     try:
                                         await channel.send(embed=embed)
                                     except AttributeError:
-                                        self.recent_posts[subs].remove(channels)
+                                        self.recent_posts[subs].pop(channels)
                                         print("Channel deleted")
                         lp.append(perm)
             except Exception as e:
