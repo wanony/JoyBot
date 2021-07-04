@@ -40,7 +40,7 @@ db = conn.connect(
 def add_command(name, link, added_by):
     """Add a new custom command to the database."""
     cursor = db.cursor()
-    sql = "INSERT INTO Custom_Commands(CommandName, Command, AddedBy) VALUES (%s, %s, %s);"
+    sql = "INSERT INTO custom_commands(CommandName, Command, AddedBy) VALUES (%s, %s, %s);"
     val = (name, link, added_by)
     cursor.execute(sql, val)
     rowcount = cursor.rowcount
@@ -52,7 +52,7 @@ def add_command(name, link, added_by):
 def get_commands():
     """Returns a dictionary of all commands in the database."""
     cursor = db.cursor()
-    sql = "SELECT CommandName, Command FROM Custom_Commands ORDER BY CommandName;"
+    sql = "SELECT CommandName, Command FROM custom_commands ORDER BY CommandName;"
     cursor.execute(sql)
     result = dict(cursor.fetchall())
     cursor.close()
@@ -62,7 +62,7 @@ def get_commands():
 def find_command(command_name):
     """Finds a specific command by name in the database."""
     cursor = db.cursor()
-    sql = """SELECT CommandName FROM Custom_Commands
+    sql = """SELECT CommandName FROM custom_commands
                 WHERE CommandName = %s"""
     val = command_name
     cursor.execute(sql, val)
@@ -79,7 +79,7 @@ def remove_command(name):
     #             Custom_Commands.IsDeleted = 1
     #         WHERE
     #             Custom_Commands.CommandName = %s;"""
-    sql = """DELETE FROM Custom_Commands
+    sql = """DELETE FROM custom_commands
                 WHERE CommandName = %s"""
     value = (name,)
     cursor.execute(sql, value)
@@ -95,7 +95,7 @@ def remove_command(name):
 def add_link(link, added_by):
     """Adds a link to the database."""
     cursor = db.cursor()
-    sql = "INSERT INTO Links(Link, AddedBy) VALUES (%s, %s);"
+    sql = "INSERT INTO links(Link, AddedBy) VALUES (%s, %s);"
     values = (link, added_by)
     try:
         cursor.execute(sql, values)
@@ -123,7 +123,7 @@ def count_links():
 def get_link_id(link):
     """Returns a links unique ID in the database."""
     cursor = db.cursor()
-    sql = "SELECT LinkId FROM Links WHERE Link = %s"
+    sql = "SELECT LinkId FROM links WHERE Link = %s"
     val = (link,)
     cursor.execute(sql, val)
     link_id = cursor.fetchone()[0]
@@ -196,7 +196,7 @@ def remove_link(group, member, link):
 
 def add_link_to_member(member_id, link_id):
     cursor = db.cursor()
-    sql = """INSERT INTO Link_Members(LinkId, MemberId) VALUES (%s, %s);"""
+    sql = """INSERT INTO link_members(LinkId, MemberId) VALUES (%s, %s);"""
     values = (link_id, member_id)
     try:
         cursor.execute(sql, values)
@@ -215,7 +215,7 @@ def add_link_to_member(member_id, link_id):
 def add_tag(tag_name, added_by):
     """Adds a new tag to the database."""
     cursor = db.cursor()
-    sql = "INSERT INTO Tags(TagName, AddedBy) VALUES (%s, %s);"
+    sql = "INSERT INTO tags(TagName, AddedBy) VALUES (%s, %s);"
     value = (tag_name, added_by)
     cursor.execute(sql, value)
     rowcount = cursor.rowcount
@@ -226,7 +226,7 @@ def add_tag(tag_name, added_by):
 
 def add_tag_alias(tag_id, alias, added_by):
     cursor = db.cursor()
-    sql = "INSERT INTO Tag_Aliases(TagId, Alias, AddedBy) VALUES (%s, %s, %s);"
+    sql = "INSERT INTO tag_aliases(TagId, Alias, AddedBy) VALUES (%s, %s, %s);"
     values = (tag_id, alias, added_by)
     cursor.execute(sql, values)
     rowcount = cursor.rowcount
@@ -238,7 +238,7 @@ def add_tag_alias(tag_id, alias, added_by):
 def get_all_tag_names():
     """Returns all tag names."""
     cursor = db.cursor()
-    sql = "SELECT TagName FROM Tags ORDER BY TagName"
+    sql = "SELECT TagName FROM tags ORDER BY TagName"
     # sql = """SELECT Alias FROM Tag_Aliases ORDER BY Alias"""
     cursor.execute(sql)
     result = cursor.fetchall()
@@ -264,7 +264,7 @@ def add_tag_alias_db(tag, alias, user_id):
     """Adds a new alias to an existing tag."""
     cursor = db.cursor()
     sql = """INSERT INTO tag_aliases(TagId, Alias, AddedBy)
-             VALUES ((SELECT TagId FROM Tags WHERE TagName = %s), %s, %s)"""
+             VALUES ((SELECT TagId FROM tags WHERE TagName = %s), %s, %s)"""
     val = (tag, alias, user_id)
     cursor.execute(sql, val)
     rowcount = cursor.rowcount
@@ -289,7 +289,7 @@ def remove_tag_alias_db(tag, alias):
 def find_tag_id(tag_name):
     """Returns the unique ID of a tag by name."""
     cursor = db.cursor()
-    sql = "SELECT TagId FROM Tags WHERE TagName = %s"
+    sql = "SELECT TagId FROM tags WHERE TagName = %s"
     # sql = """SELECT tags.TagId FROM Tags
     #             left join tag_aliases
     #                 on tag_aliases.TagId = tags.TagId
@@ -304,12 +304,12 @@ def find_tag_id(tag_name):
 def find_tags_on_link(link):
     """Returns a dict of tagnames and IDs that are on a link."""
     cursor = db.cursor()
-    sql = """SELECT TagName, TagId, Links.LinkId
-             FROM Tags, Links
+    sql = """SELECT TagName, TagId, links.LinkId
+             FROM tags, links
                 WHERE
-                    Links.Link = %s
+                    links.Link = %s
                     AND
-                    Tags.LinkId = Links.LinkId;"""
+                    tags.LinkId = links.LinkId;"""
     val = (link,)
     cursor.execute(sql, val)
     tags = dict(cursor.fetchall())
@@ -345,10 +345,10 @@ def add_link_tags(link, tag_name):
     # sql = """INSERT INTO Link_Tags(LinkId, TagId) SELECT Links.LinkId, Tags.TagId FROM Links
     #          LEFT JOIN Tags ON Tags.TagName = %s
     #          WHERE Links.Link = %s"""
-    sql = """INSERT INTO Link_Tags(LinkId, Tags.TagId) SELECT Links.LinkId, Tags.TagId FROM Links
-             LEFT JOIN Tag_Aliases ON Tag_Aliases.Alias = %s
-             LEFT JOIN Tags ON Tags.TagId = Tag_Alaises.TagId
-             WHERE Links.Link = %s"""
+    sql = """INSERT INTO link_tags(LinkId, Tags.TagId) SELECT links.LinkId, tags.TagId FROM links
+             LEFT JOIN tag_aliases ON tag_aliases.Alias = %s
+             LEFT JOIN tags ON tags.TagId = tag_alaises.TagId
+             WHERE links.Link = %s"""
     values = (tag_name, link)
     try:
         cursor.execute(sql, values)
@@ -374,9 +374,9 @@ def remove_tag_from_link(link, tag):
     #                 Links.Link = %s
     #                 AND
     #                 Tags.TagName = %s;"""
-    sql = """DELETE FROM Link_Tags
-          WHERE LinkId = ANY(SELECT LinkId FROM Links WHERE Link = %s) 
-          AND TagId = ANY(SELECT TagId FROM Tags WHERE TagName = %s)"""
+    sql = """DELETE FROM link_tags
+          WHERE LinkId = ANY(SELECT LinkId FROM links WHERE Link = %s) 
+          AND TagId = ANY(SELECT TagId FROM tags WHERE TagName = %s)"""
     values = (link, tag)
     cursor.execute(sql, values)
     rowcount = cursor.rowcount
@@ -420,7 +420,7 @@ def member_link_count(group_name, member_name):
 
 def add_group(group_name, added_by):
     cursor = db.cursor()
-    sql = "INSERT INTO Groupz(RomanName, AddedBy) VALUES (%s, %s);"
+    sql = "INSERT INTO groupz(RomanName, AddedBy) VALUES (%s, %s);"
     values = (group_name, added_by)
     try:
         cursor.execute(sql, values)
@@ -476,10 +476,10 @@ def remove_group(group):
 
 def find_group_id(group_name):
     cursor = db.cursor()
-    sql = """SELECT Groupz.GroupId FROM Groupz
+    sql = """SELECT groupz.GroupId FROM groupz
                 left join groupz_aliases
                     on groupz_aliases.Alias = %s
-                where Groupz.GroupId = groupz_aliases.GroupId;"""
+                where groupz.GroupId = groupz_aliases.GroupId;"""
     value = (group_name,)
     try:
         cursor.execute(sql, value)
@@ -493,10 +493,10 @@ def find_group_id(group_name):
 
 def find_group_id_and_name(group_name):
     cursor = db.cursor()
-    sql = """SELECT Groupz.GroupId, Groupz.RomanName FROM Groupz
+    sql = """SELECT groupz.GroupId, groupz.RomanName FROM groupz
                 left join groupz_aliases
                     on groupz_aliases.Alias = %s
-                where Groupz.GroupId = groupz_aliases.GroupId;"""
+                where groupz.GroupId = groupz_aliases.GroupId;"""
     value = (group_name,)
     try:
         cursor.execute(sql, value)
@@ -522,7 +522,7 @@ def find_group_and_member_id(group_name, member_name):
 
 def get_groups():
     cursor = db.cursor()
-    sql = """SELECT RomanName FROM Groupz
+    sql = """SELECT RomanName FROM groupz
                 ORDER BY RomanName"""
     cursor.execute(sql)
     result = cursor.fetchall()
@@ -557,7 +557,7 @@ def remove_group_alias_db(group_name, alias):
 
 def get_group_aliases(group_name):
     cursor = db.cursor()
-    sql = "select Alias from Groupz_Aliases WHERE GroupId = %s"
+    sql = "select Alias from groupz_aliases WHERE GroupId = %s"
     val = (group_name,)
     cursor.execute(sql, val)
     result = cursor.fetchall()
@@ -570,8 +570,8 @@ def get_group_aliases(group_name):
 
 def add_member(group_name, member_name, addedby):
     cursor = db.cursor()
-    sql = """INSERT INTO Members(GroupId, RomanName, AddedBy)
-                VALUES ((SELECT Groupz.GroupId FROM Groupz WHERE Groupz.RomanName = %s),
+    sql = """INSERT INTO members(GroupId, RomanName, AddedBy)
+                VALUES ((SELECT groupz.GroupId FROM groupz WHERE groupz.RomanName = %s),
                          %s, %s);"""
     values = (group_name, member_name, addedby)
     try:
@@ -604,7 +604,7 @@ def remove_member(group_id, member_name):
     #                 ON links.LinkId = link_members.LinkId
     #             WHERE members.RomanName = %s
     #             AND members.GroupId = %s;"""
-    sql = "DELETE FROM Members WHERE RomanName = %s AND GroupId = %s"
+    sql = "DELETE FROM members WHERE RomanName = %s AND GroupId = %s"
     values = (member_name, group_id)
     try:
         cursor.execute(sql, values)
@@ -619,10 +619,10 @@ def remove_member(group_id, member_name):
 def find_member_id(group_id, member_name):
     cursor = db.cursor()
     # sql = "SELECT MemberId FROM Members WHERE RomanName = (%s) AND GroupId = (%s)"
-    sql = """SELECT members.MemberId FROM Members
+    sql = """SELECT members.MemberId FROM members
                 left join member_aliases
                     on member_aliases.MemberId = members.MemberId
-                WHERE alias = (%s) AND members.GroupId = (%s)"""
+                WHERE alias = %s AND members.GroupId = %s"""
     val = (member_name, group_id)
     try:
         cursor.execute(sql, val)
@@ -636,10 +636,10 @@ def find_member_id(group_id, member_name):
 def find_member_id_and_name(group_id, member_name):
     cursor = db.cursor()
     # sql = "SELECT MemberId FROM Members WHERE RomanName = (%s) AND GroupId = (%s)"
-    sql = """SELECT members.MemberId, members.RomanName FROM Members
+    sql = """SELECT members.MemberId, members.RomanName FROM members
                 left join member_aliases
                     on member_aliases.MemberId = members.MemberId
-                WHERE alias = (%s) AND members.GroupId = (%s)"""
+                WHERE alias = %s AND members.GroupId = %s"""
     val = (member_name, group_id)
     try:
         cursor.execute(sql, val)
@@ -700,9 +700,9 @@ def find_member_aliases(member_id):
 def get_members_of_group(group_name):
     """Returns a dict of members of a group."""
     cursor = db.cursor()
-    sql = """SELECT Members.RomanName FROM Members
-                INNER JOIN Groupz ON Groupz.RomanName = %s
-                WHERE Members.GroupId = Groupz.GroupId;"""
+    sql = """SELECT members.RomanName FROM members
+                INNER JOIN groupz ON groupz.RomanName = %s
+                WHERE members.GroupId = groupz.GroupId;"""
     val = (group_name,)
     cursor.execute(sql, val)
     members = cursor.fetchall()
@@ -712,9 +712,9 @@ def get_members_of_group(group_name):
 
 def get_members_of_group_by_group_id(group_id):
     cursor = db.cursor()
-    sql = """SELECT Members.RomanName FROM Members
-                INNER JOIN Groupz ON Groupz.GroupId = %s
-                WHERE Members.GroupId = Groupz.GroupId;"""
+    sql = """SELECT members.RomanName FROM members
+                INNER JOIN groupz ON groupz.GroupId = %s
+                WHERE members.GroupId = groupz.GroupId;"""
     val = group_id
     cursor.execute(sql, val)
     members = cursor.fetchall()
@@ -724,7 +724,7 @@ def get_members_of_group_by_group_id(group_id):
 
 def get_member_links(group_id, member_name):
     cursor = db.cursor()
-    sql = """select Link from Links
+    sql = """select Link from links
                 left join link_members 
                     on links.LinkId = link_members.LinkId
                 left join groupz 
@@ -746,12 +746,12 @@ def get_member_links(group_id, member_name):
 
 def get_members_of_group_and_link_count(group_id):
     cursor = db.cursor()
-    sql = """SELECT Members.RomanName,
+    sql = """SELECT members.RomanName,
                 (SELECT COUNT(*) FROM link_members WHERE link_members.MemberId = members.MemberId)
-                FROM Members
+                FROM members
                 INNER JOIN groupz ON groupz.GroupId = %s
-                WHERE Members.GroupId = Groupz.GroupId
-                ORDER BY Members.RomanName"""
+                WHERE members.GroupId = groupz.GroupId
+                ORDER BY members.RomanName"""
     val = (group_id,)
     cursor.execute(sql, val)
     result = cursor.fetchall()
@@ -761,7 +761,7 @@ def get_members_of_group_and_link_count(group_id):
 
 def get_member_links_with_tag(group_id, member_name, tag):
     cursor = db.cursor()
-    sql = """select Link from Links
+    sql = """select Link from links
              left join link_members 
                 on links.LinkId = link_members.LinkId
              left join groupz 
@@ -771,7 +771,7 @@ def get_member_links_with_tag(group_id, member_name, tag):
             left join member_aliases
                 on member_aliases.MemberId = members.MemberId
             left join link_tags 
-                on link_tags.LinkId = Links.LinkId 
+                on link_tags.LinkId = links.LinkId 
             left join tags 
                 on tags.TagId = link_tags.TagId
             left join tag_aliases
@@ -788,7 +788,7 @@ def get_member_links_with_tag(group_id, member_name, tag):
 
 def count_links_of_member(member_id):
     cursor = db.cursor()
-    sql = "SELECT COUNT(*) FROM Link_Members WHERE MemberId = (%s)"
+    sql = "SELECT COUNT(*) FROM link_members WHERE MemberId = (%s)"
     val = (member_id,)
     try:
         cursor.execute(sql, val)
@@ -800,10 +800,10 @@ def count_links_of_member(member_id):
 
 def last_three_links(member_id):
     cursor = db.cursor()
-    sql = """SELECT Link FROM Links
-                INNER JOIN Link_Members ON Links.LinkId = Link_Members.LinkId
-                WHERE Link_Members.MemberId = %s
-                ORDER BY Links.LinkId DESC
+    sql = """SELECT Link FROM links
+                INNER JOIN link_members ON links.LinkId = link_members.LinkId
+                WHERE link_members.MemberId = %s
+                ORDER BY links.LinkId DESC
                 LIMIT 3"""
     val = (member_id,)
     try:
@@ -816,7 +816,7 @@ def last_three_links(member_id):
 
 def get_all_tags_on_member_and_count(member_id):
     cursor = db.cursor()
-    sql = """SELECT TagName, Count(*) FROM Link_Tags
+    sql = """SELECT TagName, Count(*) FROM link_tags
                 INNER JOIN tags on tags.TagId = link_tags.TagId
                 INNER JOIN link_members on link_members.LinkId = link_tags.LinkId
                 WHERE link_members.MemberId = %s
@@ -831,7 +831,7 @@ def get_all_tags_on_member_and_count(member_id):
 
 def add_link_members(link_id, member_id):
     cursor = db.cursor()
-    sql = "INSERT INTO Link_Members(LinkId, MemberId) VALUES (%s, %s);"
+    sql = "INSERT INTO link_members(LinkId, MemberId) VALUES (%s, %s);"
     values = (link_id, member_id)
     cursor.execute(sql, values)
     rowcount = cursor.rowcount
@@ -842,7 +842,7 @@ def add_link_members(link_id, member_id):
 
 def add_user(discord_id, xp=0, contri=0):
     cursor = db.cursor()
-    sql = "INSERT INTO Users(UserId, Xp, Cont) VALUES (%s, %s, %s);"
+    sql = "INSERT INTO users(UserId, Xp, Cont) VALUES (%s, %s, %s);"
     values = (discord_id, xp, contri)
     cursor.execute(sql, values)
     db.commit()
@@ -851,7 +851,7 @@ def add_user(discord_id, xp=0, contri=0):
 
 def add_user_xp(discord_id, xp_to_add=1):
     cursor = db.cursor()
-    sql = """UPDATE Users
+    sql = """UPDATE users
                 SET
                     Xp = Xp + %s
                 WHERE
@@ -865,7 +865,7 @@ def add_user_xp(discord_id, xp_to_add=1):
 
 def find_user(discord_id):
     cursor = db.cursor()
-    sql = "SELECT UserId, Xp, Cont FROM Users WHERE UserId = %s;"
+    sql = "SELECT UserId, Xp, Cont FROM users WHERE UserId = %s;"
     val = (discord_id,)
     cursor.execute(sql, val)
     user = cursor.fetchone()[0]
@@ -875,7 +875,7 @@ def find_user(discord_id):
 
 def add_user_contribution(discord_id, contribution=1):
     cursor = db.cursor()
-    sql = """UPDATE Users
+    sql = """UPDATE users
                 SET
                     Cont = Cont + %s
                 WHERE
@@ -903,7 +903,7 @@ def add_user_contribution(discord_id, contribution=1):
 
 def get_leaderboard(number_of_users=10):
     cursor = db.cursor()
-    sql = "SELECT UserId, Cont FROM Users ORDER BY Cont DESC LIMIT %s;"
+    sql = "SELECT UserId, Cont FROM users ORDER BY Cont DESC LIMIT %s;"
     val = (number_of_users,)
     cursor.execute(sql, val)
     leaderboard = cursor.fetchall()
@@ -913,7 +913,7 @@ def get_leaderboard(number_of_users=10):
 
 def add_moderator(discord_id):
     cursor = db.cursor()
-    sql = "INSERT INTO Moderators(UserId) VALUES (%s);"
+    sql = "INSERT INTO moderators(UserId) VALUES (%s);"
     value = (discord_id,)
     try:
         cursor.execute(sql, value)
@@ -932,7 +932,7 @@ def remove_moderator(discord_id):
     #                 Moderators.IsDeleted = 1
     #             WHERE
     #                 Moderators.UserId = %s;"""
-    sql = "DELETE FROM Moderators WHERE UserId = %s"
+    sql = "DELETE FROM moderators WHERE UserId = %s"
     value = (discord_id,)
     cursor.execute(sql, value)
     rowcount = cursor.rowcount
@@ -943,7 +943,7 @@ def remove_moderator(discord_id):
 
 def find_moderator(discord_id):
     cursor = db.cursor()
-    sql = "SELECT UserId FROM Moderators WHERE UserId = %s"
+    sql = "SELECT UserId FROM moderators WHERE UserId = %s"
     val = (discord_id,)
     cursor.execute(sql, val)
     result = cursor.fetchone()
@@ -953,7 +953,7 @@ def find_moderator(discord_id):
 
 def add_channel(discord_id):
     cursor = db.cursor()
-    sql = "INSERT INTO Channels(Channel) VALUES (%s);"
+    sql = "INSERT INTO channels(Channel) VALUES (%s);"
     value = (discord_id,)
     try:
         cursor.execute(sql, value)
@@ -982,7 +982,7 @@ def remove_channel(discord_id):
 
 def find_channel(discord_id):
     cursor = db.cursor()
-    sql = "SELECT ChannelId FROM Channels WHERE Channel = %s;"
+    sql = "SELECT ChannelId FROM channels WHERE Channel = %s;"
     val = (discord_id,)
     cursor.execute(sql, val)
     result = cursor.fetchone()
@@ -992,9 +992,9 @@ def find_channel(discord_id):
 
 def add_auditing_channel(discord_id):
     cursor = db.cursor()
-    sql = """INSERT INTO Auditing_Channels(ChannelId)
-            SELECT ChannelId FROM Channels 
-            WHERE Channels.Channel = %s"""
+    sql = """INSERT INTO auditing_channels(ChannelId)
+            SELECT ChannelId FROM channels 
+            WHERE channels.Channel = %s"""
     value = (discord_id,)
     cursor.execute(sql, value)
     rowcount = cursor.rowcount
@@ -1014,7 +1014,7 @@ def remove_auditing_channel(discord_id):
     #             WHERE ChannelId = %s"""
     sql = """DELETE FROM auditing_channels
                 WHERE ChannelId = ANY(
-                SELECT ChannelId FROM Channels
+                SELECT ChannelId FROM channels
                 WHERE Channel = %s);"""
     value = (discord_id,)
     try:
@@ -1029,7 +1029,7 @@ def remove_auditing_channel(discord_id):
 
 def find_auditing_channel(channel_id):
     cursor = db.cursor()
-    sql = "SELECT ChannelId FROM Auditing_Channels WHERE ChannelId = %s"
+    sql = "SELECT ChannelId FROM auditing_channels WHERE ChannelId = %s"
     val = (channel_id,)
     cursor.execute(sql, val)
     result = cursor.fetchone()
@@ -1050,7 +1050,7 @@ def get_auditing_channels():
 
 def add_reddit(reddit_name):
     cursor = db.cursor()
-    sql = "INSERT INTO Reddit(RedditName) VALUES (%s);"
+    sql = "INSERT INTO reddit(RedditName) VALUES (%s);"
     value = (reddit_name,)
     try:
         cursor.execute(sql, value)
@@ -1080,7 +1080,7 @@ def add_reddit(reddit_name):
 
 def get_subreddit_id(reddit_name):
     cursor = db.cursor()
-    sql = """SELECT RedditId FROM Reddit
+    sql = """SELECT RedditId FROM reddit
                 WHERE RedditName = %s"""
     val = (reddit_name,)
     try:
@@ -1094,7 +1094,7 @@ def get_subreddit_id(reddit_name):
 
 def add_reddit_channel(channel_id, reddit_id):
     cursor = db.cursor()
-    sql = "INSERT INTO Reddit_Channels(ChannelId, RedditId) VALUES (%s, %s);"
+    sql = "INSERT INTO reddit_channels(ChannelId, RedditId) VALUES (%s, %s);"
     values = (channel_id, reddit_id)
     try:
         cursor.execute(sql, values)
@@ -1109,7 +1109,7 @@ def add_reddit_channel(channel_id, reddit_id):
 
 def remove_channel_from_subreddit(channel_id, subreddit_name):
     cursor = db.cursor()
-    sql = """DELETE FROM Reddit_Channels
+    sql = """DELETE FROM reddit_channels
                 WHERE RedditId = %s
                 AND ChannelId = %s"""
     vals = (subreddit_name, channel_id)
@@ -1174,8 +1174,8 @@ def get_channels_with_sub(reddit_name):
 
 def random_link_from_links():
     cursor = db.cursor()
-    sql = """SELECT Link, members.RomanName, groupz.RomanName FROM Links
-                INNER JOIN link_members ON link_members.LinkId = Links.LinkId
+    sql = """SELECT Link, members.RomanName, groupz.RomanName FROM links
+                INNER JOIN link_members ON link_members.LinkId = links.LinkId
                 INNER JOIN members ON members.MemberId = link_members.MemberId
                 INNER JOIN groupz ON groupz.GroupId = members.GroupId
                 ORDER BY RAND()
