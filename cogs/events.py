@@ -8,6 +8,7 @@ class Events(commands.Cog):
     No user commands added here... Yet.
     """
     def __init__(self, disclient):
+        """Initialise client."""
         self.disclient = disclient
 
     @commands.Cog.listener()

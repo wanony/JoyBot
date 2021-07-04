@@ -12,6 +12,7 @@ class Reddits(commands.Cog):
     """Get new posts from your favourite Subreddits
     """
     def __init__(self, disclient):
+        """Initialise client."""
         self.disclient = disclient
         # possibly save recent posts to file to avoid reposts on restart
         self.recent_posts = {}
@@ -118,7 +119,7 @@ class Reddits(commands.Cog):
 
     @commands.command()
     async def unfollow_subreddit(self, ctx, subreddit):
-        """Unfollow a previously followed subreddit"""
+        """Unfollow a previously followed subreddit."""
         channel = ctx.channel.id
         subreddit = subreddit.lower()
         subreddit_id = get_subreddit_id(subreddit)
@@ -143,7 +144,7 @@ class Reddits(commands.Cog):
     async def follow_subreddit(self, ctx, subreddit):
         """Add a subreddit to follow in this server!
         The channel this command is invoked in will be used
-        to post the new submission to the sub"""
+        to post the new submission to the sub."""
         channel = ctx.channel.id
         subreddit = subreddit.lower()
         subreddit_id = get_subreddit_id(subreddit)

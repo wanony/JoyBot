@@ -1,11 +1,11 @@
 import discord
 from discord.ext import commands
-from data import find_user, check_user_is_mod, check_user_is_owner
+from data import find_user
 
 
 class General(commands.Cog):
-    """General commands that are useful to get
-    information about users or help!
+    """
+    General commands that are useful to get information about users or help!
     """
     def __init__(self, disclient):
         self.disclient = disclient
@@ -89,7 +89,7 @@ class General(commands.Cog):
 
     @commands.command(aliases=['avatar'])
     async def get_avatar(self, ctx, member: discord.Member = None):
-        """returns the users avatar"""
+        """Returns the users avatar."""
         if member:
             member = member
         else:

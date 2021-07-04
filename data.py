@@ -38,7 +38,7 @@ db = conn.connect(
 
 
 def add_command(name, link, added_by):
-    """Add a new custom command to the database"""
+    """Add a new custom command to the database."""
     cursor = db.cursor()
     sql = "INSERT INTO Custom_Commands(CommandName, Command, AddedBy) VALUES (%s, %s, %s);"
     val = (name, link, added_by)
@@ -50,7 +50,7 @@ def add_command(name, link, added_by):
 
 
 def get_commands():
-    """returns a dictionary of all commands in the database"""
+    """Returns a dictionary of all commands in the database."""
     cursor = db.cursor()
     sql = "SELECT CommandName, Command FROM Custom_Commands ORDER BY CommandName;"
     cursor.execute(sql)
@@ -60,7 +60,7 @@ def get_commands():
 
 
 def find_command(command_name):
-    """Finds a specific command by name in the database"""
+    """Finds a specific command by name in the database."""
     cursor = db.cursor()
     sql = """SELECT CommandName FROM Custom_Commands
                 WHERE CommandName = %s"""
@@ -72,7 +72,7 @@ def find_command(command_name):
 
 
 def remove_command(name):
-    """Removes a command by name from the database"""
+    """Removes a command by name from the database."""
     cursor = db.cursor()
     # sql = """UPDATE Custom_Commands
     #         SET
@@ -93,7 +93,7 @@ def remove_command(name):
 
 
 def add_link(link, added_by):
-    """Adds a link to the database"""
+    """Adds a link to the database."""
     cursor = db.cursor()
     sql = "INSERT INTO Links(Link, AddedBy) VALUES (%s, %s);"
     values = (link, added_by)
@@ -108,7 +108,7 @@ def add_link(link, added_by):
 
 
 def count_links():
-    """returns a count of all links, groups, and members"""
+    """Returns a count of all links, groups, and members."""
     cursor = db.cursor()
     sql = """SELECT
               (SELECT COUNT(*) FROM links) as link_count, 
@@ -121,7 +121,7 @@ def count_links():
 
 
 def get_link_id(link):
-    """Returns a links unique ID in the database"""
+    """Returns a links unique ID in the database."""
     cursor = db.cursor()
     sql = "SELECT LinkId FROM Links WHERE Link = %s"
     val = (link,)
@@ -132,7 +132,7 @@ def get_link_id(link):
 
 
 def remove_link(group, member, link):
-    """Removes a link from a member"""
+    """Removes a link from a member."""
     cursor = db.cursor()
     # sql = """UPDATE Links, Link_Members, Link_Tags
     #             SET
@@ -213,7 +213,7 @@ def add_link_to_member(member_id, link_id):
 
 
 def add_tag(tag_name, added_by):
-    """Adds a new tag to the database"""
+    """Adds a new tag to the database."""
     cursor = db.cursor()
     sql = "INSERT INTO Tags(TagName, AddedBy) VALUES (%s, %s);"
     value = (tag_name, added_by)
@@ -236,7 +236,7 @@ def add_tag_alias(tag_id, alias, added_by):
 
 
 def get_all_tag_names():
-    """returns all tag names"""
+    """Returns all tag names."""
     cursor = db.cursor()
     sql = "SELECT TagName FROM Tags ORDER BY TagName"
     # sql = """SELECT Alias FROM Tag_Aliases ORDER BY Alias"""
@@ -247,7 +247,7 @@ def get_all_tag_names():
 
 
 def get_all_alias_of_tag(tag):
-    """returns all aliases of tag from db"""
+    """Returns all aliases of tag from db."""
     cursor = db.cursor()
     sql = """select alias from tag_aliases
              left join tags
@@ -261,7 +261,7 @@ def get_all_alias_of_tag(tag):
 
 
 def add_tag_alias_db(tag, alias, user_id):
-    """adds a new alias to an existing tag"""
+    """Adds a new alias to an existing tag."""
     cursor = db.cursor()
     sql = """INSERT INTO tag_aliases(TagId, Alias, AddedBy)
              VALUES ((SELECT TagId FROM Tags WHERE TagName = %s), %s, %s)"""
@@ -274,7 +274,7 @@ def add_tag_alias_db(tag, alias, user_id):
 
 
 def remove_tag_alias_db(tag, alias):
-    """adds a new alias to an existing tag"""
+    """Adds a new alias to an existing tag."""
     cursor = db.cursor()
     sql = """delete from tag_aliases where tag_aliases.TagId = ANY(select tags.TagId from tags WHERE TagName = %s)
              AND tag_aliases.Alias = %s"""
@@ -287,7 +287,7 @@ def remove_tag_alias_db(tag, alias):
 
 
 def find_tag_id(tag_name):
-    """Returns the unique ID of a tag by name"""
+    """Returns the unique ID of a tag by name."""
     cursor = db.cursor()
     sql = "SELECT TagId FROM Tags WHERE TagName = %s"
     # sql = """SELECT tags.TagId FROM Tags
@@ -302,9 +302,9 @@ def find_tag_id(tag_name):
 
 
 def find_tags_on_link(link):
-    """Returns a dict of tagnames and IDs that are on a link"""
+    """Returns a dict of tagnames and IDs that are on a link."""
     cursor = db.cursor()
-    sql = """SELECT TagName, TagId, Links.LinkId 
+    sql = """SELECT TagName, TagId, Links.LinkId
              FROM Tags, Links
                 WHERE
                     Links.Link = %s
@@ -476,7 +476,7 @@ def remove_group(group):
 
 def find_group_id(group_name):
     cursor = db.cursor()
-    sql = """SELECT Groupz.GroupId FROM Groupz 
+    sql = """SELECT Groupz.GroupId FROM Groupz
                 left join groupz_aliases
                     on groupz_aliases.Alias = %s
                 where Groupz.GroupId = groupz_aliases.GroupId;"""
@@ -493,7 +493,7 @@ def find_group_id(group_name):
 
 def find_group_id_and_name(group_name):
     cursor = db.cursor()
-    sql = """SELECT Groupz.GroupId, Groupz.RomanName FROM Groupz 
+    sql = """SELECT Groupz.GroupId, Groupz.RomanName FROM Groupz
                 left join groupz_aliases
                     on groupz_aliases.Alias = %s
                 where Groupz.GroupId = groupz_aliases.GroupId;"""
@@ -532,7 +532,7 @@ def get_groups():
 
 def add_group_alias_db(group_name, alias, user_id):
     cursor = db.cursor()
-    sql = """INSERT INTO groupz_aliases(GroupId, Alias, AddedBy) 
+    sql = """INSERT INTO groupz_aliases(GroupId, Alias, AddedBy)
              VALUES ((SELECT GroupId FROM groupz WHERE RomanName = %s), %s, %s)"""
     val = (group_name, alias, user_id)
     cursor.execute(sql, val)
@@ -671,7 +671,7 @@ def add_member_alias_db(group, idol, alias, user_id):
 
 def remove_member_alias_db(group, idol, alias):
     cursor = db.cursor()
-    sql = """delete from member_aliases 
+    sql = """delete from member_aliases
              where member_aliases.MemberId = ANY(
              select members.MemberId from members
              left join groupz on groupz.GroupId = members.GroupId 
@@ -698,7 +698,7 @@ def find_member_aliases(member_id):
 
 
 def get_members_of_group(group_name):
-    """Returns a dict of members of a group"""
+    """Returns a dict of members of a group."""
     cursor = db.cursor()
     sql = """SELECT Members.RomanName FROM Members
                 INNER JOIN Groupz ON Groupz.RomanName = %s
@@ -1039,8 +1039,8 @@ def find_auditing_channel(channel_id):
 
 def get_auditing_channels():
     cursor = db.cursor()
-    sql = """select Channel from channels 
-             left join auditing_channels 
+    sql = """select Channel from channels
+             left join auditing_channels
              on auditing_channels.ChannelId = channels.ChannelId"""
     cursor.execute(sql)
     result = cursor.fetchall()

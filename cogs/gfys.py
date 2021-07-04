@@ -20,6 +20,7 @@ class Fun(commands.Cog):
     Example: Red Velvet will become RedVelvet
     """
     def __init__(self, disclient):
+        """Initialise client."""
         self.disclient = disclient
         self.loops = {}  # dict for timers
         self.disclient.loop.create_task(self.write_recent())
@@ -166,7 +167,8 @@ class Fun(commands.Cog):
 
 # --- Gfy/Link Commands --- #
 
-    @commands.command(aliases=['add', 'add_link', 'addgfy', 'add_gfy', 'add_image', 'addimage', 'add_fancam', 'addfancam'])
+    @commands.command(aliases=[
+        'add', 'add_link', 'addgfy', 'add_gfy', 'add_image', 'addimage', 'add_fancam', 'addfancam'])
     async def addlink(self, ctx, group, idol, *args):
         """
         Adds a link to the idols list of gfys with tags following the link
@@ -417,13 +419,13 @@ class Fun(commands.Cog):
 
     @commands.command()
     async def tags(self, ctx):  # link=None
-        """Returns a list of the tags"""
+        """Returns a list of the tags!"""
         tag_list = [x[0] for x in get_all_tag_names()]
         await ctx.send(f"Tags: `{format_list(tag_list)}`\nSome tags have aliases, to check these try `.tagalias <tag>`")
 
     @commands.command(aliases=['tagalias', 'talias', 'tag_aliases', 'tagaliases'])
     async def tag_alias(self, ctx, tag):
-        """Returns all aliases of a tag"""
+        """Returns all aliases of a tag!"""
         tag = tag.lower()
         aliases = [x[0] for x in get_all_alias_of_tag(tag)]
         await ctx.send(f"Aliases for `{tag}`: `{format_list(aliases)}`")
@@ -431,7 +433,7 @@ class Fun(commands.Cog):
     @commands.command()
     async def tag_link(self, ctx, *tags_or_links):
         """
-        Adds tag to links previously added
+        Adds tag to links previously added.
         Example: .addtag <link> <tag> <tag>
         Example: .addtag <link> <tag> <link> <tag>
         """
@@ -508,7 +510,7 @@ class Fun(commands.Cog):
     @commands.command(aliases=['t'])
     async def tagged(self, ctx, tag):
         """
-        Sends a random gfy with the specified tag
+        Sends a random gfy with the specified tag.
         Example: .tagged <tag>
         """
         tag = tag.lower()
@@ -538,7 +540,7 @@ class Fun(commands.Cog):
     @commands.command(aliases=['ti'])
     async def taggedimage(self, ctx, tag):
         """
-        Sends a random image with the specified tag
+        Sends a random image with the specified tag.
         Example: .taggedimage <tag>
         """
         tag = tag.lower()
@@ -566,7 +568,7 @@ class Fun(commands.Cog):
     @commands.command(aliases=['tg'])
     async def taggedgfy(self, ctx, tag):
         """
-        Sends a random gfy with the specified tag
+        Sends a random gfy with the specified tag.
         Example: .taggedgfy <tag>
         """
         valid_links = (
@@ -596,7 +598,7 @@ class Fun(commands.Cog):
 
     @commands.command(aliases=['tf'])
     async def taggedfancam(self, ctx, tag):
-        """Sends a random fancam with the specified tag"""
+        """Sends a random fancam with the specified tag."""
         valid_links = (
             "https://youtu",
             "https://www.youtu"
@@ -631,7 +633,9 @@ class Fun(commands.Cog):
         When calling state the duration in minutes, and the interval in seconds
         Example: .timer <duration(min)> <interval(sec)> <group> <idol>
         Example: .timer 10 10 RedVelvet Joy
-        This command can also be invoked with tags after <idol> add, <tag>
+        If the interval is omitted, it will default to 10 seconds.
+        Example: .timer 10 RedVelvet Joy
+        This command can be invoked with tags after <idol> add, <tag>.
         """
         await self.disclient.wait_until_ready()
         no_interval = False
@@ -689,8 +693,8 @@ class Fun(commands.Cog):
     @commands.command(aliases=['stop'])
     async def stop_timer(self, ctx, timer_number=None):
         """
-        Stops the timer function by user, if you have
-        multiple timers running, specify the timer number.
+        Stops the timer function by user, if you have multiple timers running, specify the timer number.
+        You can stop all timers with: .stop all
         """
         if timer_number:
             pass
@@ -732,7 +736,7 @@ class Fun(commands.Cog):
     @commands.command()
     async def info(self, ctx, group=None, idol=None):
         """
-        returns info about the groups added to the bot;
+        returns info about the groups added to the bot,
         or the group specified, or the idol specified.
         Example: .info
         Example: .info <group>
@@ -925,9 +929,11 @@ class Fun(commands.Cog):
 # --- Auditing --- #
 
     async def audit_channel(self, group, idol, link, author):
-        """To keep gfycat links safe and within rules of what can be added
+        """
+        To keep gfycat links safe and within rules of what can be added
         main channel is in the official discord, other auditing channels can
-        be made by mods, author names will be omitted in those."""
+        be made by mods, author names will be omitted in those.
+        """
         dt = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         main_audcha = self.disclient.get_channel(apis_dict["auditing_channel"])
         s = f'Time Added: `{dt}`\nAdded By: `{author}`\nGroup: `{group}`\nIdol: `{idol}`\nLink: {link}'

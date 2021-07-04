@@ -10,6 +10,7 @@ class Levels(commands.Cog):
     of the top contributors!
     """
     def __init__(self, disclient):
+        """Initialise client."""
         self.disclient = disclient
 
     @commands.Cog.listener()
@@ -51,8 +52,7 @@ class Levels(commands.Cog):
 
     @commands.command()
     async def leaderboard(self, ctx, number_of_users=10):
-        """
-        Returns a leaderboard of the top 10 contributers!
+        """Returns a leaderboard of the top 10 contributers!
         This leaderboard is made from all contributers across
         every server the bot is connected to.
         """

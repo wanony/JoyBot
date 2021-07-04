@@ -1,5 +1,7 @@
 import mysql.connector.errors as errors
-from data import *
+import mysql.connector as conn
+import json
+
 
 with open('directories.json') as direc:
     direc_dict = json.load(direc)
