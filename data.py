@@ -780,7 +780,10 @@ def get_member_links_with_tag(group_id, member_name, tag):
             AND member_aliases.Alias = %s
             """
     vals = (group_id, member_name, tag)
-    cursor.execute(sql, vals)
+    try:
+        cursor.execute(sql, vals)
+    except Exception as e:
+        print(e)
     result = cursor.fetchall()
     cursor.close()
     return result
