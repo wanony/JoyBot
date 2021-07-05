@@ -43,7 +43,7 @@ db = conn.connect(
 
 
 def backup_database():
-    os.system(f'sudo mysqldump - u {username} {database} > backup-file.sql')
+    os.system(f'sudo mysqldump - u root {database} > backup-file.sql')
     print("Database backed up at " + str(datetime.datetime.now()))
     threading.Timer(86400.0, backup_database).start()
 
