@@ -148,7 +148,10 @@ for reddit in reddit_dict:
     channels = reddit_dict[reddit]["channels"]
     rsql = "INSERT INTO reddit_channels(ChannelId, RedditId) VALUES (%s, %s);"
     for channel in channels:
-        cursor.execute(channel_sql, (channel,))
+        try:
+            cursor.execute(channel_sql, (channel,))
+        except Exception as e:
+            print(e)
         select_sql = "SELECT * FROM channels WHERE Channel = (%s);"
         cursor.execute(select_sql, (channel,))
         channel_id = cursor.fetchone()[0]
