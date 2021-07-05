@@ -1,6 +1,9 @@
 import json
 import mysql.connector as conn
 import mysql.connector.errors
+import threading
+import datetime
+import os
 
 with open('directories.json') as direc:
     direc_dict = json.load(direc)
@@ -9,8 +12,6 @@ with open(direc_dict["apis"], 'r') as apis:
 
 command_prefix = apis_dict["command_prefix"]
 
-with open(direc_dict["recents"], 'r') as recen:
-    recent_dict = json.load(recen)
 with open(direc_dict["mods"], 'r') as mods:
     mods_dict = json.load(mods)
 
@@ -26,13 +27,25 @@ def check_user_is_owner(ctx):
         return False
 
 
+database = 'botdatabase'
+username = apis_dict["database_user"]
+password = apis_dict["database_password"]
+
 db = conn.connect(
-    host="localhost",
-    user=apis_dict["database_user"],
-    passwd=apis_dict["database_password"],
-    database="botdatabase",
+    host='localhost',
+    user=username,
+    passwd=password,
+    database=database,
     buffered=True
 )
+
+# --- MAKE DATABASE BACKUP ON DAY CYCLES --- #
+
+
+def backup_database():
+    os.system(f'sudo mysqldump - u {username} {database} > backup-file.sql')
+    print("Database backed up at " + str(datetime.datetime.now()))
+    threading.Timer(86400.0, backup_database).start()
 
 # --- CUSTOM COMMANDS --- #
 
@@ -172,20 +185,19 @@ def remove_link(group, member, link):
     #             left JOIN link_tags
     #                 ON link_tags.LinkId = link_members.linkId
     #             WHERE links.Link = %s;"""
-    sql = """DELETE link_members, link_tags, links  FROM links
-                left JOIN groupz_aliases
-                    ON groupz_aliases.Alias = %s
-                left JOIN groupz
-                    ON groupz.GroupId = groupz_aliases.GroupId
-                left JOIN member_aliases
-                    ON member_aliases.Alias = %s
-                left JOIN members
-                    ON members.MemberId = member_aliases.MemberId
-                left JOIN link_members 
-                    ON members.MemberId = link_members.MemberId
-                left JOIN link_tags 
-                    ON link_tags.LinkId = link_members.linkId
-                WHERE links.Link = %s;"""
+    sql = """delete links FROM links
+             left JOIN groupz_aliases
+             ON groupz_aliases.Alias = %s
+             left JOIN groupz
+             ON groupz.GroupId = groupz_aliases.GroupId
+             left JOIN member_aliases
+             ON member_aliases.Alias = %s
+             left JOIN members
+             ON members.MemberId = member_aliases.MemberId
+             left JOIN link_members 
+             ON members.MemberId = link_members.MemberId
+             WHERE links.Link = %s
+             and links.LinkId = link_members.LinkId;"""
     value = (group, member, link)
     cursor.execute(sql, value)
     rowcount = cursor.rowcount
@@ -238,7 +250,7 @@ def add_tag_alias(tag_id, alias, added_by):
 def get_all_tag_names():
     """Returns all tag names."""
     cursor = db.cursor()
-    sql = "SELECT TagName FROM tags ORDER BY TagName"
+    sql = "SELECT Alias FROM tag_aliases ORDER BY Alias"
     # sql = """SELECT Alias FROM Tag_Aliases ORDER BY Alias"""
     cursor.execute(sql)
     result = cursor.fetchall()
@@ -246,14 +258,29 @@ def get_all_tag_names():
     return result
 
 
-def get_all_alias_of_tag(tag):
+def get_tag_parent_from_alias(tag):
+    """gets parent tag name"""
+    cursor = db.cursor()
+    sql = """SELECT TagName, tags.TagId FROM tags
+             LEFT JOIN tag_aliases ON tags.TagId = tag_aliases.TagId
+             WHERE tag_aliases.Alias = %s"""
+    try:
+        cursor.execute(sql, (tag,))
+    except Exception as e:
+        print(e)
+    result = cursor.fetchone()
+    cursor.close()
+    return result
+
+
+def get_all_alias_of_tag(tag_id):
     """Returns all aliases of tag from db."""
     cursor = db.cursor()
     sql = """select alias from tag_aliases
              left join tags
              on tags.TagId = tag_aliases.TagId
-             where tag_aliases.alias = %s"""
-    val = (tag,)
+             where tag_aliases.TagId = %s"""
+    val = (tag_id,)
     cursor.execute(sql, val)
     result = cursor.fetchall()
     cursor.close()
@@ -345,9 +372,9 @@ def add_link_tags(link, tag_name):
     # sql = """INSERT INTO Link_Tags(LinkId, TagId) SELECT Links.LinkId, Tags.TagId FROM Links
     #          LEFT JOIN Tags ON Tags.TagName = %s
     #          WHERE Links.Link = %s"""
-    sql = """INSERT INTO link_tags(LinkId, Tags.TagId) SELECT links.LinkId, tags.TagId FROM links
+    sql = """INSERT INTO link_tags(LinkId, TagId) SELECT links.LinkId, tags.TagId FROM links
              LEFT JOIN tag_aliases ON tag_aliases.Alias = %s
-             LEFT JOIN tags ON tags.TagId = tag_alaises.TagId
+             LEFT JOIN tags ON tags.TagId = tag_aliases.TagId
              WHERE links.Link = %s"""
     values = (tag_name, link)
     try:
@@ -390,7 +417,8 @@ def get_links_with_tag(tag_name):
     sql = """select link from links
                 inner join link_tags on link_tags.LinkId = links.LinkId
                 inner join tags on tags.TagId = link_tags.TagId
-                where tags.TagName = %s"""
+                inner join tag_aliases on tags.TagId = tag_aliases.TagId
+                where tag_aliases.Alias = %s;"""
     val = (tag_name,)
     try:
         cursor.execute(sql, val)
@@ -779,7 +807,7 @@ def get_member_links_with_tag(group_id, member_name, tag):
             WHERE tag_aliases.Alias = %s
             AND member_aliases.Alias = %s
             """
-    vals = (group_id, member_name, tag)
+    vals = (group_id, tag, member_name)
     try:
         cursor.execute(sql, vals)
     except Exception as e:
@@ -1042,8 +1070,8 @@ def find_auditing_channel(channel_id):
 
 def get_auditing_channels():
     cursor = db.cursor()
-    sql = """select Channel from channels
-             left join auditing_channels
+    sql = """select channels.Channel from channels
+             inner join auditing_channels
              on auditing_channels.ChannelId = channels.ChannelId"""
     cursor.execute(sql)
     result = cursor.fetchall()

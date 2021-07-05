@@ -4,17 +4,11 @@ from discord.ext import commands
 from datetime import datetime
 
 # import lots of shit
-from data import add_channel, add_tag_alias_db, remove_tag_alias_db, add_group_alias_db, remove_group_alias_db, \
-    remove_member_alias_db, add_member_alias_db, add_tag
-from data import find_group_id, add_group, remove_group
-from data import remove_moderator, add_moderator
-from data import get_members_of_group, add_member, remove_member
-from data import apis_dict
-from data import remove_auditing_channel, add_auditing_channel
-from data import remove_command
-from data import remove_link
-from data import remove_tag_from_link, remove_tag
-from data import check_user_is_mod, check_user_is_owner
+from data import add_channel, add_tag_alias_db, remove_tag_alias_db, add_group_alias_db, remove_group_alias_db
+from data import remove_member_alias_db, add_member_alias_db, add_tag, find_group_id, add_group, remove_group
+from data import remove_moderator, add_moderator, get_members_of_group, add_member, remove_member, apis_dict
+from data import remove_auditing_channel, add_auditing_channel, remove_command, remove_link, remove_tag_from_link
+from data import remove_tag, check_user_is_mod, check_user_is_owner
 
 from embeds import success_embed, error_embed, permission_denied_embed
 
@@ -220,6 +214,7 @@ class Moderation(commands.Cog):
             for idol in idol_list:
                 idol = str(idol).lower()
                 add_member(group, idol, ctx.author.id)
+                add_member_alias_db(group, idol, idol, ctx.author.id)
                 added.append(idol)
             if already_exists and added:
                 exists = ', '.join(already_exists)
@@ -272,7 +267,7 @@ class Moderation(commands.Cog):
             msg = f"Failed to add alias(es): {', '.join(invalid_aliases)} to {idol}!"
             await ctx.send(embed=error_embed(msg))
 
-    @commands.command(aliases=['delidolalias'])
+    @commands.command(aliases=['delidolalias', 'deleteidolalias'])
     async def delete_idol_alias(self, ctx, group, idol, *aliases):
         """Removes an alias from an idol.
         A list of aliases can be passed through in one command, but only one idol.
@@ -353,6 +348,7 @@ class Moderation(commands.Cog):
             return
         tag = tag.lower()
         added = add_tag(tag, ctx.author.id)
+        add_tag_alias_db(tag, tag, ctx.author.id)
         if added:
             act = f'Added tag: {tag}!'
             await self.moderation_auditing(ctx.author, act)
@@ -528,7 +524,7 @@ class Moderation(commands.Cog):
             success = []
             for idol in idol_list:
                 idol = idol.lower()
-                a = remove_member(g_id, idol)
+                a = remove_member(g_id[0], idol)
                 if a:
                     success.append(idol)
             if success and failed:

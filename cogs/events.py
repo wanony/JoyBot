@@ -1,6 +1,8 @@
 from discord.ext import commands
 from data import command_prefix
 from data import get_commands
+import re
+from embeds import error_embed
 
 
 class Events(commands.Cog):
@@ -34,8 +36,13 @@ class Events(commands.Cog):
                 if message.author == self.disclient.user:
                     print("sent out a custom command")
                 else:
-                    print("Command not found!")
-                    raise error
+                    regex1 = re.compile(r'(\..*){2,}')
+                    match = re.search(regex1, message.content)
+                    if match:
+                        print('user wrote some ...')
+                    else:
+                        await ctx.send(embed=error_embed("Command not found!"))
+                        raise error
 
 
 def setup(disclient):

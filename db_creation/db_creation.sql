@@ -96,7 +96,8 @@ CREATE TABLE custom_commands (
 CREATE TABLE channels (
   ChannelId int NOT NULL AUTO_INCREMENT,
   Channel bigint NOT NULL,
-  PRIMARY KEY (ChannelId)
+  PRIMARY KEY (ChannelId),
+  UNIQUE (Channel)
 );
 
 CREATE TABLE reddit (
