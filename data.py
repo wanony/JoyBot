@@ -47,6 +47,9 @@ def backup_database():
     print("Database backed up at " + str(datetime.datetime.now()))
     threading.Timer(86400.0, backup_database).start()
 
+
+backup_database()
+
 # --- CUSTOM COMMANDS --- #
 
 
