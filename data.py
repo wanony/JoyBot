@@ -43,8 +43,9 @@ db = conn.connect(
 
 
 def backup_database():
-    os.system(f'sudo mysqldump -u root botdatabase > backup-file.sql')
-    print("Database backed up at " + str(datetime.datetime.now()))
+    today = datetime.date.today()
+    os.system(f'sudo mysqldump -u root botdatabase > ./backupgfys/backup-file-{today}.sql')
+    print(f"Database backed up on {today} at {datetime.datetime.now()}")
     threading.Timer(86400.0, backup_database).start()
 
 
