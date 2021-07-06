@@ -1,7 +1,34 @@
-# Lewdabot
-Discord bot for my own discord server.
+# Joy bot
+An open source discord bot for storing embedding links powered by a MySQL/MariaDB database, with a focus on Kpop communities.
+Links stored in the bot are accessable between servers and in direct messages.
 
-## setup
+
+### Features
+
+- Gfycat, Youtube and Image link storage and retreval
+- Group, Sub-group style SQL database 
+- Tagging on links for easier references
+- Custom Command creation
+- Reddit updates from your favourite reddits
+- Contribution leaderboards and levels
+- Access user information and avatars
+- Mod controls
+- Auditing of links added
+- ...And more to come!
+
+
+### Join The Joy Discord
+
+If you'd like to add Joy to your own server, join the Joy Discord Server!
+- [Discord Invite Link](https://discord.gg/jmhgVbvau9)
+
+More chat alternatives to come soon...
+
+
+### Setup
+
+If self hosting, it is required to setup a MySQL database and execute the script found in db_creation.
+Many tutorials and options exist out there, so search around or try out MySQL on Windows or MariaDB on Linux/MacOS.
 
 Ensure $PYTHON_DIR and $PYTHON_DIR/Scripts are on path.
 
