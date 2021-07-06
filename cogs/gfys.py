@@ -291,7 +291,7 @@ class Fun(commands.Cog):
             if added_links > 0:
                 idol = idol.title()
                 embed.add_field(name=f"Added `{added_links}` link(s) to `{group}`'s `{idol}`!",
-                                value='-',
+                                value='\uFEFF',
                                 inline=False)
                 found = find_user(author)
                 if found:
@@ -303,11 +303,11 @@ class Fun(commands.Cog):
                 for key, value in tags_added.items():
                     lets.append(f"{key}: {value}")
                 embed.add_field(name=f"Added tagged links to: `{format_list(lets)}`.",
-                                value='-',
+                                value='\uFEFF',
                                 inline=False)
             if duplicate_links > 0:
                 embed.add_field(name=f"Skipped adding `{duplicate_links}` duplicate link(s).",
-                                value='-',
+                                value='\uFEFF',
                                 inline=False)
             if invalid_tags:
                 embed.add_field(name=f"Skipped adding duplicate link(s) to tags: `{', '.join(invalid_tags)}` .",
@@ -511,11 +511,11 @@ class Fun(commands.Cog):
             for key, value in tags_added.items():
                 lets.append(f"{key}: {value}")
             embed.add_field(name=f"Added tagged links to: `{format_list(lets)}`.",
-                            value='-',
+                            value='\uFEFF',
                             inline=False)
         if invalid_tags:
             embed.add_field(name=f"Skipped adding duplicate link(s) to tags: `{', '.join(invalid_tags)}` .",
-                            value='-',
+                            value='\uFEFF',
                             inline=False)
         if not invalid_tags and not tags_added:
             embed = error_embed("Something went wrong!")
