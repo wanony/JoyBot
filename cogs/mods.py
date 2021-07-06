@@ -1,3 +1,5 @@
+import os
+
 import discord
 from discord.ext import commands
 
@@ -43,6 +45,56 @@ class Owner(commands.Cog):
             await ctx.send(embed=success_embed(f'{member} is now a moderator!'))
         else:
             await ctx.send(embed=error_embed(f'{member} is already a moderator!'))
+
+    @commands.command()
+    async def reload(self, ctx, cog_name=None):
+        """Reload cog."""
+        if not check_user_is_owner(ctx):
+            await ctx.send(embed=permission_denied_embed())
+            return
+        embed = discord.Embed(title='Reloading Results',
+                              description='\uFEFF',
+                              color=discord.Color.blurple())
+        if cog_name is None:
+            async with ctx.typing():
+                reloaded = []
+                failed = []
+                for cog in os.listdir("./cogs"):
+                    if cog.endswith(".py"):
+                        try:
+                            cog = f"cogs.{cog.replace('.py', '')}"
+                            self.disclient.unload_extension(cog)
+                            self.disclient.load_extension(cog)
+                            reloaded.append(str(cog[5:]))
+                        except commands.ExtensionNotLoaded:
+                            failed.append(str(cog[5:]))
+                if reloaded:
+                    embed.add_field(name=f"Reloaded:",
+                                    value=', '.join(reloaded))
+                if failed:
+                    embed.add_field(name=f"Failed to load:",
+                                    value=', '.join(failed))
+        else:
+            async with ctx.typing():
+                reloaded = []
+                failed = []
+                for cog in os.listdir("./cogs"):
+                    if cog.endswith('.py'):
+                        if cog[:-3] == cog_name:
+                            cog = f"cogs.{cog.replace('.py', '')}"
+                            try:
+                                self.disclient.unload_extension(cog)
+                                self.disclient.load_extension(cog)
+                                reloaded.append(str(cog[5:]))
+                            except commands.ExtensionNotLoaded:
+                                failed.append(str(cog[5:]))
+                if reloaded:
+                    embed.add_field(name=f"Reloaded:",
+                                    value=', '.join(reloaded))
+                if failed:
+                    embed.add_field(name=f"Failed to load:",
+                                    value=', '.join(failed))
+        await ctx.send(embed=embed)
 
 
 class Moderation(commands.Cog):
