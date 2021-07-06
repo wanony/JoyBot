@@ -111,7 +111,7 @@ class Reddits(commands.Cog):
                                     except AttributeError:
                                         self.recent_posts[subs].pop(channels)
                                         print("Channel deleted")
-                        lp.append(perm)
+                                lp.append(perm)
             except Exception as e:
                 print(f'Exception: {e}')
             await asyncio.sleep(600)
