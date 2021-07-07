@@ -1,4 +1,7 @@
 # Joy bot
+
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/9a9bb9d798f645f09b90c12487745760)](https://app.codacy.com/gh/wanony/PublicBot?utm_source=github.com&utm_medium=referral&utm_content=wanony/PublicBot&utm_campaign=Badge_Grade_Settings)
+
 An open source discord bot for storing embedding links powered by a MySQL/MariaDB database, with a focus on Kpop communities.
 Links stored in the bot are accessable between servers and in direct messages.
 
