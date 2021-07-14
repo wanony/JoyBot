@@ -48,6 +48,10 @@ class Fun(commands.Cog):
         if not g_id:
             await ctx.send(embed=error_embed(f'No group added named {group}!'))
             return
+        m_id = find_member_id(g_id, idol)
+        if not m_id:
+            await ctx.send(embed=error_embed(f'No idol named {idol} in {group}!'))
+            return
         link_list = []
         no_tag = []
         if tags:
@@ -61,7 +65,7 @@ class Fun(commands.Cog):
                 else:
                     no_tag.append(tag)
         if not link_list:
-            links = get_member_links(g_id[0], idol)
+            links = get_member_links(m_id[0])
             if links:
                 link_list.extend([x[0] for x in links])
             else:
@@ -115,6 +119,10 @@ class Fun(commands.Cog):
         if not g_id:
             await ctx.send(embed=error_embed(f'No group added named {group}!'))
             return
+        m_id = find_member_id(g_id, idol)
+        if not m_id:
+            await ctx.send(embed=error_embed(f'No idol named {idol} in {group}!'))
+            return
         link_list = []
         no_tag = []
         if tags:
@@ -128,7 +136,7 @@ class Fun(commands.Cog):
                 else:
                     no_tag.append(tag)
         if not link_list:
-            links = get_member_links(g_id[0], idol)
+            links = get_member_links(m_id[0])
             if links:
                 link_list.extend([x[0] for x in links])
             else:
@@ -331,6 +339,10 @@ class Fun(commands.Cog):
         if not g_id:
             await ctx.send(embed=error_embed(f'No group added named {group}!'))
             return
+        m_id = find_member_id(g_id, idol)
+        if not m_id:
+            await ctx.send(embed=error_embed(f'No idol named {idol} in {group}!'))
+            return
         link_list = []
         no_tag = []
         if tags:
@@ -344,7 +356,7 @@ class Fun(commands.Cog):
                 else:
                     no_tag.append(tag)
         if not link_list:
-            links = get_member_links(g_id[0], idol)
+            links = get_member_links(m_id[0])
             if links:
                 link_list.extend([x[0] for x in links])
             else:
@@ -955,9 +967,11 @@ class Fun(commands.Cog):
         """
         dt = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         main_audcha = self.disclient.get_channel(apis_dict["auditing_channel"])
-        s = f'Time Added: `{dt}`\nAdded By: `{author}`\nGroup: `{group}`\nIdol: `{idol}`\nLink: {link}'
+        s = f'Time Added: `{dt}`\nGroup: `{group}`\nIdol: `{idol}`\nLink: {link}'
         embed = discord.Embed(title=s,
                               color=discord.Color.blurple())
+        embed.set_footer(text=f"Added by {author}",
+                         icon_url=author.avatar_url)
         await main_audcha.send(embed=embed)
         await main_audcha.send(link)
         aud_chas = get_auditing_channels()

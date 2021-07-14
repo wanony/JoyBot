@@ -6,7 +6,8 @@ from discord.ext import commands
 from datetime import datetime
 
 # import lots of shit
-from data import add_channel, add_tag_alias_db, remove_tag_alias_db, add_group_alias_db, remove_group_alias_db
+from data import add_channel, add_tag_alias_db, remove_tag_alias_db, add_group_alias_db, remove_group_alias_db, \
+    add_cont_from_one_user_to_other
 from data import remove_member_alias_db, add_member_alias_db, add_tag, find_group_id, add_group, remove_group
 from data import remove_moderator, add_moderator, get_members_of_group, add_member, remove_member, apis_dict
 from data import remove_auditing_channel, add_auditing_channel, remove_command, remove_link, remove_tag_from_link
@@ -69,10 +70,10 @@ class Owner(commands.Cog):
                         except commands.ExtensionNotLoaded:
                             failed.append(str(cog[5:]))
                 if reloaded:
-                    embed.add_field(name=f"Reloaded:",
+                    embed.add_field(name="Reloaded:",
                                     value=', '.join(reloaded))
                 if failed:
-                    embed.add_field(name=f"Failed to load:",
+                    embed.add_field(name="Failed to load:",
                                     value=', '.join(failed))
         else:
             async with ctx.typing():
@@ -95,6 +96,14 @@ class Owner(commands.Cog):
                     embed.add_field(name=f"Failed to load:",
                                     value=', '.join(failed))
         await ctx.send(embed=embed)
+
+        @commands.command()
+        async def merge_user_contribution(member1: discord.Member, member2: discord.Member):
+            """Add contribution from first arguement to second argument"""
+            if not check_user_is_owner(ctx):
+                await ctx.send(embed=permission_denied_embed())
+                return
+            add_cont_from_one_user_to_other(member1.id, member2.id)
 
 
 class Moderation(commands.Cog):

@@ -10,7 +10,7 @@ class General(commands.Cog):
     def __init__(self, disclient):
         self.disclient = disclient
 
-    @commands.command(pass_context=True)
+    @commands.command(hidden=True, pass_context=True)
     @commands.has_permissions(add_reactions=True, embed_links=True)
     async def help(self, ctx, *args):
         """Gets all categories and commands of the bot."""
@@ -110,6 +110,7 @@ class General(commands.Cog):
             member = ctx.author
         print(member)
         user = find_user(member.id)
+        print(user)
         xp = user[1]
         cont = user[2]
         cr_at = member.created_at.strftime("%a, %#d %B %Y, %I:%M%p UTC")
