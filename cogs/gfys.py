@@ -712,13 +712,17 @@ class Fun(commands.Cog):
             await ctx.send(f"This is timer number `{t}` for `{ctx.author}`.")
             loop_and_author = {author: loops}
             self.loops.update(loop_and_author)
-            while self.loops[author] > 0:
-                await self.gfy(ctx, group, idol, *tags)
-                self.loops[author] -= 1
-                if self.loops[author] <= 0:
-                    await ctx.send("Timer finished.")
-                    self.loops.pop(author)
-                await asyncio.sleep(interval)
+            try:
+                while self.loops[author] > 0:
+                    await self.gfy(ctx, group, idol, *tags)
+                    self.loops[author] -= 1
+                    if self.loops[author] <= 0:
+                        await ctx.send("Timer finished.")
+                        self.loops.pop(author)
+                    await asyncio.sleep(interval)
+            except KeyError:
+                pass
+                return
 
     @commands.command(aliases=['stop'])
     async def stop_timer(self, ctx, timer_number=None):
