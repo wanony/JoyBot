@@ -48,7 +48,7 @@ class Fun(commands.Cog):
         if not g_id:
             await ctx.send(embed=error_embed(f'No group added named {group}!'))
             return
-        m_id = find_member_id(g_id, idol)
+        m_id = find_member_id(g_id[0], idol)
         if not m_id:
             await ctx.send(embed=error_embed(f'No idol named {idol} in {group}!'))
             return
@@ -119,7 +119,7 @@ class Fun(commands.Cog):
         if not g_id:
             await ctx.send(embed=error_embed(f'No group added named {group}!'))
             return
-        m_id = find_member_id(g_id, idol)
+        m_id = find_member_id(g_id[0], idol)
         if not m_id:
             await ctx.send(embed=error_embed(f'No idol named {idol} in {group}!'))
             return
@@ -339,7 +339,7 @@ class Fun(commands.Cog):
         if not g_id:
             await ctx.send(embed=error_embed(f'No group added named {group}!'))
             return
-        m_id = find_member_id(g_id, idol)
+        m_id = find_member_id(g_id[0], idol)
         if not m_id:
             await ctx.send(embed=error_embed(f'No idol named {idol} in {group}!'))
             return

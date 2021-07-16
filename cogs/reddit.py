@@ -46,7 +46,6 @@ class Reddits(commands.Cog):
                             "https://www.redgifs.com/",
                             "https://www.gifdeliverynetwork.com/"
                         )
-                        lp = []
                         channels_with_reddit = [x[0] for x in get_channels_with_sub(subs)]
                         if not channels_with_reddit:
                             continue

@@ -23,6 +23,14 @@ class Owner(commands.Cog):
         """Initialise client."""
         self.disclient = disclient
 
+    @commands.command(name='muc', aliases=['merge_user_cont', 'mergeusercont'])
+    async def merge_user_contribution(self, ctx, member1: discord.Member, member2: discord.Member):
+        """Add contribution from first arguement to second argument"""
+        if not check_user_is_owner(ctx):
+            await ctx.send(embed=permission_denied_embed())
+            return
+        add_cont_from_one_user_to_other(member1.id, member2.id)
+
     @commands.command()
     async def remove_moderator(self, ctx, member: discord.Member):
         """Add user to moderator list."""
@@ -96,14 +104,6 @@ class Owner(commands.Cog):
                     embed.add_field(name=f"Failed to load:",
                                     value=', '.join(failed))
         await ctx.send(embed=embed)
-
-        @commands.command()
-        async def merge_user_contribution(member1: discord.Member, member2: discord.Member):
-            """Add contribution from first arguement to second argument"""
-            if not check_user_is_owner(ctx):
-                await ctx.send(embed=permission_denied_embed())
-                return
-            add_cont_from_one_user_to_other(member1.id, member2.id)
 
 
 class Moderation(commands.Cog):

@@ -1,6 +1,5 @@
 .vscode/
-backupgfys/backupgfys.json
-backupgfys/backuplvls.json
+backupgfys/*
 cogs/__pycache__/
 jsons/*
 cogs/directories.json

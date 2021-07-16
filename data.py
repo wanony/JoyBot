@@ -10,7 +10,7 @@ with open('directories.json') as direc:
 with open(direc_dict["apis"], 'r') as apis:
     apis_dict = json.load(apis)
 
-command_prefix = apis_dict["command_prefix"]
+default_prefix = apis_dict["command_prefix"]
 
 with open(direc_dict["mods"], 'r') as mods:
     mods_dict = json.load(mods)
@@ -754,19 +754,13 @@ def get_members_of_group_by_group_id(group_id):
     return members
 
 
-def get_member_links(group_id, member_name):
+def get_member_links(member_id):
     cursor = db.cursor()
     sql = """select Link from links
-                left join link_members 
-                    on links.LinkId = link_members.LinkId
-                left join groupz 
-                    on groupz.GroupId = %s
-                left join members 
-                    on members.MemberId = link_members.MemberId
-                left join member_aliases
-                    on members.MemberId = member_aliases.MemberId
-                where member_aliases.Alias = %s"""
-    vals = (group_id, member_name)
+                inner join link_members 
+                on links.LinkId = link_members.LinkId
+                where link_members.MemberId = %s;"""
+    vals = (member_id,)
     try:
         cursor.execute(sql, vals)
     except Exception as e:
@@ -903,7 +897,7 @@ def find_user(discord_id):
     sql = "SELECT UserId, Xp, Cont FROM users WHERE UserId = %s;"
     val = (discord_id,)
     cursor.execute(sql, val)
-    user = cursor.fetchone()[0]
+    user = cursor.fetchone()
     cursor.close()
     return user
 
@@ -917,6 +911,20 @@ def add_user_contribution(discord_id, contribution=1):
                     UserId = %s"""
     vals = (contribution, discord_id)
     cursor.execute(sql, vals)
+    db.commit()
+    cursor.close()
+
+
+def add_cont_from_one_user_to_other(from_id, to_id):
+    cursor = db.cursor()
+    sql = """UPDATE users as U, users AS OldUser
+             SET U.Cont = U.Cont + OldUser.Cont
+             WHERE U.UserId = %s AND OldUser.UserId = %s"""
+    val = (to_id, from_id)
+    try:
+        cursor.execute(sql, val)
+    except Exception as e:
+        print(e)
     db.commit()
     cursor.close()
 
@@ -1219,6 +1227,68 @@ def random_link_from_links():
     result = cursor.fetchone()
     cursor.close()
     return result
+
+
+def add_guild_db(guild_id):
+    cursor = db.cursor()
+    sql = """INSERT INTO guilds(Guild, Prefix) VALUES(%s, %s)"""
+    val = (guild_id, default_prefix)
+    try:
+        cursor.execute(sql, val)
+    except Exception as e:
+        print(e)
+    rowcount = cursor.rowcount
+    cursor.close()
+    return rowcount > 0
+
+
+def get_prefix_db(guild_id):
+    cursor = db.cursor()
+    sql = """SELECT Prefix FROM guilds WHERE Guild = %s;"""
+    val = (guild_id,)
+    try:
+        cursor.execute(sql, val)
+    except Exception as e:
+        print(f'get_prefix_db {e}')
+    result = cursor.fetchone()
+    cursor.close()
+    return result
+
+
+def set_guild_prefix_db(guild_id, prefix):
+    cursor = db.cursor()
+    sql = """UPDATE guilds
+                SET
+                    Prefix = %s
+                WHERE
+                    Guild = %s"""
+    val = (prefix, guild_id,)
+    cursor.execute(sql, val)
+    rowcount = cursor.rowcount
+    db.commit()
+    cursor.close()
+    return rowcount > 0
+
+
+def get_banned_words(guild_id):
+    cursor = db.cursor()
+    sql = """"""
+    val = (guild_id,)
+    cursor.execute(sql, val)
+    result = [x[0] for x in cursor.fetchall()]
+    cursor.close()
+    return result
+
+
+def add_banned_word(guild_id, word, author_id):
+    cursor = db.cursor()
+    sql = """"""
+    val = (guild_id, word, author_id)
+    cursor.execute(sql, val)
+    rowcount = cursor.rowcount
+    db.commit()
+    cursor.close()
+    return rowcount > 0
 
 # def get_all_links_from_group(group_name):
 #     cursor = db.cursor()

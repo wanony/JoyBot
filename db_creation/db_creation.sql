@@ -120,3 +120,25 @@ CREATE TABLE auditing_channels (
   PRIMARY KEY (ChannelId),
   CONSTRAINT auditing_channels_ibfk_1 FOREIGN KEY (ChannelId) REFERENCES channels (ChannelId)
 );
+
+CREATE TABLE guilds (
+  GuildId int NOT NULL AUTO_INCREMENT,
+  Guild bigint NOT NULL,
+  Prefix varchar(255) NOT NULL,
+  PRIMARY KEY (GuildId),
+  UNIQUE (Guild)
+);
+
+CREATE TABLE banned_words (
+  WordId int NOT NULL AUTO_INCREMENT,
+  Word varchar(255) NOT NULL,
+  PRIMARY KEY (WordId),
+  UNIQUE (Word)
+);
+
+CREATE TABLE guild_banned_words (
+  WordId int NOT NULL,
+  GuildId int NOT NULL,
+  FOREIGN KEY (WordId) REFERENCES banned_words (WordId),
+  FOREIGN KEY (GuildId) REFERENCES guilds (GuildId)
+);
