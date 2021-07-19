@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from data import find_user, add_user, add_user_xp
+from data import find_user, add_user, add_user_xp, get_idol_leaderboard, get_group_leaderboard
 from data import get_leaderboard
 
 
@@ -56,16 +56,19 @@ class Levels(commands.Cog):
         This leaderboard is made from all contributers across
         every server the bot is connected to.
         """
+        if number_of_users > 20:
+            number_of_users = 20
         async with ctx.channel.typing():
             lb = get_leaderboard(number_of_users)
             one_str = ""
-            suffix = 'st.'
             for i, pair in enumerate(lb, start=1):
-                if i == 2:
+                if str(i).endswith('1') and i != 11:
+                    suffix = 'st.'
+                elif str(i).endswith('2') and i != 12:
                     suffix = 'nd.'
-                elif i == 3:
+                elif str(i).endswith('3') and i != 13:
                     suffix = 'rd.'
-                elif i > 3:
+                else:
                     suffix = 'th.'
                 user = await self.disclient.fetch_user(pair[0])
                 name = user.name + '#' + user.discriminator
@@ -75,6 +78,60 @@ class Levels(commands.Cog):
                 # possibly make this string all in one field?
                 # embed.add_field(name="-", value=elem, inline=False)
             embed = discord.Embed(title="Contribution Leaderboard",
+                                  description=one_str,
+                                  color=discord.Color.blurple())
+            await ctx.send(embed=embed)
+
+    @commands.command()
+    async def idol_leaderboard(self, ctx, number_of_entries=10):
+        """Returns a leaderboard of the idols with the most links added to them!"""
+        if number_of_entries > 50:
+            number_of_entries = 50
+        async with ctx.channel.typing():
+            lb = get_idol_leaderboard(number_of_entries)
+            one_str = ""
+            for i, pair in enumerate(lb, start=1):
+                if str(i).endswith('1') and i != 11:
+                    suffix = 'st.'
+                elif str(i).endswith('2') and i != 12:
+                    suffix = 'nd.'
+                elif str(i).endswith('3') and i != 13:
+                    suffix = 'rd.'
+                else:
+                    suffix = 'th.'
+                name = pair[0].title()
+                link_count = pair[1]
+                spacing = 40 - len(str(i) + suffix + name)
+                elem = f"`{i}{suffix} {name}{' ' * spacing}{link_count}`\n"
+                one_str = one_str + elem
+            embed = discord.Embed(title="Idol Leaderboard",
+                                  description=one_str,
+                                  color=discord.Color.blurple())
+            await ctx.send(embed=embed)
+
+    @commands.command()
+    async def group_leaderboard(self, ctx, number_of_entries=10):
+        """Returns a leaderboard of the groups with the most links added to them!"""
+        if number_of_entries > 50:
+            number_of_entries = 50
+        async with ctx.channel.typing():
+            lb = get_group_leaderboard(number_of_entries)
+            one_str = ""
+            for i, pair in enumerate(lb, start=1):
+                if str(i).endswith('1') and i != 11:
+                    suffix = 'st.'
+                elif str(i).endswith('2') and i != 12:
+                    suffix = 'nd.'
+                elif str(i).endswith('3') and i != 13:
+                    suffix = 'rd.'
+                else:
+                    suffix = 'th.'
+                name = pair[0].title()
+                link_count = pair[1]
+                spacing = 40 - len(str(i) + suffix + name)
+                elem = f"`{i}{suffix} {name}{' ' * spacing}{link_count}`\n"
+                one_str = one_str + elem
+            embed = discord.Embed(title="Group Leaderboard",
                                   description=one_str,
                                   color=discord.Color.blurple())
             await ctx.send(embed=embed)
