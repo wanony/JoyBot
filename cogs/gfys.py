@@ -59,7 +59,7 @@ class Fun(commands.Cog):
                 tag = tag.lower()
                 # rework sql to take a list of tags at once, rather than multiple
                 # https://stackoverflow.com/questions/589284/imploding-a-list-for-use-in-a-python-mysqldb-in-clause
-                tagged_links = get_member_links_with_tag(g_id[0], idol, tag)
+                tagged_links = get_member_links_with_tag(m_id[0], tag)
                 if tagged_links:
                     link_list.extend([x[0] for x in tagged_links])
                 else:
@@ -130,7 +130,7 @@ class Fun(commands.Cog):
                 tag = tag.lower()
                 # rework sql to take a list of tags at once, rather than multiple
                 # https://stackoverflow.com/questions/589284/imploding-a-list-for-use-in-a-python-mysqldb-in-clause
-                tagged_links = get_member_links_with_tag(g_id[0], idol, tag)
+                tagged_links = get_member_links_with_tag(m_id[0], tag)
                 if tagged_links:
                     link_list.extend([x[0] for x in tagged_links])
                 else:
@@ -350,7 +350,7 @@ class Fun(commands.Cog):
                 tag = tag.lower()
                 # rework sql to take a list of tags at once, rather than multiple
                 # https://stackoverflow.com/questions/589284/imploding-a-list-for-use-in-a-python-mysqldb-in-clause
-                tagged_links = get_member_links_with_tag(g_id[0], idol, tag)
+                tagged_links = get_member_links_with_tag(m_id[0], tag)
                 if tagged_links:
                     link_list.extend([x[0] for x in tagged_links])
                 else:
