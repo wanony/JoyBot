@@ -66,9 +66,12 @@ class General(commands.Cog):
                             command = c
 
                     if command:
+                        # if just command, send to channel
                         halp = discord.Embed(title=command.name,
-                                             description=command.help,
+                                             description=f"{command.help}\n\nAliases: {', '.join(command.aliases)}",
                                              color=discord.Color.blurple())
+                        await ctx.send(embed=halp)
+                        return
                     else:
                         errr = f"Category '{arg}' not found!"
                         halp = discord.Embed(title='Error!',
