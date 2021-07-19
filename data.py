@@ -785,17 +785,11 @@ def get_members_of_group_and_link_count(group_id):
     return result
 
 
-def get_member_links_with_tag(group_id, member_name, tag):
+def get_member_links_with_tag(member_id, tag):
     cursor = db.cursor()
     sql = """select Link from links
              left join link_members 
                 on links.LinkId = link_members.LinkId
-             left join groupz 
-                on groupz.GroupId = %s
-             left join members 
-                on members.MemberId = link_members.MemberId
-            left join member_aliases
-                on member_aliases.MemberId = members.MemberId
             left join link_tags 
                 on link_tags.LinkId = links.LinkId 
             left join tags 
@@ -803,9 +797,9 @@ def get_member_links_with_tag(group_id, member_name, tag):
             left join tag_aliases
                 on tag_aliases.TagId = tags.TagId
             WHERE tag_aliases.Alias = %s
-            AND member_aliases.Alias = %s
+            AND link_members.MemberId = %s
             """
-    vals = (group_id, tag, member_name)
+    vals = (tag, member_id)
     try:
         cursor.execute(sql, vals)
     except Exception as e:
@@ -948,6 +942,35 @@ def get_leaderboard(number_of_users=10):
     cursor = db.cursor()
     sql = "SELECT UserId, Cont FROM users ORDER BY Cont DESC LIMIT %s;"
     val = (number_of_users,)
+    cursor.execute(sql, val)
+    leaderboard = cursor.fetchall()
+    cursor.close()
+    return leaderboard
+
+
+def get_idol_leaderboard(number_of_entries=10):
+    cursor = db.cursor()
+    sql = """SELECT members.RomanName, COUNT(*) FROM link_members
+             JOIN members ON members.MemberId = link_members.MemberId
+             GROUP BY members.MemberId
+             ORDER BY COUNT(*) DESC
+             LIMIT %s"""
+    val = (number_of_entries,)
+    cursor.execute(sql, val)
+    leaderboard = cursor.fetchall()
+    cursor.close()
+    return leaderboard
+
+
+def get_group_leaderboard(number_of_entries=10):
+    cursor = db.cursor()
+    sql = """SELECT groupz.RomanName, COUNT(*) FROM link_members
+             JOIN members ON members.MemberId = link_members.MemberId
+             JOIN groupz ON members.GroupId = groupz.GroupId
+             GROUP BY groupz.GroupId
+             ORDER BY count(*) DESC
+             LIMIT %s"""
+    val = (number_of_entries,)
     cursor.execute(sql, val)
     leaderboard = cursor.fetchall()
     cursor.close()
