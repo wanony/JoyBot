@@ -950,8 +950,9 @@ def get_leaderboard(number_of_users=10):
 
 def get_idol_leaderboard(number_of_entries=10):
     cursor = db.cursor()
-    sql = """SELECT members.RomanName, COUNT(*) FROM link_members
+    sql = """SELECT members.RomanName, groupz.RomanName, COUNT(*) FROM link_members
              JOIN members ON members.MemberId = link_members.MemberId
+             JOIN groupz ON members.GroupId = groupz.GroupId
              GROUP BY members.MemberId
              ORDER BY COUNT(*) DESC
              LIMIT %s"""

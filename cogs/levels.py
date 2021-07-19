@@ -90,7 +90,7 @@ class Levels(commands.Cog):
         async with ctx.channel.typing():
             lb = get_idol_leaderboard(number_of_entries)
             one_str = ""
-            for i, pair in enumerate(lb, start=1):
+            for i, triple in enumerate(lb, start=1):
                 if str(i).endswith('1') and i != 11:
                     suffix = 'st.'
                 elif str(i).endswith('2') and i != 12:
@@ -99,10 +99,11 @@ class Levels(commands.Cog):
                     suffix = 'rd.'
                 else:
                     suffix = 'th.'
-                name = pair[0].title()
-                link_count = pair[1]
-                spacing = 40 - len(str(i) + suffix + name)
-                elem = f"`{i}{suffix} {name}{' ' * spacing}{link_count}`\n"
+                name = triple[0].title()
+                group = triple[1]
+                link_count = triple[-1]
+                spacing = 40 - len(str(i) + suffix + name + group) - 3
+                elem = f"`{i}{suffix} {name} ({group}) {' ' * spacing}{link_count}`\n"
                 one_str = one_str + elem
             embed = discord.Embed(title="Idol Leaderboard",
                                   description=one_str,
