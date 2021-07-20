@@ -102,7 +102,7 @@ class Levels(commands.Cog):
                 name = triple[0].title()
                 group = triple[1]
                 link_count = triple[-1]
-                spacing = 40 - len(str(i) + suffix + name + group) - 3
+                spacing = 40 - len(str(i) + str(suffix) + str(name) + str(group)) - 3
                 elem = f"`{i}{suffix} {name} ({group}) {' ' * spacing}{link_count}`\n"
                 one_str = one_str + elem
             embed = discord.Embed(title="Idol Leaderboard",
