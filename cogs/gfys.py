@@ -455,7 +455,7 @@ class Fun(commands.Cog):
                               color=discord.Color.blurple())
         await ctx.send(embed=embed)
 
-    @commands.command()
+    @commands.command(aliases=['addtag', 'taglink', 'add_tag'])
     async def tag_link(self, ctx, *tags_or_links):
         """
         Adds tag to links previously added.

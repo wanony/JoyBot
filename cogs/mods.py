@@ -401,8 +401,8 @@ class Moderation(commands.Cog):
             nt = ', '.join(not_there)
             await ctx.send(embed=error_embed(f'Link did not have tag(s): {nt}!'))
 
-    @commands.command(aliases=['addtag'])
-    async def add_tag(self, ctx, tag):
+    @commands.command(aliases=['createtag'])
+    async def create_tag(self, ctx, tag):
         """Adds a new tag, which will be available for use."""
         if not check_user_is_mod(ctx):
             await ctx.send(embed=permission_denied_embed())
