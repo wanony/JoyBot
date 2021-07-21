@@ -27,6 +27,14 @@ def check_user_is_owner(ctx):
         return False
 
 
+def check_user_is_restricted(ctx):
+    restricted = find_restricted_user_db(ctx.author.id)
+    if restricted:
+        return True
+    else:
+        return False
+
+
 database = 'botdatabase'
 username = apis_dict["database_user"]
 password = apis_dict["database_password"]
@@ -1296,7 +1304,10 @@ def set_guild_prefix_db(guild_id, prefix):
 
 def get_banned_words(guild_id):
     cursor = db.cursor()
-    sql = """"""
+    sql = """SELECT Word FROM banned_words
+             JOIN guild_banned_words ON banned_words.WordId = guild_banned_words.WordId
+             JOIN guilds ON guilds.GuildId = guild_banned_words.GuildId
+             WHERE guilds.Guild = %s"""
     val = (guild_id,)
     cursor.execute(sql, val)
     result = [x[0] for x in cursor.fetchall()]
@@ -1304,13 +1315,47 @@ def get_banned_words(guild_id):
     return result
 
 
-def add_banned_word(guild_id, word, author_id):
+def add_banned_word(guild_id, word):
     cursor = db.cursor()
     sql = """"""
-    val = (guild_id, word, author_id)
+    val = (guild_id, word)
     cursor.execute(sql, val)
     rowcount = cursor.rowcount
     db.commit()
+    cursor.close()
+    return rowcount > 0
+
+
+def find_restricted_user_db(guild_id, user_id):
+    cursor = db.cursor()
+    sql = """SELECT UserId FROM restricted_users
+             JOIN guilds ON guilds.GuildId = restricted_users.GuildId
+             WHERE guilds.Guild = %s AND UserId = %s"""
+    val = (guild_id, user_id,)
+    cursor.execute(sql, val)
+    rowcount = cursor.rowcount
+    cursor.close()
+    return rowcount > 0
+
+
+def add_restricted_user(guild_id, user_id):
+    cursor = db.cursor()
+    sql = """INSERT INTO restricted_users(GuildId, UserId) VALUES ((
+             SELECT GuildId FROM guilds WHERE Guild = %s), %s)"""
+    val = (guild_id, user_id,)
+    cursor.execute(sql, val)
+    rowcount = cursor.rowcount
+    cursor.close()
+    return rowcount > 0
+
+
+def remove_restricted_user(guild_id, user_id):
+    cursor = db.cursor()
+    sql = """DELETE FROM restricted_users WHERE GuildId = ANY(SELECT GuildId FROM guilds WHERE Guild = %s)
+             AND UserId = %s"""
+    val = (guild_id, user_id,)
+    cursor.execute(sql, val)
+    rowcount = cursor.rowcount
     cursor.close()
     return rowcount > 0
 

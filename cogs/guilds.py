@@ -1,6 +1,7 @@
+import discord
 from discord.ext import commands
 
-from data import set_guild_prefix_db, add_banned_word
+from data import set_guild_prefix_db, add_banned_word, remove_restricted_user, add_restricted_user
 from embeds import error_embed, success_embed
 
 
@@ -24,6 +25,29 @@ class Server(commands.Cog):
             await ctx.send(embed=success_embed(f'Changed this servers prefix to `{prefix}`!'))
         else:
             await ctx.send(embed=error_embed('Failed to change the prefix in this server.'))
+
+    @commands.command(name='restrict_user', aliases=['restrictuser'])
+    @commands.has_permissions(kick_members=True)
+    @commands.guild_only()
+    async def _restrict_user(self, ctx, member: discord.Member):
+        """Restricts a user from using Joy's Fun category commands in this discord.
+        The user can continue to use the bot in DMs, other categories, and in other discords."""
+        added = add_restricted_user(ctx.guild.id, member.id)
+        if added:
+            await ctx.send(embed=success_embed(f'Restricted {member} in {ctx.guild.name}!'))
+        else:
+            await ctx.send(embed=error_embed(f'{member} is already restricted in {ctx.guild.name}!'))
+
+    @commands.command(name='unrestrict_user', aliases=['unrestrictuser'])
+    @commands.has_permissions(kick_members=True)
+    @commands.guild_only()
+    async def _unrestrict_user(self, ctx, member: discord.Member):
+        """Unrestricts a user from using Joy's Fun category commands in this discord."""
+        removed = remove_restricted_user(ctx.guild.id, member.id)
+        if removed:
+            await ctx.send(embed=success_embed(f'{member} is no longer restricted in {ctx.guild.name}!'))
+        else:
+            await ctx.send(embed=error_embed(f'{member} is not restricted in {ctx.guild.name}!'))
 
     # @commands.command()
     # @commands.has_permissions(administrator=True)

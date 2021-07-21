@@ -142,3 +142,11 @@ CREATE TABLE guild_banned_words (
   FOREIGN KEY (WordId) REFERENCES banned_words (WordId),
   FOREIGN KEY (GuildId) REFERENCES guilds (GuildId)
 );
+
+CREATE TABLE restricted_users (
+	GuildId INT NOT NULL,
+    UserId BIGINT NOT NULL,
+    PRIMARY KEY (GuildId, UserId),
+    FOREIGN KEY (GuildId) REFERENCES guilds(GuildId),
+    FOREIGN KEY (UserId) REFERENCES users(UserId)
+);
