@@ -30,9 +30,20 @@ def banned_word_embed(guild, word):
     embed = Embed(title='Message Deleted!',
                   description=message,
                   color=Color.orange())
-    embed.set_thumbnail(url=guild.icon)
+    embed.set_thumbnail(url=guild.icon_url)
     return embed
 
 
 def permission_denied_embed():
     return error_embed('Permission Denied!')
+
+
+def restricted_embed(guild):
+    message = f"""You are currently restricted from using commands in {guild.name}!\n
+                  You can continue to use Joy's functions in other servers or in DMs!
+                  Speak with a moderator of {guild.name} to get more information!"""
+    embed = Embed(title='Restricted User Warning!',
+                  description=message,
+                  color=Color.orange())
+    embed.set_thumbnail(url=guild.icon_url)
+    return embed
