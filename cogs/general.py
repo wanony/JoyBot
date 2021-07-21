@@ -1,6 +1,8 @@
 import discord
 from discord.ext import commands
 from data import find_user
+from data import apis_dict
+from embeds import success_embed
 
 
 class General(commands.Cog):
@@ -131,6 +133,23 @@ class General(commands.Cog):
         embed.add_field(name="Account Created:", value=cr_at)
         embed.add_field(name="Joined Server:", value=jo_at)
         await ctx.send(embed=embed)
+
+    @commands.command()
+    async def report(self, ctx, link, *reason):
+        """If you see something you think doesn't belong on the bot, report it
+        Usage: .report <link> <reason>
+        The reason can be as long as you need it to be."""
+        author = ctx.author
+        if not reason:
+            reason = 'No reason provided!'
+        embed = discord.Embed(title='Link Reported!',
+                              description=f'Reason: {" ".join(reason)}\n\n{link}',
+                              color=discord.Color.orange())
+        embed.set_footer(text=f"Reported by {author}",
+                         icon_url=author.avatar_url)
+        report_chan = self.disclient.get_channel(apis_dict["reporting_channel"])
+        await report_chan.send(embed=embed)
+        await ctx.send(embed=success_embed('Link reported!'))
 
 
 def setup(disclient):
