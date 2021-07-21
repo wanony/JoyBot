@@ -27,14 +27,6 @@ def check_user_is_owner(ctx):
         return False
 
 
-def check_user_is_restricted(ctx):
-    restricted = find_restricted_user_db(ctx.author.id)
-    if restricted:
-        return True
-    else:
-        return False
-
-
 database = 'botdatabase'
 username = apis_dict["database_user"]
 password = apis_dict["database_password"]
