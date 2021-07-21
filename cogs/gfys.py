@@ -3,16 +3,16 @@ from discord.ext import commands
 from random import SystemRandom
 import asyncio
 from datetime import datetime
-from embeds import error_embed, warning_embed
+from embeds import error_embed, warning_embed, success_embed, restricted_embed
 
 # import lots of shit from datafile.
-from data import find_group_id, get_member_links_with_tag, get_member_links, find_member_id, get_all_alias_of_tag
-from data import find_member_aliases, find_group_id_and_name, get_group_aliases, find_member_id_and_name
-from data import get_tag_parent_from_alias, get_all_tag_names, add_tag, find_tag_id, add_tag_alias, add_link_tags
-from data import add_link, get_link_id, add_link_to_member, find_user, add_user_contribution, add_user
-from data import random_link_from_links, member_link_count, get_links_with_tag, get_groups
-from data import get_members_of_group_and_link_count, count_links_of_member, get_all_tags_on_member_and_count
-from data import last_three_links, count_links, apis_dict, get_auditing_channels, remove_auditing_channel
+from data import find_group_id, get_member_links_with_tag, get_member_links, find_member_id, get_all_alias_of_tag, \
+ find_member_aliases, find_group_id_and_name, get_group_aliases, find_member_id_and_name, \
+ get_tag_parent_from_alias, get_all_tag_names, add_tag, find_tag_id, add_tag_alias, add_link_tags, \
+ add_link, get_link_id, add_link_to_member, find_user, add_user_contribution, add_user, \
+ random_link_from_links, member_link_count, get_links_with_tag, get_groups, \
+ get_members_of_group_and_link_count, count_links_of_member, get_all_tags_on_member_and_count, \
+ last_three_links, count_links, apis_dict, get_auditing_channels, remove_auditing_channel, find_restricted_user_db
 
 
 class Fun(commands.Cog):
@@ -42,6 +42,10 @@ class Fun(commands.Cog):
         This can be invoked with tags following <idol>
         Example .image <group> <idol> <tag> <tag>
         """
+        if ctx.guild:
+            if find_restricted_user_db(ctx.guild.id, ctx.author.id):
+                await ctx.author.send(embed=restricted_embed(ctx.guild))
+                return
         group = group.lower()
         idol = idol.lower()
         g_id = find_group_id(group)
@@ -113,6 +117,10 @@ class Fun(commands.Cog):
         This can be invoked with tags following <idol>
         Example .fancam <group> <idol> <tag> <tag>
         """
+        if ctx.guild:
+            if find_restricted_user_db(ctx.guild.id, ctx.author.id):
+                await ctx.author.send(embed=restricted_embed(ctx.guild))
+                return
         group = group.lower()
         idol = idol.lower()
         g_id = find_group_id(group)
@@ -188,6 +196,10 @@ class Fun(commands.Cog):
         or another external source. Please try to use an image source that
         embeds automatically in discord!
         """
+        if ctx.guild:
+            if find_restricted_user_db(ctx.guild.id, ctx.author.id):
+                await ctx.author.send(embed=restricted_embed(ctx.guild))
+                return
         async with ctx.channel.typing():
             group = group.lower()
             idol = idol.lower()
@@ -333,6 +345,10 @@ class Fun(commands.Cog):
         This can be invoked with tags following <idol>
         Example .gfy <group> <idol> <tag> <tag>
         """
+        if ctx.guild:
+            if find_restricted_user_db(ctx.guild.id, ctx.author.id):
+                await ctx.author.send(embed=restricted_embed(ctx.guild))
+                return
         group = group.lower()
         idol = idol.lower()
         g_id = find_group_id(group)
@@ -406,6 +422,11 @@ class Fun(commands.Cog):
     @commands.command(aliases=['r'])
     async def random(self, ctx):
         """Returns a random link, luck of the draw!"""
+        if ctx.guild:
+            if find_restricted_user_db(ctx.guild.id, ctx.author.id):
+                await ctx.author.send(embed=restricted_embed(ctx.guild))
+                return
+
         async def random_link():
             link_member_group = random_link_from_links()
             link = link_member_group[0]
@@ -435,6 +456,10 @@ class Fun(commands.Cog):
     @commands.command()
     async def tags(self, ctx):  # link=None
         """Returns a list of the tags!"""
+        if ctx.guild:
+            if find_restricted_user_db(ctx.guild.id, ctx.author.id):
+                await ctx.author.send(embed=restricted_embed(ctx.guild))
+                return
         tag_list = [x[0] for x in get_all_tag_names()]
         msg = f"`{format_list(tag_list)}`\nSome tags have aliases, to check these try `.tagalias <tag>`"
         embed = discord.Embed(title="Tags:",
@@ -445,6 +470,10 @@ class Fun(commands.Cog):
     @commands.command(aliases=['tagalias', 'talias', 'tag_aliases', 'tagaliases'])
     async def tag_alias(self, ctx, tag):
         """Returns all aliases of a tag!"""
+        if ctx.guild:
+            if find_restricted_user_db(ctx.guild.id, ctx.author.id):
+                await ctx.author.send(embed=restricted_embed(ctx.guild))
+                return
         tag = tag.lower()
         tag_name_and_id = get_tag_parent_from_alias(tag)
         tag_name = tag_name_and_id[0]
@@ -462,6 +491,10 @@ class Fun(commands.Cog):
         Example: .addtag <link> <tag> <tag>
         Example: .addtag <link> <tag> <link> <tag>
         """
+        if ctx.guild:
+            if find_restricted_user_db(ctx.guild.id, ctx.author.id):
+                await ctx.author.send(embed=restricted_embed(ctx.guild))
+                return
         tags_list = tags_or_links
         if not tags_list:
             await ctx.send(error_embed("Not enough arguments provided!"))
@@ -539,6 +572,10 @@ class Fun(commands.Cog):
         Sends a random gfy with the specified tag.
         Example: .tagged <tag>
         """
+        if ctx.guild:
+            if find_restricted_user_db(ctx.guild.id, ctx.author.id):
+                await ctx.author.send(embed=restricted_embed(ctx.guild))
+                return
         tag = tag.lower()
         valid_tags = [x[0] for x in get_all_tag_names()]
         if tag in valid_tags:
@@ -570,6 +607,10 @@ class Fun(commands.Cog):
         Sends a random image with the specified tag.
         Example: .taggedimage <tag>
         """
+        if ctx.guild:
+            if find_restricted_user_db(ctx.guild.id, ctx.author.id):
+                await ctx.author.send(embed=restricted_embed(ctx.guild))
+                return
         tag = tag.lower()
         valid_fts = (".JPG", ".jpg", ".JPEG", ".jpeg", ".PNG", ".png")
         valid_tags = [x[0] for x in get_all_tag_names()]
@@ -599,6 +640,10 @@ class Fun(commands.Cog):
         Sends a random gfy with the specified tag.
         Example: .taggedgfy <tag>
         """
+        if ctx.guild:
+            if find_restricted_user_db(ctx.guild.id, ctx.author.id):
+                await ctx.author.send(embed=restricted_embed(ctx.guild))
+                return
         valid_links = (
             "https://www.redgifs",
             "https://gfy",
@@ -628,6 +673,10 @@ class Fun(commands.Cog):
     @commands.command(aliases=['tf'])
     async def taggedfancam(self, ctx, tag):
         """Sends a random fancam with the specified tag."""
+        if ctx.guild:
+            if find_restricted_user_db(ctx.guild.id, ctx.author.id):
+                await ctx.author.send(embed=restricted_embed(ctx.guild))
+                return
         valid_links = (
             "https://youtu",
             "https://www.you"
@@ -667,6 +716,10 @@ class Fun(commands.Cog):
         Example: .timer 10 RedVelvet Joy
         This command can be invoked with tags after <idol> add, <tag>.
         """
+        if ctx.guild:
+            if find_restricted_user_db(ctx.guild.id, ctx.author.id):
+                await ctx.author.send(embed=restricted_embed(ctx.guild))
+                return
         await self.disclient.wait_until_ready()
         no_interval = False
         try:
@@ -694,15 +747,22 @@ class Fun(commands.Cog):
         mid = find_member_id(gid[0], idol)
         if not mid:
             await ctx.send(error_embed(f"Nothing for {idol} in {group}"))
+            return
         else:
             if interval < 10:
                 interval = 10
             if duration > 30:
                 duration = 30
+            elif duration <= 0:
+                await ctx.send(embed=error_embed('Invalid duration, try again!'))
+                return
             loops = int((duration * 60) // interval)
             author = str(ctx.author)
+            channel = ctx.channel.id
+            if channel not in self.loops:
+                self.loops.update({channel: {}})
             checklist = []
-            for keys in self.loops:
+            for keys in self.loops[channel]:
                 if keys.startswith(author):
                     checklist.append(keys)
             if len(checklist) >= 1:
@@ -711,45 +771,51 @@ class Fun(commands.Cog):
             t = len(str(author)) - len(str(ctx.author)) + 1
             await ctx.send(f"This is timer number `{t}` for `{ctx.author}`.")
             loop_and_author = {author: loops}
-            self.loops.update(loop_and_author)
+            self.loops[channel].update(loop_and_author)
+            print(self.loops)
             try:
-                while self.loops[author] > 0:
+                while self.loops[channel][author] > 0:
                     await self.gfy(ctx, group, idol, *tags)
-                    self.loops[author] -= 1
-                    if self.loops[author] <= 0:
+                    self.loops[channel][author] -= 1
+                    if self.loops[channel][author] <= 0:
                         await ctx.send("Timer finished.")
-                        self.loops.pop(author)
+                        self.loops[channel].pop(author)
                     await asyncio.sleep(interval)
             except KeyError:
                 pass
                 return
 
-    @commands.command(aliases=['stop'])
+    @commands.command(aliases=['stop', 'cancel', 'end'])
     async def stop_timer(self, ctx, timer_number=None):
         """
         Stops the timer function by user, if you have multiple timers running, specify the timer number.
         You can stop all timers with: .stop all
         """
+        if ctx.guild:
+            if find_restricted_user_db(ctx.guild.id, ctx.author.id):
+                await ctx.author.send(embed=restricted_embed(ctx.guild))
+                return
         if timer_number:
             pass
         else:
             timer_number = 1
         author = str(ctx.author)
+        channel = ctx.channel.id
         checklist = []
-        for keys in self.loops:
+        for keys in self.loops[channel]:
             if keys.startswith(author):
                 checklist.append(keys)
 
         if str(timer_number) == 'all':
             i = 0
             for element in checklist:
-                self.loops[element] = 0
-                self.loops.pop(element)
+                self.loops[channel][element] = 0
+                self.loops[channel].pop(element)
                 i += 1
             await ctx.send(f"Stopped all {i} timers for `{author}`")
         elif len(checklist) == 1:
-            self.loops[checklist[0]] = 0
-            self.loops.pop(checklist[0])
+            self.loops[channel][checklist[0]] = 0
+            self.loops[channel].pop(checklist[0])
             await ctx.send(f"Stopped timer for `{author}`.")
         elif len(checklist) > 1:
             to_stop = len(author) + timer_number - 1
@@ -757,13 +823,38 @@ class Fun(commands.Cog):
             for element in checklist:
                 if len(element) == to_stop:
                     author = element
-            self.loops[author] = 0
+            self.loops[channel][author] = 0
             await ctx.send(
                     f"Stopped timer `{timer_number}` for `{ctx.author}`.")
             self.loops.pop(author)
             print(f"deleted {author} from loops")
         else:
             await ctx.send(f"No timers running for `{ctx.author}`.")
+
+    @commands.command(name='force_stop', aliases=['stoptimer', 'stopusertimer', 'forcestop'])
+    @commands.has_permissions(manage_messages=True)
+    @commands.guild_only()
+    async def _destroy_timers(self, ctx, member: discord.Member):
+        """Force all timers started by a user to end.
+        Usage (invoke this command in the same channel that the timer is running):
+        .stop_user_timer @<user>"""
+        if ctx.guild:
+            if find_restricted_user_db(ctx.guild.id, ctx.author.id):
+                await ctx.author.send(embed=restricted_embed(ctx.guild))
+                return
+        channel = ctx.channel.id
+        destroyed = 0
+        if channel in self.loops:
+            for key in self.loops[channel]:
+                if key.startswith(str(member)):
+                    self.loops[channel][key] = 0
+                    destroyed += 1
+                else:
+                    await ctx.send(embed=error_embed(f'No timers running for `{member}`!'))
+        else:
+            await ctx.send(embed=error_embed('No timers running in this channel!'))
+        if destroyed > 0:
+            await ctx.send(embed=success_embed(f'Destroyed {destroyed} timers running for `{member}`'))
 
 # --- Info Commands --- #
 
@@ -776,6 +867,10 @@ class Fun(commands.Cog):
         Example: .info <group>
         Example: .info <group> <idol>
         """
+        if ctx.guild:
+            if find_restricted_user_db(ctx.guild.id, ctx.author.id):
+                await ctx.author.send(embed=restricted_embed(ctx.guild))
+                return
         async with ctx.channel.typing():
             if group is None:
                 groups = get_groups()
@@ -854,6 +949,10 @@ class Fun(commands.Cog):
 
     @commands.command(aliases=['linkcount', 'total_links'])
     async def totallinks(self, ctx):
+        if ctx.guild:
+            if find_restricted_user_db(ctx.guild.id, ctx.author.id):
+                await ctx.author.send(embed=restricted_embed(ctx.guild))
+                return
         results = count_links()
         group_count = results[1]
         member_count = results[2]
