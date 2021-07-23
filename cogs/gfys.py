@@ -354,11 +354,11 @@ class Fun(commands.Cog):
         g_id = find_group_id(group)
         if not g_id:
             await ctx.send(embed=error_embed(f'No group added named {group}!'))
-            return
+            return 'no group'
         m_id = find_member_id(g_id[0], idol)
         if not m_id:
             await ctx.send(embed=error_embed(f'No idol named {idol} in {group}!'))
-            return
+            return 'no idol'
         link_list = []
         no_tag = []
         if tags:
@@ -377,7 +377,7 @@ class Fun(commands.Cog):
                 link_list.extend([x[0] for x in links])
             else:
                 await ctx.send(embed=error_embed(f"No content for `{idol.title()}` in `{group}`!"))
-                return
+                return 'no content'
         valid_links = (
             "https://gfycat.com/",
             "https://www.redgifs.com/",
@@ -740,50 +740,49 @@ class Fun(commands.Cog):
             idol = args[3].lower()
             tags = args[4:]
 
-        gid = find_group_id(group)
-        if not gid:
-            await ctx.send(error_embed(f"Nothing for {group}"))
+        if interval < 10:
+            interval = 10
+        if duration > 30:
+            duration = 30
+        elif duration <= 0:
+            await ctx.send(embed=error_embed('Invalid duration, try again!'))
             return
-        mid = find_member_id(gid[0], idol)
-        if not mid:
-            await ctx.send(error_embed(f"Nothing for {idol} in {group}"))
+        loops = int((duration * 60) // interval)
+        author = str(ctx.author)
+        channel = ctx.channel.id
+        if channel not in self.loops:
+            self.loops.update({channel: {}})
+        checklist = []
+        for keys in self.loops[channel]:
+            if keys.startswith(author):
+                checklist.append(keys)
+        if len(checklist) >= 1:
+            checklist.sort()
+            author = checklist[-1] + "_"
+        t = len(str(author)) - len(str(ctx.author)) + 1
+        await ctx.send(f"This is timer number `{t}` for `{ctx.author}`.")
+        loop_and_author = {author: loops}
+        self.loops[channel].update(loop_and_author)
+        try:
+            while self.loops[channel][author] > 0:
+                send = await self.gfy(ctx, group, idol, *tags)
+                if send == 'no content':
+                    del self.loops[channel][author]
+                    return
+                elif send == 'no idol':
+                    del self.loops[channel][author]
+                    return
+                elif send == 'no group':
+                    del self.loops[channel][author]
+                    return
+                self.loops[channel][author] -= 1
+                if self.loops[channel][author] <= 0:
+                    await ctx.send("Timer finished.")
+                    self.loops[channel].pop(author)
+                await asyncio.sleep(interval)
+        except KeyError:
+            pass
             return
-        else:
-            if interval < 10:
-                interval = 10
-            if duration > 30:
-                duration = 30
-            elif duration <= 0:
-                await ctx.send(embed=error_embed('Invalid duration, try again!'))
-                return
-            loops = int((duration * 60) // interval)
-            author = str(ctx.author)
-            channel = ctx.channel.id
-            if channel not in self.loops:
-                self.loops.update({channel: {}})
-            checklist = []
-            for keys in self.loops[channel]:
-                if keys.startswith(author):
-                    checklist.append(keys)
-            if len(checklist) >= 1:
-                checklist.sort()
-                author = checklist[-1] + "_"
-            t = len(str(author)) - len(str(ctx.author)) + 1
-            await ctx.send(f"This is timer number `{t}` for `{ctx.author}`.")
-            loop_and_author = {author: loops}
-            self.loops[channel].update(loop_and_author)
-            print(self.loops)
-            try:
-                while self.loops[channel][author] > 0:
-                    await self.gfy(ctx, group, idol, *tags)
-                    self.loops[channel][author] -= 1
-                    if self.loops[channel][author] <= 0:
-                        await ctx.send("Timer finished.")
-                        self.loops[channel].pop(author)
-                    await asyncio.sleep(interval)
-            except KeyError:
-                pass
-                return
 
     @commands.command(aliases=['stop', 'cancel', 'end'])
     async def stop_timer(self, ctx, timer_number=None):
