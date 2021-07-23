@@ -794,9 +794,7 @@ class Fun(commands.Cog):
             if find_restricted_user_db(ctx.guild.id, ctx.author.id):
                 await ctx.author.send(embed=restricted_embed(ctx.guild))
                 return
-        if timer_number:
-            pass
-        else:
+        if not timer_number:
             timer_number = 1
         author = str(ctx.author)
         channel = ctx.channel.id
