@@ -111,14 +111,16 @@ class Reddits(commands.Cog):
                                         self.recent_posts[subs].pop(channels)
                                         print("Channel deleted")
                                 lp.append(perm)
+                    await asyncio.sleep(600)
             except Exception as e:
-                print(f'Exception: {e}')
-            await asyncio.sleep(600)
+                print(f'Reddit Exception: {e}')
+            await asyncio.sleep(100)
         # print("calling reddit")
 
     @commands.command()
     async def unfollow_subreddit(self, ctx, subreddit):
-        """Unfollow a previously followed subreddit."""
+        """Unfollow a previously followed subreddit.
+        Example: `.unfollow_subreddit <subreddit_name>`"""
         channel = ctx.channel.id
         subreddit = subreddit.lower()
         subreddit_id = get_subreddit_id(subreddit)
@@ -143,7 +145,8 @@ class Reddits(commands.Cog):
     async def follow_subreddit(self, ctx, subreddit):
         """Add a subreddit to follow in this server!
         The channel this command is invoked in will be used
-        to post the new submission to the sub."""
+        to post the new submission to the sub.
+        Example: `.follow_subreddit <subreddit_name>`"""
         channel = ctx.channel.id
         subreddit = subreddit.lower()
         subreddit_id = get_subreddit_id(subreddit)
