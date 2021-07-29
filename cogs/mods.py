@@ -108,6 +108,9 @@ class Owner(commands.Cog):
     @commands.command()
     async def perma_user(self, ctx, user_id):
         """Stops user from added anything to the bot"""
+        if not check_user_is_owner(ctx):
+            await ctx.send(embed=permission_denied_embed())
+            return
         perma = perma_user_db(user_id)
         if perma:
             await ctx.send(embed=success_embed("User successfully perma'd."))
@@ -117,6 +120,8 @@ class Owner(commands.Cog):
     @commands.command()
     async def remove_perma_user(self, ctx, user_id):
         """Removes user from perma ban"""
+        if not check_user_is_owner(ctx):
+            return
         unperma = remove_perma_user_db(user_id)
         if unperma:
             await ctx.send(embed=success_embed("User un-perma'd."))
