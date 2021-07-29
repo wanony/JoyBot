@@ -1338,6 +1338,7 @@ def add_restricted_user(guild_id, user_id):
     cursor.execute(sql, val)
     rowcount = cursor.rowcount
     cursor.close()
+    db.commit()
     return rowcount > 0
 
 
@@ -1349,6 +1350,40 @@ def remove_restricted_user(guild_id, user_id):
     cursor.execute(sql, val)
     rowcount = cursor.rowcount
     cursor.close()
+    db.commit()
+    return rowcount > 0
+
+
+def perma_user_db(user_id):
+    cursor = db.cursor()
+    sql = """INSERT INTO perma_users(UserId) VALUES (%s)"""
+    val = (user_id,)
+    cursor.execute(sql, val)
+    rowcount = cursor.rowcount
+    cursor.close()
+    db.commit()
+    return rowcount > 0
+
+
+def find_perma_db(user_id):
+    cursor = db.cursor()
+    sql = """SELECT UserId FROM perma_users WHERE UserId = %s"""
+    val = (user_id,)
+    cursor.execute(sql, val)
+    result = cursor.fetchone()
+    cursor.close()
+    db.commit()
+    return result
+
+
+def remove_perma_user_db(user_id):
+    cursor = db.cursor()
+    sql = """DELETE FROM perma_users WHERE UserId = %s"""
+    val = (user_id,)
+    cursor.execute(sql, val)
+    rowcount = cursor.rowcount
+    cursor.close()
+    db.commit()
     return rowcount > 0
 
 # def get_all_links_from_group(group_name):

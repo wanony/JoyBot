@@ -3,16 +3,17 @@ from discord.ext import commands
 from random import SystemRandom
 import asyncio
 from datetime import datetime
-from embeds import error_embed, warning_embed, success_embed, restricted_embed
+from embeds import error_embed, warning_embed, success_embed, restricted_embed, perma_embed
 
 # import lots of shit from datafile.
 from data import find_group_id, get_member_links_with_tag, get_member_links, find_member_id, get_all_alias_of_tag, \
- find_member_aliases, find_group_id_and_name, get_group_aliases, find_member_id_and_name, \
- get_tag_parent_from_alias, get_all_tag_names, add_tag, find_tag_id, add_tag_alias, add_link_tags, \
- add_link, get_link_id, add_link_to_member, find_user, add_user_contribution, add_user, \
- random_link_from_links, member_link_count, get_links_with_tag, get_groups, \
- get_members_of_group_and_link_count, count_links_of_member, get_all_tags_on_member_and_count, \
- last_three_links, count_links, apis_dict, get_auditing_channels, remove_auditing_channel, find_restricted_user_db
+    find_member_aliases, find_group_id_and_name, get_group_aliases, find_member_id_and_name, \
+    get_tag_parent_from_alias, get_all_tag_names, add_tag, find_tag_id, add_tag_alias, add_link_tags, \
+    add_link, get_link_id, add_link_to_member, find_user, add_user_contribution, add_user, \
+    random_link_from_links, member_link_count, get_links_with_tag, get_groups, \
+    get_members_of_group_and_link_count, count_links_of_member, get_all_tags_on_member_and_count, \
+    last_three_links, count_links, apis_dict, get_auditing_channels, remove_auditing_channel, find_restricted_user_db, \
+    find_perma_db
 
 
 class Fun(commands.Cog):
@@ -200,6 +201,10 @@ class Fun(commands.Cog):
             if find_restricted_user_db(ctx.guild.id, ctx.author.id):
                 await ctx.author.send(embed=restricted_embed(ctx.guild))
                 return
+        perma = find_perma_db(ctx.author.id)
+        if perma:
+            await ctx.author.send(embed=perma_embed())
+            return
         async with ctx.channel.typing():
             group = group.lower()
             idol = idol.lower()
@@ -1067,7 +1072,7 @@ class Fun(commands.Cog):
         """
         dt = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         main_audcha = self.disclient.get_channel(apis_dict["auditing_channel"])
-        s = f'Time Added: `{dt}`\nGroup: `{group}`\nIdol: `{idol}`\nLink: {link}'
+        s = f'Time Added: `{dt}`\nUser ID: `{author.id}`\nGroup: `{group}`\nIdol: `{idol}`\nLink: {link}'
         embed = discord.Embed(title=s,
                               color=discord.Color.blurple())
         embed.set_footer(text=f"Added by {author}",

@@ -7,7 +7,7 @@ from datetime import datetime
 
 # import lots of shit
 from data import add_channel, add_tag_alias_db, remove_tag_alias_db, add_group_alias_db, remove_group_alias_db, \
-    add_cont_from_one_user_to_other
+    add_cont_from_one_user_to_other, perma_user_db, remove_perma_user_db
 from data import remove_member_alias_db, add_member_alias_db, add_tag, find_group_id, add_group, remove_group
 from data import remove_moderator, add_moderator, get_members_of_group, add_member, remove_member, apis_dict
 from data import remove_auditing_channel, add_auditing_channel, remove_command, remove_link, remove_tag_from_link
@@ -104,6 +104,24 @@ class Owner(commands.Cog):
                     embed.add_field(name=f"Failed to load:",
                                     value=', '.join(failed))
         await ctx.send(embed=embed)
+
+    @commands.command()
+    async def perma_user(self, ctx, user_id):
+        """Stops user from added anything to the bot"""
+        perma = perma_user_db(user_id)
+        if perma:
+            await ctx.send(embed=success_embed("User successfully perma'd."))
+        else:
+            await ctx.send(embed=error_embed("Failed to perma user."))
+
+    @commands.command()
+    async def remove_perma_user(self, ctx, user_id):
+        """Removes user from perma ban"""
+        unperma = remove_perma_user_db(user_id)
+        if unperma:
+            await ctx.send(embed=success_embed("User un-perma'd."))
+        else:
+            await ctx.send(embed=error_embed("Failed to un-perma user."))
 
 
 class Moderation(commands.Cog):

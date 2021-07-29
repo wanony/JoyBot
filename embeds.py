@@ -47,3 +47,13 @@ def restricted_embed(guild):
                   color=Color.orange())
     embed.set_thumbnail(url=guild.icon_url)
     return embed
+
+
+def perma_embed():
+    message = f"""You are currently restricted from adding to Joy!\n
+                  You can continue to use Joy's functions, but adding to Joy has been disabled.
+                  Speak with a moderator of Joy to get more information."""
+    embed = Embed(title='Restricted User Warning!',
+                  description=message,
+                  color=Color.orange())
+    return embed
