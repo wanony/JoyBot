@@ -122,6 +122,8 @@ class Reddits(commands.Cog):
         Example: `.unfollow_subreddit <subreddit_name>`"""
         channel = ctx.channel.id
         subreddit = subreddit.lower()
+        if '/r/' in subreddit:
+            subreddit = subreddit.split('/r/')[-1]
         subreddit_id = get_subreddit_id(subreddit)
         if not subreddit_id:
             msg = f"{subreddit} is not found!"
@@ -148,6 +150,8 @@ class Reddits(commands.Cog):
         Example: `.follow_subreddit <subreddit_name>`"""
         channel = ctx.channel.id
         subreddit = subreddit.lower()
+        if '/r/' in subreddit:
+            subreddit = subreddit.split('/r/')[-1]
         subreddit_id = get_subreddit_id(subreddit)
         if not subreddit_id:
             add_reddit(subreddit)
