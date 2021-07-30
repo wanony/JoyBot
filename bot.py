@@ -38,9 +38,9 @@ async def on_ready():
         # add if guild id not in guild table here...
         added = add_guild_db(guild.id)
         if added:
-            print(f'Added {guild.name} to the database! (ID: {guild.id})')
+            print(f'Added {guild.name} with {guild.member_count} members to the database!\n(ID: {guild.id})')
         else:
-            print(f'{guild.name}: (ID: {guild.id})')
+            print(f'{guild.name}: Member Count: {guild.member_count}\n(ID: {guild.id})')
 
 
 try:

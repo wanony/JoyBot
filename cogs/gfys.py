@@ -152,7 +152,7 @@ class Fun(commands.Cog):
                 await ctx.send(embed=error_embed(f"No content for `{idol.title()}` in `{group}`!"))
                 return
         yt_link = 'https://www.youtu'
-        # --- THIS SEEMS TO BE BROKEN --------------------------------------------------------------- #
+        # TODO THIS SEEMS TO BE BROKEN --------------------------------------------------------------- #
         link_list = [x[0] for x in link_list if x[0].startswith(yt_link)]
         if not link_list:
             await ctx.send(embed=error_embed(f"No fancams added for `{idol.title()}`!"))
@@ -225,7 +225,9 @@ class Fun(commands.Cog):
                 return
             author = ctx.author.id
             currentlink = None
-            invalid_tags = []
+            last_added = None
+            invalid_tags = {}
+            duplicate_tags = {}
             tags_added = {}
             duplicate_links = 0
             added_links = 0
@@ -241,18 +243,23 @@ class Fun(commands.Cog):
                         split[-1] = split[-1][0]
                     link = "https://gfycat.com/" + split[-1]
                     currentlink = link
+                    last_added = None
                 elif link.startswith("https://www.redgifs.com/"):
                     split = link.split("/")
                     link = "https://www.redgifs.com/watch/" + split[-1]
                     currentlink = link
+                    last_added = None
                 elif link.startswith("https://www.gifdeliverynetwork.com/"):
                     split = link.split("/")
                     link = "https://www.gifdeliverynetwork.com/" + split[-1]
                     currentlink = link
+                    last_added = None
                 elif link.startswith("https://www.youtu"):
                     currentlink = link
+                    last_added = None
                 elif link.endswith(fts):
                     currentlink = link
+                    last_added = None
                 elif "twimg" in link:
                     split_link = link.split("/")
                     if "?" in split_link[-1]:
@@ -270,6 +277,7 @@ class Fun(commands.Cog):
                             newending = splitt[0] + "?format=jpg&name=orig"
                         link = split_link[:-1] + newending
                     currentlink = link
+                    last_added = None
                 else:
                     if not currentlink:
                         continue
@@ -288,8 +296,11 @@ class Fun(commands.Cog):
                                 else:
                                     tags_added.update({link: 1})
                         else:
-                            invalid_tags.append(link)
-                        continue
+                            if link not in invalid_tags:
+                                invalid_tags.update({link: [currentlink]})
+                            else:
+                                invalid_tags[link].append(currentlink)
+                            continue
                     else:
                         link = get_tag_parent_from_alias(link)[0]
                         added = add_link_tags(currentlink, link)
@@ -300,17 +311,24 @@ class Fun(commands.Cog):
                                 tags_added.update({link: 1})
                         else:
                             # update to duplicate tags in future
-                            invalid_tags.append(link)
-                        continue
+                            if link not in duplicate_tags:
+                                duplicate_tags.update({link: [currentlink]})
+                            else:
+                                duplicate_tags[link].append(currentlink)
+                            continue
                 if add_link(currentlink, author):
                     l_id = get_link_id(currentlink)
                     added = add_link_to_member(m_id[0], l_id)
                     if added:
                         await self.audit_channel(group, idol, str(link), ctx.author)
                         added_links += 1
+                        last_added = currentlink
                     else:
-                        duplicate_links += 1
-            # loop end .............................................................. god this function sucks
+                        if currentlink == last_added:
+                            continue
+                        else:
+                            duplicate_links += 1
+            # loop end .............................................................. this function loool
             embed = discord.Embed(title='Results:',
                                   color=discord.Color.blurple())
             if added_links > 0:
@@ -334,9 +352,13 @@ class Fun(commands.Cog):
                 embed.add_field(name=f"Skipped adding `{duplicate_links}` duplicate link(s).",
                                 value='\uFEFF',
                                 inline=False)
+            if duplicate_tags:
+                embed.add_field(name=f"Skipped adding duplicate link(s) to tag(s): `{', '.join(duplicate_tags)}` .",
+                                value='\uFEFF',
+                                inline=False)
             if invalid_tags:
-                embed.add_field(name=f"Skipped adding duplicate link(s) to tags: `{', '.join(invalid_tags)}` .",
-                                value='-',
+                embed.add_field(name=f"The following tags are invalid: `{', '.join(invalid_tags)}` .",
+                                value='\uFEFF',
                                 inline=False)
             if not added_links and not tags_added and not duplicate_links and not invalid_tags:
                 embed = error_embed("Something went wrong!")
@@ -517,6 +539,7 @@ class Fun(commands.Cog):
         valid_tags = [x[0] for x in get_all_tag_names()]
         author = ctx.author.id
         invalid_tags = []
+        duplicate_tags = []
         tags_added = {}
         for tag in tags_list:
             if tag.startswith(valid_links):
@@ -542,7 +565,7 @@ class Fun(commands.Cog):
                                 tags_added.update({tag: 1})
                     else:
                         invalid_tags.append(tag)
-                    continue
+                        continue
                 else:
                     added = add_link_tags(currentlink, tag)
                     if added:
@@ -552,7 +575,7 @@ class Fun(commands.Cog):
                             tags_added.update({tag: 1})
                     else:
                         # update to duplicate tags in future
-                        invalid_tags.append(tag)
+                        duplicate_tags.append(tag)
                     continue
         embed = discord.Embed(title='Results:',
                               color=discord.Color.blurple())
@@ -563,11 +586,15 @@ class Fun(commands.Cog):
             embed.add_field(name=f"Added tagged links to: `{format_list(lets)}`.",
                             value='\uFEFF',
                             inline=False)
-        if invalid_tags:
-            embed.add_field(name=f"Skipped adding duplicate link(s) to tags: `{', '.join(invalid_tags)}` .",
+        if duplicate_tags:
+            embed.add_field(name=f"Skipped adding duplicate link(s) to tags: `{', '.join(duplicate_tags)}` .",
                             value='\uFEFF',
                             inline=False)
-        if not invalid_tags and not tags_added:
+        if invalid_tags:
+            embed.add_field(name=f"The following tags are invalid: `{', '.join(invalid_tags)}` .",
+                            value='\uFEFF',
+                            inline=False)
+        if not invalid_tags and not tags_added and not duplicate_tags:
             embed = error_embed("Something went wrong!")
         await ctx.send(embed=embed)
 
@@ -732,7 +759,12 @@ class Fun(commands.Cog):
         except ValueError:
             no_interval = True
 
-        duration = int(args[0])
+        try:
+            duration = int(args[0])
+        except ValueError:
+            await ctx.send(embed=warning_embed("""Make sure to include a duration!\nExamples:\n`.timer 10 RedVelvet Joy`
+                                               `.timer <duration> <group_name> <idol_name>`"""))
+            return
 
         if no_interval:
             group = args[1].lower()

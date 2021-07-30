@@ -3,7 +3,7 @@ import asyncpraw
 from discord.ext import commands
 import asyncio
 from data import get_all_subreddits, get_channels_with_sub, remove_channel_from_subreddit, add_reddit_channel, \
-    add_reddit, get_subreddit_id, find_channel, add_channel
+    add_reddit, get_subreddit_id, find_channel, add_channel, get_all_reddit_channels_and_sub
 from data import apis_dict
 from embeds import success_embed, error_embed
 
@@ -117,6 +117,8 @@ class Reddits(commands.Cog):
             await asyncio.sleep(600)
 
     @commands.command()
+    @commands.guild_only()
+    @commands.has_permissions(administrator=True)
     async def unfollow_subreddit(self, ctx, subreddit):
         """Unfollow a previously followed subreddit.
         Example: `.unfollow_subreddit <subreddit_name>`"""
@@ -143,6 +145,8 @@ class Reddits(commands.Cog):
             await ctx.send(embed=error_embed(msg))
 
     @commands.command()
+    @commands.guild_only()
+    @commands.has_permissions(administrator=True)
     async def follow_subreddit(self, ctx, subreddit):
         """Add a subreddit to follow in this server!
         The channel this command is invoked in will be used
@@ -167,6 +171,35 @@ class Reddits(commands.Cog):
         else:
             msg = f"Already added {subreddit} to this channel!"
             await ctx.send(embed=error_embed(msg))
+
+    @commands.command(aliases=['subreddits'])
+    @commands.guild_only()
+    async def reddits(self, ctx):
+        """Returns a list of followed subreddits in this channel"""
+        guild = ctx.guild
+        chans = get_all_reddit_channels_and_sub()
+        chan_dict = {}
+        for pair in chans:
+            if pair[0] not in chan_dict:
+                chan_dict.update({pair[0]: [pair[-1]]})
+            else:
+                chan_dict[pair[0]].append(pair[-1])
+        msg = ''
+        for channel in guild.channels:
+            if channel.id in chan_dict:
+                for reddit in chan_dict[channel.id]:
+                    spacing = 39 - len(channel.name + reddit)
+                    chan_str = f"`#{channel.name}{' ' * spacing}{reddit}`\n"
+                    msg = msg + chan_str
+        if msg == '':
+            await ctx.send(embed=error_embed('No subreddits followed in this server!'))
+        else:
+            add_to_start = f"`Channel Name{' ' * 19}Subreddit`\n"
+            msg = add_to_start + msg
+            embed = discord.Embed(title=f'Subreddits Followed in {guild.name}!',
+                                  description=msg,
+                                  color=discord.Color.blurple())
+            await ctx.send(embed=embed)
 
 
 def setup(disclient):

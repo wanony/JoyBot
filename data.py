@@ -1226,6 +1226,18 @@ def get_all_subreddits():
     return result
 
 
+def get_all_reddit_channels_and_sub():
+    cursor = db.cursor()
+    sql = """SELECT Channel, RedditName FROM reddit_channels
+             JOIN channels on channels.ChannelId = reddit_channels.ChannelId 
+             JOIN reddit on reddit.RedditId = reddit_channels.RedditId
+             ORDER BY Channel"""
+    cursor.execute(sql)
+    result = cursor.fetchall()
+    cursor.close()
+    return result
+
+
 def get_channels_with_sub(reddit_name):
     cursor = db.cursor()
     sql = """select channel from channels
@@ -1259,8 +1271,8 @@ def add_guild_db(guild_id):
     val = (guild_id, default_prefix)
     try:
         cursor.execute(sql, val)
-    except Exception as e:
-        print(e)
+    except mysql.connector.errors.IntegrityError:
+        pass
     rowcount = cursor.rowcount
     cursor.close()
     return rowcount > 0
@@ -1385,6 +1397,31 @@ def remove_perma_user_db(user_id):
     cursor.close()
     db.commit()
     return rowcount > 0
+
+
+def add_linked_channel_db(channel_id, group, idol):
+    cursor = db.cursor()
+    sql = """INSERT INTO linked_channels (ChannelId, GroupId, MemberId) VALUES (%s,
+             (SELECT GroupId FROM groupz_aliases WHERE Alias = %s),
+             (SELECT MemberId FROM member_aliases WHERE Alias = %s));"""
+    val = (channel_id, group, idol)
+    cursor.execute(sql, val)
+    rowcount = cursor.rowcount
+    cursor.close()
+    db.commit()
+    return rowcount > 0
+
+
+def remove_linked_channel_db(channel_id):
+    cursor = db.cursor()
+    sql = """DELETE FROM linked_channels WHERE ChannelId = %s"""
+    val = (channel_id,)
+    cursor.execute(sql, val)
+    rowcount = cursor.rowcount
+    cursor.close()
+    db.commit()
+    return rowcount > 0
+
 
 # def get_all_links_from_group(group_name):
 #     cursor = db.cursor()

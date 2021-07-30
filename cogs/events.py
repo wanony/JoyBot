@@ -22,11 +22,14 @@ class Events(commands.Cog):
             return
         # user = message.author
         msg = message.content.split(" ")
-        # banned_words = get_banned_words(guild_id)
-        # w = any(x in banned_words for x in msg)
-        # if w:
-        #     await message.delete()
-        #     await message.author.send(banned_word_embed(message.guild, w))
+        if message.guild:
+            guild = message.guild.id
+            banned_words = get_banned_words(guild)
+            if banned_words:
+                w = any(x in banned_words for x in msg)
+                if w:
+                    await message.delete()
+                    await message.author.send(banned_word_embed(message.guild, w))
         if msg[0].startswith(get_prefix(self.disclient, message)):
             command = msg[0][1:]
             command_list = get_commands()
@@ -34,9 +37,12 @@ class Events(commands.Cog):
                 await message.channel.send(command_list[command])
 
     @commands.Cog.listener()
+    async def on_command(self, ctx):
+        # will be useful for data crunching later
+        pass
+
+    @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
-        if isinstance(error, commands.CheckFailure):
-            await ctx.send(embed=permission_denied_embed())
         if isinstance(error, commands.CommandNotFound):
             async for message in ctx.history(limit=1):
                 if message.author == self.disclient.user:
@@ -59,11 +65,16 @@ class Events(commands.Cog):
         # always raise errors
         if isinstance(error, commands.CommandInvokeError):
             await ctx.send(embed=error_embed('Something went wrong!'))
+        if isinstance(error, commands.NoPrivateMessage):
+            await ctx.send(embed=error_embed('This command does not work in DMs!'))
+            return
+        if isinstance(error, commands.CheckFailure):
+            await ctx.send(embed=permission_denied_embed())
         raise error
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
-        set_guild_prefix_db(guild, prefix='.')
+        set_guild_prefix_db(guild, default_prefix)
 
     @commands.Cog.listener()
     async def on_user_join(self, ctx):
