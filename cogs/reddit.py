@@ -25,20 +25,20 @@ class Reddits(commands.Cog):
         # possibly save recent posts to file to avoid reposts on restart
         self.recent_posts = {}
         self.disclient.loop.create_task(self.post_new())
-        self.reddit = asyncpraw.Reddit(client_id=apis_dict["reddit_id"],
-                                       client_secret=apis_dict["reddit_secret"],
-                                       user_agent="idk what this is")
 
     async def post_new(self):
         await self.disclient.wait_until_ready()
         while not self.disclient.is_closed():
+            reddit = asyncpraw.Reddit(client_id=apis_dict["reddit_id"],
+                                      client_secret=apis_dict["reddit_secret"],
+                                      user_agent="idk what this is")
             subs_list = get_and_format_subs_list()
             for subs in subs_list:
                 channels_with_reddit = get_and_format_channels_with_sub(subs)
                 if not channels_with_reddit:
                     continue
                 # do as much processing before reddit call
-                sub = await self.reddit.subreddit(subs)
+                sub = await reddit.subreddit(subs)
                 async for subm in sub.new(limit=5):
                     titl = subm.title
                     if "/r/" in subm.url:
@@ -113,6 +113,7 @@ class Reddits(commands.Cog):
                                     self.recent_posts[subs].pop(channels)
                                     print(f"Channel deleted")
                             lp.append(perm)
+            await reddit.close()
             await asyncio.sleep(600)
 
     @commands.command()
