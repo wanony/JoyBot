@@ -7,7 +7,7 @@ name = "pypi"
 "discord.py" = "*"
 asyncpraw = "*"
 mysql-connector-python = "*"
-twitchapi = "*"
+tweepy = "*"
 
 [dev-packages]
 

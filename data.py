@@ -1423,6 +1423,69 @@ def remove_linked_channel_db(channel_id):
     return rowcount > 0
 
 
+def get_twitter_users_from_db():
+    cursor = db.cursor()
+    sql = """SELECT Twitter FROM twitter"""
+    cursor.execute(sql)
+    result = [str(x[0]) for x in cursor.fetchall()]
+    cursor.close()
+    return result
+
+
+def add_twitter_channel_to_db(channel_id, twitter_id):
+    cursor = db.cursor()
+    sql = """INSERT INTO twitter_channels(ChannelId, TwitterId) VALUES (
+              (SELECT ChannelId FROM channels WHERE Channel = %s),
+              (SELECT TwitterId FROM twitter WHERE Twitter = %s))"""
+    vals = (channel_id, twitter_id)
+    cursor.execute(sql, vals)
+    rowcount = cursor.rowcount
+    db.commit()
+    cursor.close()
+    return rowcount > 0
+
+
+def add_twitter_to_db(twitter_id):
+    cursor = db.cursor()
+    sql = """INSERT INTO twitter(Twitter) VALUES(%s)"""
+    vals = (twitter_id,)
+    try:
+        cursor.execute(sql, vals)
+    except mysql.connector.errors.IntegrityError:
+        return
+    rowcount = cursor.rowcount
+    db.commit()
+    cursor.close()
+    return rowcount > 0
+
+
+def remove_twitter_user_from_db(channel_id, twitter_id):
+    cursor = db.cursor()
+    sql = """DELETE twitter_channels FROM twitter_channels
+             JOIN twitter ON twitter.TwitterId = twitter_channels.TwitterId
+             JOIN channels ON channels.ChannelId = twitter_channels.ChannelId
+             WHERE twitter.Twitter = %s AND channels.Channel = %s;"""
+    vals = (twitter_id, channel_id)
+    cursor.execute(sql, vals)
+    rowcount = cursor.rowcount
+    db.commit()
+    cursor.close()
+    return rowcount > 0
+
+
+def get_twitter_channels_following_user(twitter_id):
+    cursor = db.cursor()
+    sql = """SELECT Channel FROM channels
+             JOIN twitter_channels on twitter_channels.ChannelId = channels.ChannelId
+             JOIN twitter on twitter.TwitterId = twitter_channels.TwitterId
+             WHERE twitter.Twitter = %s;"""
+    vals = (twitter_id,)
+    cursor.execute(sql, vals)
+    result = [x[0] for x in cursor.fetchall()]
+    cursor.close()
+    return result
+
+
 # def get_all_links_from_group(group_name):
 #     cursor = db.cursor()
 #     sql = """"""

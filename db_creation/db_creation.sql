@@ -100,6 +100,16 @@ CREATE TABLE channels (
   UNIQUE (Channel)
 );
 
+CREATE TABLE linked_channels (
+  ChannelId int NOT NULL,
+  GroupId int NOT NULL,
+  MemberId int NOT NULL,
+  PRIMARY KEY (ChannelId), 
+  FOREIGN KEY (ChannelId) REFERENCES channels(ChannelId),
+  FOREIGN KEY (GroupId) REFERENCES groupz(GroupId),
+  FOREIGN KEY (MemberId) REFERENCES members(MemberId)
+);
+
 CREATE TABLE reddit (
   RedditId int NOT NULL AUTO_INCREMENT,
   RedditName varchar(255) NOT NULL,
@@ -110,7 +120,6 @@ CREATE TABLE reddit_channels (
   ChannelId int NOT NULL,
   RedditId int NOT NULL,
   PRIMARY KEY (ChannelId, RedditId),
-  KEY RedditId (RedditId),
   CONSTRAINT reddit_channels_ibfk_1 FOREIGN KEY (ChannelId) REFERENCES channels (ChannelId),
   CONSTRAINT reddit_channels_ibfk_2 FOREIGN KEY (RedditId) REFERENCES reddit (RedditId)
 );
@@ -149,4 +158,24 @@ CREATE TABLE restricted_users (
     PRIMARY KEY (GuildId, UserId),
     FOREIGN KEY (GuildId) REFERENCES guilds(GuildId),
     FOREIGN KEY (UserId) REFERENCES users(UserId)
+);
+
+CREATE TABLE perma_users (
+    UserId BIGINT NOT NULL,
+    PRIMARY KEY (UserId),
+    FOREIGN KEY (UserId) REFERENCES users(UserId)
+);
+
+CREATE TABLE twitter (
+  TwitterId int NOT NULL AUTO_INCREMENT,
+  Twitter bigint NOT NULL,
+  PRIMARY KEY (RedditId)
+);
+
+CREATE TABLE twitter_channels (
+  ChannelId int NOT NULL,
+  TwitterId int NOT NULL,
+  PRIMARY KEY (ChannelId, TwitterId),
+  FOREIGN KEY (ChannelId) REFERENCES channels (ChannelId),
+  FOREIGN KEY (TwitterId) REFERENCES twitter (TwitterId)
 );

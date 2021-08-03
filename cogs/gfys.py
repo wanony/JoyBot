@@ -275,7 +275,7 @@ class Fun(commands.Cog):
                             newending = splitt[0] + "?format=png&name=orig"
                         else:
                             newending = splitt[0] + "?format=jpg&name=orig"
-                        link = split_link[:-1] + newending
+                        link = "https://pbs.twimg.com/media/" + newending
                     currentlink = link
                     last_added = None
                 else:

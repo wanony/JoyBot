@@ -16,7 +16,7 @@ def get_and_format_channels_with_sub(sub_name):
     return [x[0] for x in get_channels_with_sub(sub_name)]
 
 
-class Reddits(commands.Cog):
+class Reddit(commands.Cog):
     """Get new posts from your favourite Subreddits
     """
     def __init__(self, disclient):
@@ -160,10 +160,8 @@ class Reddits(commands.Cog):
         if not subreddit_id:
             add_reddit(subreddit)
             subreddit_id = get_subreddit_id(subreddit)
+        add_channel(channel)
         found = find_channel(channel)
-        if not found:
-            add_channel(channel)
-            found = find_channel(channel)
         added = add_reddit_channel(found[0], subreddit_id[0])
         if added:
             msg = f"Added {subreddit} to this channel!"
@@ -203,4 +201,4 @@ class Reddits(commands.Cog):
 
 
 def setup(disclient):
-    disclient.add_cog(Reddits(disclient))
+    disclient.add_cog(Reddit(disclient))

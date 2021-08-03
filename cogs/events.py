@@ -1,7 +1,7 @@
 from discord.ext import commands
 
 from bot import get_prefix
-from data import default_prefix, set_guild_prefix_db, get_banned_words
+from data import get_banned_words, add_guild_db
 from data import get_commands
 import re
 from embeds import error_embed, permission_denied_embed, banned_word_embed
@@ -74,7 +74,9 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
-        set_guild_prefix_db(guild, default_prefix)
+        added = add_guild_db(guild.id)
+        if added:
+            print(f"Added guild: {guild.name}!")
 
     @commands.Cog.listener()
     async def on_user_join(self, ctx):
