@@ -1,6 +1,4 @@
-import asyncio
 import json
-
 import discord
 import tweepy
 from discord.ext import commands
@@ -60,14 +58,13 @@ class TwitterClient:
 
 
 class MyStreamListener(tweepy.StreamListener):
-    def __init__(self):
+    def __init__(self, disclient):
         """Inherit and overwrite listener from Tweepy."""
         super().__init__()
-        self.new_tweet = None
+        self.disclient = disclient
 
     def on_data(self, raw_data):
-        data = json.loads(raw_data)
-        self.new_tweet = data
+        self.disclient.loop.create_task(self.disclient.get_cog('Twitter').format_new_tweet(raw_data))
 
     def on_event(self, status):
         print(f"event: {status}")
@@ -81,8 +78,8 @@ class MyStreamListener(tweepy.StreamListener):
     def on_error(self, status_code):
         print(status_code)
         if status_code == 420:
-            return False
-        return False
+            return True  # return False disconnects, True tries reconnect
+        return True
 
 
 class Twitter(commands.Cog):
@@ -91,28 +88,18 @@ class Twitter(commands.Cog):
     def __init__(self, disclient):
         """Initialise client."""
         self.disclient = disclient
-        self.current_stream = tweepy.Stream(authenticator(), MyStreamListener())
+        self.current_stream = tweepy.Stream(authenticator(), MyStreamListener(self.disclient))
         self.current_stream.filter(follow=get_users_to_stream(), is_async=True)
         self.client = TwitterClient()
-        self.disclient.loop.create_task(self.on_new_tweet())
 
     def restart_stream(self):
         """"""
-        self.current_stream = tweepy.Stream(authenticator(), MyStreamListener())
+        self.current_stream = tweepy.Stream(authenticator(), MyStreamListener(self.disclient))
         self.refilter_stream()
 
     def refilter_stream(self):
         """"""
         self.current_stream.filter(follow=get_users_to_stream(), is_async=True)
-
-    @commands.Cog.listener()
-    async def on_new_tweet(self):
-        await self.disclient.wait_until_ready()
-        while not self.disclient.is_closed():
-            if self.current_stream.listener.new_tweet is not None:
-                tweet = self.current_stream.listener.new_tweet
-                await self.format_new_tweet(tweet)
-            await asyncio.sleep(5)
 
     @commands.command(name='follow_twitter', aliases=['followtwitter', 'twitterfollow'])
     @commands.guild_only()
@@ -128,13 +115,14 @@ class Twitter(commands.Cog):
         if user_id:
             add_twitter_to_db(user_id)
         else:
-            await ctx.send(embed=error_embed(f'Twitter user {user_name} not found!'))
+            await ctx.send(embed=error_embed(f'Twitter user `{user_name}` not found!'))
         added = add_twitter_channel_to_db(channel_id, user_id)
         if added:
-            await ctx.send(embed=success_embed(f'Followed twitter user {user_name}!'))
-            self.refilter_stream()
+            await ctx.send(embed=success_embed(f'Followed twitter user `{user_name}`!'))
+            if user_id not in get_users_to_stream():
+                self.restart_stream()
         else:
-            await ctx.send(embed=error_embed(f'Failed to follow twitter user {user_name}!'))
+            await ctx.send(embed=error_embed(f'Failed to follow twitter user `{user_name}`!'))
 
     @commands.command(name='unfollow_twitter', aliases=['unfollowtwitter', 'twitterunfollow'])
     @commands.guild_only()
@@ -147,13 +135,12 @@ class Twitter(commands.Cog):
         channel_id = ctx.channel.id
         user_id = self.client.get_twitter_user_id(user_name)
         if not user_id:
-            await ctx.send(embed=error_embed(f'Twitter user {user_name} not found!'))
+            await ctx.send(embed=error_embed(f'Twitter user `{user_name}` not found!'))
         removed = remove_twitter_user_from_db(channel_id, user_id)
         if removed:
-            await ctx.send(embed=success_embed(f'Unfollowed twitter user {user_name}!'))
-            self.refilter_stream()
+            await ctx.send(embed=success_embed(f'Unfollowed twitter user `{user_name}`!'))
         else:
-            await ctx.send(embed=error_embed(f'Failed to unfollow twitter user {user_name}!'))
+            await ctx.send(embed=error_embed(f'Failed to unfollow twitter user `{user_name}`!'))
 
     @commands.command()
     @commands.guild_only()
@@ -187,6 +174,7 @@ class Twitter(commands.Cog):
 
     async def format_new_tweet(self, tweet_data):
         """Formats a tweet into a nice discord embed"""
+        tweet_data = json.loads(tweet_data)
         twitter_id = tweet_data["user"]["id_str"]
         user_name = tweet_data["user"]["name"]
         twitter_at = f'@{tweet_data["user"]["screen_name"]}'
@@ -211,8 +199,8 @@ class Twitter(commands.Cog):
                     tweet_id = tweet_data["id_str"]
                     tweet = f'https://fxtwitter.com/{screen_name}/status/{tweet_id}'
                 else:
-                    l = tweet_data["extended_entities"]["media"][0]["media_url_https"]
-                    image_url = twitter_image_link_formatting(l)
+                    link = tweet_data["extended_entities"]["media"][0]["media_url_https"]
+                    image_url = twitter_image_link_formatting(link)
                     tweet = discord.Embed(title=title,
                                           description=text,
                                           color=discord.Color.blue())
