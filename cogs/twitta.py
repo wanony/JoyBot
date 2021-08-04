@@ -89,6 +89,10 @@ class Twitter(commands.Cog):
     def restart_stream(self):
         """"""
         self.current_stream = tweepy.Stream(authenticator(), MyStreamListener())
+        self.refilter_stream()
+
+    def refilter_stream(self):
+        """"""
         self.current_stream.filter(follow=get_users_to_stream(), is_async=True)
 
     @commands.Cog.listener()
@@ -118,7 +122,7 @@ class Twitter(commands.Cog):
         added = add_twitter_channel_to_db(channel_id, user_id)
         if added:
             await ctx.send(embed=success_embed(f'Followed twitter user {user_name}!'))
-            self.restart_stream()
+            self.refilter_stream()
         else:
             await ctx.send(embed=error_embed(f'Failed to follow twitter user {user_name}!'))
 
@@ -136,10 +140,10 @@ class Twitter(commands.Cog):
             await ctx.send(embed=error_embed(f'Twitter user {user_name} not found!'))
         removed = remove_twitter_user_from_db(channel_id, user_id)
         if removed:
-            await ctx.send(embed=success_embed(f'Followed twitter user {user_name}!'))
-            self.restart_stream()
+            await ctx.send(embed=success_embed(f'Unfollowed twitter user {user_name}!'))
+            self.refilter_stream()
         else:
-            await ctx.send(embed=error_embed(f'Failed to follow twitter user {user_name}!'))
+            await ctx.send(embed=error_embed(f'Failed to unfollow twitter user {user_name}!'))
 
     async def format_new_tweet(self, tweet_data):
         """Formats a tweet into a nice discord embed"""
