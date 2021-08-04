@@ -169,7 +169,8 @@ CREATE TABLE perma_users (
 CREATE TABLE twitter (
   TwitterId int NOT NULL AUTO_INCREMENT,
   Twitter bigint NOT NULL,
-  PRIMARY KEY (RedditId)
+  PRIMARY KEY (TwitterId),
+  UNIQUE (Twitter)
 );
 
 CREATE TABLE twitter_channels (
