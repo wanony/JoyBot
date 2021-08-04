@@ -1,7 +1,7 @@
 import discord
 import os
 from discord.ext import commands
-from data import apis_dict, add_guild_db
+from data import apis_dict, add_guild_db, write_cache
 from data import default_prefix
 from data import get_prefix_db
 
@@ -41,6 +41,8 @@ async def on_ready():
             print(f'Added {guild.name} with {guild.member_count} members to the database!\n(ID: {guild.id})')
         else:
             print(f'{guild.name}: Member Count: {guild.member_count}\n(ID: {guild.id})')
+
+    await disclient.loop.create_task(write_cache())
 
 
 try:

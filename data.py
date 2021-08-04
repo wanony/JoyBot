@@ -3,7 +3,7 @@ import json
 import mysql.connector as conn
 import mysql.connector.errors
 import threading
-from datetime import datetime
+import datetime
 import os
 
 with open('directories.json') as direc:
@@ -28,9 +28,6 @@ async def write_cache():
             dt = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             print(f"Written cache variables for 1 hour at {dt}.")
         await asyncio.sleep(60)
-
-
-await write_cache()
 
 
 def check_user_is_mod(ctx):
