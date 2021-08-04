@@ -13,7 +13,7 @@ from data import find_group_id, get_member_links_with_tag, get_member_links, fin
     random_link_from_links, member_link_count, get_links_with_tag, get_groups, \
     get_members_of_group_and_link_count, count_links_of_member, get_all_tags_on_member_and_count, \
     last_three_links, count_links, apis_dict, get_auditing_channels, remove_auditing_channel, find_restricted_user_db, \
-    find_perma_db
+    find_perma_db, cache_dict
 
 
 class Fun(commands.Cog):
@@ -24,8 +24,8 @@ class Fun(commands.Cog):
     def __init__(self, disclient):
         """Initialise client."""
         self.disclient = disclient
-        self.loops = {}  # dict for timers
-        self.recent_dict = {}
+        self.loops = cache_dict["gfys"]["loops"]  # dict for timers
+        self.recent_posts = cache_dict["gfys"]["recent_posts"]
         # self.disclient.loop.create_task(self.write_recent())
 
     # @commands.Cog.listener()
@@ -80,16 +80,16 @@ class Fun(commands.Cog):
         link_list = [x for x in link_list if x.endswith(fts)]
         if not link_list:
             await ctx.send(embed=error_embed(f"No fancams added for `{idol.title()}`!"))
-        if group not in self.recent_dict:
+        if group not in self.recent_posts:
             updater = {group: {}}
-            self.recent_dict.update(updater)
-        if idol not in self.recent_dict[group]:
+            self.recent_posts.update(updater)
+        if idol not in self.recent_posts[group]:
             updater = {idol: []}
-            self.recent_dict[group].update(updater)
-        refine = [x for x in link_list if x not in self.recent_dict[group][idol]]
+            self.recent_posts[group].update(updater)
+        refine = [x for x in link_list if x not in self.recent_posts[group][idol]]
         if len(refine) <= 1:
             print(f"resetting {group}: {idol} list.")
-            self.recent_dict[group][idol] = []
+            self.recent_posts[group][idol] = []
             if no_tag:
                 msg = f'No content for requested tag(s): {", ".join(no_tag)}'
                 await ctx.send(embed=warning_embed(msg))
@@ -100,7 +100,7 @@ class Fun(commands.Cog):
             crypto = SystemRandom()
             rand = crypto.randrange(len(refine) - 1)
             finale = refine[rand]
-            self.recent_dict[group][idol].append(finale)
+            self.recent_posts[group][idol].append(finale)
             if no_tag:
                 msg = f'No content for requested tag(s): {", ".join(no_tag)}'
                 await ctx.send(embed=warning_embed(msg))
@@ -156,16 +156,16 @@ class Fun(commands.Cog):
         link_list = [x[0] for x in link_list if x[0].startswith(yt_link)]
         if not link_list:
             await ctx.send(embed=error_embed(f"No fancams added for `{idol.title()}`!"))
-        if group not in self.recent_dict:
+        if group not in self.recent_posts:
             updater = {group: {}}
-            self.recent_dict.update(updater)
-        if idol not in self.recent_dict[group]:
+            self.recent_posts.update(updater)
+        if idol not in self.recent_posts[group]:
             updater = {idol: []}
-            self.recent_dict[group].update(updater)
-        refine = [x for x in link_list if x not in self.recent_dict[group][idol]]
+            self.recent_posts[group].update(updater)
+        refine = [x for x in link_list if x not in self.recent_posts[group][idol]]
         if len(refine) <= 1:
             print(f"resetting {group}: {idol} list.")
-            self.recent_dict[group][idol] = []
+            self.recent_posts[group][idol] = []
             if no_tag:
                 msg = f'No content for requested tag(s): {", ".join(no_tag)}'
                 await ctx.send(embed=warning_embed(msg))
@@ -176,7 +176,7 @@ class Fun(commands.Cog):
             crypto = SystemRandom()
             rand = crypto.randrange(len(refine) - 1)
             finale = refine[rand]
-            self.recent_dict[group][idol].append(finale)
+            self.recent_posts[group][idol].append(finale)
             if no_tag:
                 msg = f'No content for requested tag(s): {", ".join(no_tag)}'
                 await ctx.send(embed=warning_embed(msg))
@@ -412,16 +412,16 @@ class Fun(commands.Cog):
         link_list = [x for x in link_list if x.startswith(valid_links)]
         if not link_list:
             await ctx.send(error_embed(f"No links added for `{idol.title()}`!"))
-        if group not in self.recent_dict:
+        if group not in self.recent_posts:
             updater = {group: {}}
-            self.recent_dict.update(updater)
-        if idol not in self.recent_dict[group]:
+            self.recent_posts.update(updater)
+        if idol not in self.recent_posts[group]:
             updater = {idol: []}
-            self.recent_dict[group].update(updater)
-        refine = [x for x in link_list if x not in self.recent_dict[group][idol]]
+            self.recent_posts[group].update(updater)
+        refine = [x for x in link_list if x not in self.recent_posts[group][idol]]
         if len(refine) <= 1:
             print(f"resetting {group}: {idol} list.")
-            self.recent_dict[group][idol] = []
+            self.recent_posts[group][idol] = []
             if no_tag:
                 msg = f'No content for requested tag(s): {", ".join(no_tag)}'
                 await ctx.send(embed=warning_embed(msg))
@@ -436,7 +436,7 @@ class Fun(commands.Cog):
                 print(e)
                 rand = 0
             finale = refine[rand]
-            self.recent_dict[group][idol].append(finale)
+            self.recent_posts[group][idol].append(finale)
             if no_tag:
                 msg = f'No content for requested tag(s): {", ".join(no_tag)}'
                 await ctx.send(embed=warning_embed(msg))
@@ -459,21 +459,21 @@ class Fun(commands.Cog):
             link = link_member_group[0]
             idol = link_member_group[1]
             group = link_member_group[2]
-            if group not in self.recent_dict:
+            if group not in self.recent_posts:
                 updater = {group: {}}
-                self.recent_dict.update(updater)
-            if idol not in self.recent_dict[group]:
+                self.recent_posts.update(updater)
+            if idol not in self.recent_posts[group]:
                 updater = {idol: []}
-                self.recent_dict[group].update(updater)
-            if link not in self.recent_dict[group][idol]:
-                self.recent_dict[group][idol].append(link)
+                self.recent_posts[group].update(updater)
+            if link not in self.recent_posts[group][idol]:
+                self.recent_posts[group][idol].append(link)
                 await ctx.send(f"Random choice! `{group.title()}`'s `{idol.title()}`\n{link}")
             else:
-                relen = len(self.recent_dict[group][idol])
+                relen = len(self.recent_posts[group][idol])
                 gflen = member_link_count(group, idol)
                 if relen == gflen:
                     print(f"resetting recent dict for {idol}")
-                    self.recent_dict[group][idol] = []
+                    self.recent_posts[group][idol] = []
                 await random_link()
 
         await random_link()
@@ -612,14 +612,14 @@ class Fun(commands.Cog):
         valid_tags = [x[0] for x in get_all_tag_names()]
         if tag in valid_tags:
             tag = get_tag_parent_from_alias(tag)[0]
-            if tag not in self.recent_dict:
+            if tag not in self.recent_posts:
                 updater = {tag: []}
-                self.recent_dict.update(updater)
+                self.recent_posts.update(updater)
             taggfy = [x[0] for x in get_links_with_tag(tag)]
-            recentag = self.recent_dict[tag]
+            recentag = self.recent_posts[tag]
             refine = [x for x in taggfy if x not in recentag]
             if len(refine) <= 1:
-                self.recent_dict[tag] = []
+                self.recent_posts[tag] = []
                 refine = taggfy
             crypto = SystemRandom()
             try:
@@ -628,7 +628,7 @@ class Fun(commands.Cog):
                 print(e)
                 rand = 0
             finale = refine[rand]
-            self.recent_dict[tag].append(finale)
+            self.recent_posts[tag].append(finale)
             await ctx.send(f"Tagged `{tag}`, {finale}")
         else:
             await ctx.send(f"Nothing for tag `{tag}`")
@@ -649,19 +649,19 @@ class Fun(commands.Cog):
         twitter = "https://pbs.twimg"
         if tag in valid_tags:
             tag = get_tag_parent_from_alias(tag)[0]
-            if tag not in self.recent_dict:
+            if tag not in self.recent_posts:
                 updater = {tag: []}
-                self.recent_dict.update(updater)
+                self.recent_posts.update(updater)
             tg = get_links_with_tag(tag)
-            recentag = self.recent_dict[tag]
+            recentag = self.recent_posts[tag]
             refine = [x[0] for x in tg if x[0] not in recentag and x[0].endswith(valid_fts) or x[0].startswith(twitter)]
             if len(refine) <= 1:
-                self.recent_dict[tag] = []
+                self.recent_posts[tag] = []
                 refine = tg
             crypto = SystemRandom()
             rand = crypto.randrange(len(refine) - 1)
             finale = refine[rand]
-            self.recent_dict[tag].append(finale)
+            self.recent_posts[tag].append(finale)
             await ctx.send(f"Tagged `{tag}`, {finale}")
         else:
             await ctx.send(f"Nothing for tag `{tag}`")
@@ -685,19 +685,19 @@ class Fun(commands.Cog):
         valid_tags = [x[0] for x in get_all_tag_names()]
         if tag in valid_tags:
             tag = get_tag_parent_from_alias(tag)[0]
-            if tag not in self.recent_dict:
+            if tag not in self.recent_posts:
                 updater = {tag: []}
-                self.recent_dict.update(updater)
+                self.recent_posts.update(updater)
             taggfy = get_links_with_tag(tag)
-            recentag = self.recent_dict[tag]
+            recentag = self.recent_posts[tag]
             refine = [x[0] for x in taggfy if x[0] not in recentag and x[0].startswith(valid_links)]
             if len(refine) <= 1:
-                self.recent_dict[tag] = []
+                self.recent_posts[tag] = []
                 refine = taggfy
             crypto = SystemRandom()
             rand = crypto.randrange(len(refine) - 1)
             finale = refine[rand]
-            self.recent_dict[tag].append(finale)
+            self.recent_posts[tag].append(finale)
             await ctx.send(f"Tagged `{tag}`, {finale}")
         else:
             await ctx.send(f"Nothing for tag `{tag}`")
@@ -717,19 +717,19 @@ class Fun(commands.Cog):
         valid_tags = [x[0] for x in get_all_tag_names()]
         if tag in valid_tags:
             tag = get_tag_parent_from_alias(tag)[0]
-            if tag not in self.recent_dict:
+            if tag not in self.recent_posts:
                 updater = {tag: []}
-                self.recent_dict.update(updater)
+                self.recent_posts.update(updater)
             taggfy = get_links_with_tag(tag)
-            recentag = self.recent_dict[tag]
+            recentag = self.recent_posts[tag]
             refine = [x[0] for x in taggfy if x[0] not in recentag and x[0].startswith(valid_links)]
             if len(refine) <= 1:
-                self.recent_dict[tag] = []
+                self.recent_posts[tag] = []
                 refine = taggfy
             crypto = SystemRandom()
             rand = crypto.randrange(len(refine) - 1)
             finale = refine[rand]
-            self.recent_dict[tag].append(finale)
+            self.recent_posts[tag].append(finale)
             await ctx.send(f"Tagged `{tag}`, {finale}")
         else:
             await ctx.send(f"Nothing for tag `{tag}`")
@@ -860,8 +860,10 @@ class Fun(commands.Cog):
             self.loops[channel][author] = 0
             await ctx.send(
                     f"Stopped timer `{timer_number}` for `{ctx.author}`.")
-            self.loops.pop(author)
+            self.loops[channel].pop(author)
             print(f"deleted {author} from loops")
+            if not self.loops[channel]:
+                self.loops.pop(channel)
         else:
             await ctx.send(f"No timers running for `{ctx.author}`.")
 

@@ -3,7 +3,7 @@ import asyncpraw
 from discord.ext import commands
 import asyncio
 from data import get_all_subreddits, get_channels_with_sub, remove_channel_from_subreddit, add_reddit_channel, \
-    add_reddit, get_subreddit_id, find_channel, add_channel, get_all_reddit_channels_and_sub
+    add_reddit, get_subreddit_id, find_channel, add_channel, get_all_reddit_channels_and_sub, cache_dict
 from data import apis_dict
 from embeds import success_embed, error_embed
 
@@ -22,8 +22,7 @@ class Reddit(commands.Cog):
     def __init__(self, disclient):
         """Initialise client."""
         self.disclient = disclient
-        # possibly save recent posts to file to avoid reposts on restart
-        self.recent_posts = {}
+        self.recent_posts = cache_dict["reddit"]["recent_posts"]
         self.disclient.loop.create_task(self.post_new())
 
     async def post_new(self):
@@ -173,7 +172,7 @@ class Reddit(commands.Cog):
     @commands.command(aliases=['subreddits'])
     @commands.guild_only()
     async def reddits(self, ctx):
-        """Returns a list of followed subreddits in this channel"""
+        """Returns a list of followed subreddits in this server."""
         guild = ctx.guild
         chans = get_all_reddit_channels_and_sub()
         chan_dict = {}

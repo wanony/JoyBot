@@ -1,19 +1,36 @@
 import json
+from time import sleep
 import mysql.connector as conn
 import mysql.connector.errors
 import threading
-import datetime
+from datetime import datetime
 import os
 
 with open('directories.json') as direc:
     direc_dict = json.load(direc)
 with open(direc_dict["apis"], 'r') as apis:
     apis_dict = json.load(apis)
+with open(direc_dict["cache_variables"]) as cache:
+    cache_dict = json.load(cache)
+with open(direc_dict["mods"], 'r') as mods:
+    mods_dict = json.load(mods)
 
 default_prefix = apis_dict["command_prefix"]
 
-with open(direc_dict["mods"], 'r') as mods:
-    mods_dict = json.load(mods)
+
+def write_cache():
+    x = 0
+    while True:
+        with open(direc_dict["cache_variables"], 'w') as cash:
+            json.dump(cache_dict, cash, indent=4)
+        sleep(60)
+        x += 60
+        if x % 600 == 0:
+            dt = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            print(f"Written cache variables for 1 hour at {dt}.")
+
+
+write_cache()
 
 
 def check_user_is_mod(ctx):
@@ -1486,6 +1503,16 @@ def get_twitter_channels_following_user(twitter_id):
     return result
 
 
+def get_all_twitter_channels_and_twitters():
+    cursor = db.cursor()
+    sql = """SELECT Channel, Twitter FROM twitter_channels
+             JOIN channels on channels.ChannelId = twitter_channels.ChannelId 
+             JOIN twitter on twitter.TwitterId = twitter_channels.TwitterId
+             ORDER BY Channel"""
+    cursor.execute(sql)
+    result = cursor.fetchall()
+    cursor.close()
+    return result
 # def get_all_links_from_group(group_name):
 #     cursor = db.cursor()
 #     sql = """"""

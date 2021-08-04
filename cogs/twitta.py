@@ -5,22 +5,25 @@ import discord
 import tweepy
 from discord.ext import commands
 from data import apis_dict, get_twitter_users_from_db, add_twitter_channel_to_db, remove_twitter_user_from_db, \
-    add_twitter_to_db, add_channel, get_twitter_channels_following_user
+    add_twitter_to_db, add_channel, get_twitter_channels_following_user, get_all_twitter_channels_and_twitters
 from embeds import error_embed, success_embed
 
 
 def authenticator():
+    """Returns authenticator."""
     auth = tweepy.OAuthHandler(apis_dict["twitter_key"], apis_dict["twitter_secret"])
     auth.set_access_token(apis_dict["twitter_access_token"], apis_dict["twitter_access_secret"])
     return auth
 
 
 def get_users_to_stream():
+    """Returns all users to stream tweets from."""
     users = get_twitter_users_from_db()
     return users
 
 
 def twitter_image_link_formatting(link):
+    """Formats link of tweeted image to return highest quality image."""
     if "twimg" in link:
         split_link = link.split("/")
         if "?" in split_link[-1]:
@@ -42,6 +45,7 @@ def twitter_image_link_formatting(link):
 
 class TwitterClient:
     def __init__(self):
+        """Create client."""
         self.client = tweepy.API(authenticator())
 
     def get_twitter_user_id(self, user_name):
@@ -52,6 +56,7 @@ class TwitterClient:
 
 class MyStreamListener(tweepy.StreamListener):
     def __init__(self):
+        """Inherit and overwrite listener from Tweepy."""
         super().__init__()
         self.new_tweet = None
 
@@ -145,6 +150,35 @@ class Twitter(commands.Cog):
         else:
             await ctx.send(embed=error_embed(f'Failed to unfollow twitter user {user_name}!'))
 
+    @commands.command()
+    @commands.guild_only()
+    async def twitters(self, ctx):
+        """Returns a list of followed twitters in this server."""
+        guild = ctx.guild
+        chans = get_all_twitter_channels_and_twitters()
+        chan_dict = {}
+        for pair in chans:
+            if pair[0] not in chan_dict:
+                chan_dict.update({pair[0]: [pair[-1]]})
+            else:
+                chan_dict[pair[0]].append(pair[-1])
+        msg = ''
+        for channel in guild.channels:
+            if channel.id in chan_dict:
+                for twitter in chan_dict[channel.id]:
+                    spacing = 39 - len(channel.name + twitter)
+                    chan_str = f"`#{channel.name}{' ' * spacing}{twitter}`\n"
+                    msg = msg + chan_str
+        if msg == '':
+            await ctx.send(embed=error_embed('No subreddits followed in this server!'))
+        else:
+            add_to_start = f"`Channel Name{' ' * 19}Subreddit`\n"
+            msg = add_to_start + msg
+            embed = discord.Embed(title=f'Twitters Followed in {guild.name}!',
+                                  description=msg,
+                                  color=discord.Color.blue())
+            await ctx.send(embed=embed)
+
     async def format_new_tweet(self, tweet_data):
         """Formats a tweet into a nice discord embed"""
         twitter_id = tweet_data["user"]["id_str"]
@@ -193,11 +227,11 @@ class Twitter(commands.Cog):
         channels = get_twitter_channels_following_user(twitter_id)
         for channel in channels:
             channel = self.disclient.get_channel(int(channel))
-            if type(tweet) is tuple:
+            if isinstance(tweet, tuple):
                 await channel.send(embed=tweet[0])
                 await channel.send('\n'.join(tweet[1]))
             else:
-                if type(tweet) is str:
+                if isinstance(tweet, str):
                     await channel.send(tweet)
                 else:
                     await channel.send(embed=tweet)

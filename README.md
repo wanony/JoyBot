@@ -6,27 +6,25 @@ An open source discord bot using [discord.py](https://github.com/Rapptz/discord.
 
 # Features
 
-- Gfycat, Youtube and Image link storage and retreval
-- Group, Sub-group style SQL database
-- User powered content addition
-- Tagging on links for easier references
-- Custom Command creation for memes and reactions
-- Reddit updates from your favourite subreddits
-- Twitter updates from your favourite tweeters
-- Contribution leaderboards and levels
-- Access user information and avatars
-- Mod controls
-- Auditing of links added to the bot
-- ...And more to come!
+-  Gfycat, Youtube and Image link storage and retreval
+-  Group, Sub-group style SQL database
+-  User powered content addition
+-  Tagging on links for easier references
+-  Custom Command creation for memes and reactions
+-  Reddit updates from your favourite subreddits
+-  Twitter updates from your favourite tweeters
+-  Contribution leaderboards and levels
+-  Access user information and avatars
+-  Mod controls
+-  Auditing of links added to the bot
+-  ...And more to come!
 
 # Join The Joy Discord
 
 If you'd like to add Joy to your own server, join the Joy Discord Server!
 
 [![Discord Server](https://discord.com/api/guilds/741066661221761135/embed.png)](https://discord.gg/bJvqnhg)
-
-[comment]: <> ([![Discord Badge] &#40;https://img.shields.io/discord/741066661221761135?color=69a6ef&label=Joy%27s%20Realm&#41;] &#40;https://discord.gg/jmhgVbvau9&#41;)
-- [Discord Invite Link](https://discord.gg/jmhgVbvau9)
+-  [Discord Invite Link](https://discord.gg/jmhgVbvau9)
 
 More chat alternatives to come soon...
 
