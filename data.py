@@ -25,7 +25,7 @@ async def write_cache():
             json.dump(cache_dict, cash, indent=4)
         x += 60
         if x % 600 == 0:
-            dt = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            dt = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             print(f"Written cache variables for 1 hour at {dt}.")
         await asyncio.sleep(60)
 
