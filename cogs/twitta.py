@@ -53,6 +53,11 @@ class TwitterClient:
         user_id = user.id_str
         return user_id
 
+    def get_twitter_user_name(self, twitter_id):
+        user = self.client.get_user(twitter_id)
+        name = user.screen_name
+        return name
+
 
 class MyStreamListener(tweepy.StreamListener):
     def __init__(self):
@@ -166,6 +171,7 @@ class Twitter(commands.Cog):
         for channel in guild.channels:
             if channel.id in chan_dict:
                 for twitter in chan_dict[channel.id]:
+                    twitter = self.client.get_twitter_user_name(twitter)
                     spacing = 39 - len(channel.name + twitter)
                     chan_str = f"`#{channel.name}{' ' * spacing}{twitter}`\n"
                     msg = msg + chan_str
