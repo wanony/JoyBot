@@ -1,5 +1,5 @@
+import asyncio
 import json
-from time import sleep
 import mysql.connector as conn
 import mysql.connector.errors
 import threading
@@ -18,19 +18,19 @@ with open(direc_dict["mods"], 'r') as mods:
 default_prefix = apis_dict["command_prefix"]
 
 
-def write_cache():
+async def write_cache():
     x = 0
     while True:
         with open(direc_dict["cache_variables"], 'w') as cash:
             json.dump(cache_dict, cash, indent=4)
-        sleep(60)
         x += 60
         if x % 600 == 0:
             dt = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             print(f"Written cache variables for 1 hour at {dt}.")
+        await asyncio.sleep(60)
 
 
-write_cache()
+await write_cache()
 
 
 def check_user_is_mod(ctx):
