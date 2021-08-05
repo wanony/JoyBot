@@ -180,3 +180,18 @@ CREATE TABLE twitter_channels (
   FOREIGN KEY (ChannelId) REFERENCES channels (ChannelId),
   FOREIGN KEY (TwitterId) REFERENCES twitter (TwitterId)
 );
+
+CREATE TABLE instagram (
+  InstagramId int NOT NULL AUTO_INCREMENT,
+  Instagram bigint NOT NULL,
+  PRIMARY KEY (InstagramId),
+  UNIQUE (Instagram)
+);
+
+CREATE TABLE instagram_channels (
+  ChannelId int NOT NULL,
+  InstagramId int NOT NULL,
+  PRIMARY KEY (ChannelId, InstagramId),
+  FOREIGN KEY (ChannelId) REFERENCES channels (ChannelId),
+  FOREIGN KEY (InstagramId) REFERENCES instagram (InstagramId)
+);

@@ -1512,6 +1512,83 @@ def get_all_twitter_channels_and_twitters():
     result = cursor.fetchall()
     cursor.close()
     return result
+
+
+def get_insta_users_to_check():
+    cursor = db.cursor()
+    sql = "SELECT Instagram FROM instagram;"
+    cursor.execute(sql)
+    result = [x[0] for x in cursor.fetchall()]
+    cursor.close()
+    return result
+
+
+def add_insta_user_to_db(user_id):
+    cursor = db.cursor()
+    sql = "INSERT INTO instagram (Instagram) VALUES (%s);"
+    val = (user_id,)
+    try:
+        cursor.execute(sql, val)
+    except Exception as e:
+        print(e)
+    rowcount = cursor.rowcount
+    db.commit()
+    cursor.close()
+    return rowcount > 0
+
+
+def follow_insta_user_db(user_id, channel_id):
+    cursor = db.cursor()
+    sql = """INSERT INTO instagram_channels (InstagramId, ChannelId) VALUES(
+             (SELECT InstagramId FROM instagram WHERE Instagram = %s), 
+             (SELECT ChannelId FROM channels WHERE Channel = %s))"""
+    vals = (user_id, channel_id)
+    cursor.execute(sql, vals)
+    result = cursor.rowcount
+    db.commit()
+    cursor.close()
+    return result > 0
+
+
+def get_channels_following_insta_user(user_id):
+    cursor = db.cursor()
+    sql = """SELECT Channel FROM channels
+             JOIN instagram_channels on instagram_channels.ChannelId = channels.ChannelId
+             JOIN instagram on instagram.InstagramId = instagram_channels.InstagramId
+             WHERE instagram.Instagram = %s;"""
+    val = (user_id,)
+    cursor.execute(sql, val)
+    result = [x[0] for x in cursor.fetchall()]
+    cursor.close()
+    return result
+
+
+def unfollow_insta_user_db(user_id, channel_id):
+    cursor = db.cursor()
+    sql = """DELETE instagram_channels FROM instagram_channels
+             JOIN instagram ON instagram.InstagramId = Instagram_channels.InstagramId
+             JOIN channels ON channels.ChannelId = instagram_channels.ChannelId
+             WHERE instagram.Instagram = %s AND channels.Channel = %s;"""
+    vals = (user_id, channel_id)
+    cursor.execute(sql, vals)
+    result = cursor.fetchall()
+    db.commit()
+    cursor.close()
+    return result
+
+
+def get_all_instas_followed_in_guild():
+    cursor = db.cursor()
+    sql = """SELECT Channel, Instagram FROM instagram_channels
+             JOIN channels on channels.ChannelId = instagram_channels.ChannelId 
+             JOIN instagram on instagram.InstagramId = instagram_channels.InstagramId
+             ORDER BY Channel"""
+    cursor.execute(sql)
+    result = cursor.fetchall()
+    cursor.close()
+    return result
+
+
 # def get_all_links_from_group(group_name):
 #     cursor = db.cursor()
 #     sql = """"""

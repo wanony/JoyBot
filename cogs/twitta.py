@@ -83,6 +83,10 @@ class MyStreamListener(tweepy.StreamListener):
         print(status_code)
         return True
 
+    def on_disconnect(self, notice):
+        print(notice)
+        Twitter.restart_stream(self.disclient)
+
 
 class Twitter(commands.Cog):
     """Get new posts from your favourite Subreddits
@@ -91,21 +95,13 @@ class Twitter(commands.Cog):
         """Initialise client."""
         self.disclient = disclient
         self.client = TwitterClient()
-        try:
-            self.current_stream = tweepy.Stream(authenticator(), MyStreamListener(self.disclient))
-            self.current_stream.filter(follow=get_users_to_stream(), is_async=True)
-        except ProtocolError:
-            print('Protocol Error, restarting stream')
-            self.restart_stream()
+        self.current_stream = tweepy.Stream(authenticator(), MyStreamListener(self.disclient))
+        self.current_stream.filter(follow=get_users_to_stream(), is_async=True)
 
     def restart_stream(self):
         """"""
-        try:
-            self.current_stream = tweepy.Stream(authenticator(), MyStreamListener(self.disclient))
-            self.current_stream.filter(follow=get_users_to_stream(), is_async=True)
-        except ProtocolError:
-            print('Protocol Error, restarting stream')
-            self.restart_stream()
+        self.current_stream = tweepy.Stream(authenticator(), MyStreamListener(self.disclient))
+        self.current_stream.filter(follow=get_users_to_stream(), is_async=True)
 
     @commands.command(name='follow_twitter', aliases=['followtwitter', 'twitterfollow'])
     @commands.guild_only()
@@ -182,7 +178,12 @@ class Twitter(commands.Cog):
     async def format_new_tweet(self, raw_data):
         """Formats a tweet into a nice discord embed"""
         tweet_data = json.loads(raw_data)
-        twitter_id = tweet_data["user"]["id_str"]
+        try:
+            twitter_id = tweet_data["user"]["id_str"]
+        except ValueError:
+            print('ValueError in formatting tweet')
+            print(tweet_data)
+            return
         user_name = tweet_data["user"]["name"]
         twitter_at = f'@{tweet_data["user"]["screen_name"]}'
         title = f'{user_name} ({twitter_at})'
