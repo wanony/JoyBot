@@ -16,6 +16,13 @@ def get_and_format_channels_with_sub(sub_name):
     return [x[0] for x in get_channels_with_sub(sub_name)]
 
 
+def create_reddit_instance():
+    reddit = asyncpraw.Reddit(client_id=apis_dict["reddit_id"],
+                              client_secret=apis_dict["reddit_secret"],
+                              user_agent="idk what this is")
+    return reddit
+
+
 class Reddit(commands.Cog):
     """Get new posts from your favourite Subreddits
     """
@@ -28,9 +35,7 @@ class Reddit(commands.Cog):
     async def post_new(self):
         await self.disclient.wait_until_ready()
         while not self.disclient.is_closed():
-            reddit = asyncpraw.Reddit(client_id=apis_dict["reddit_id"],
-                                      client_secret=apis_dict["reddit_secret"],
-                                      user_agent="idk what this is")
+            reddit = create_reddit_instance()
             subs_list = get_and_format_subs_list()
             for subs in subs_list:
                 channels_with_reddit = get_and_format_channels_with_sub(subs)
@@ -56,16 +61,15 @@ class Reddit(commands.Cog):
                     for channels in channels_with_reddit:
                         if subs not in self.recent_posts:
                             self.recent_posts.update({subs: {}})
-                        if channels not in self.recent_posts[subs]:
-                            self.recent_posts[subs].update({channels: []})
-                        lp = self.recent_posts[subs][channels]
+                        if str(channels) not in self.recent_posts[subs]:
+                            self.recent_posts[subs].update({str(channels): []})
                         channel = self.disclient.get_channel(int(channels))
-                        if perm in lp:
-                            continue
-                        else:
+                        channels = str(channels)
+                        if perm not in self.recent_posts[subs][channels]:
+                            self.recent_posts[subs][channels].append(perm)
                             soy = "https://reddit.com"
-                            if len(lp) > 10:
-                                lp.pop(0)
+                            if len(self.recent_posts[subs][channels]) > 10:
+                                self.recent_posts[subs][channels].pop(0)
                             #  Embeds from this point
                             desc = f"Posted by {auth} in **/r/{subs}**"
                             clr = discord.Color.blurple()
@@ -111,7 +115,6 @@ class Reddit(commands.Cog):
                                 except AttributeError:
                                     self.recent_posts[subs].pop(channels)
                                     print(f"Channel deleted")
-                            lp.append(perm)
             await reddit.close()
             await asyncio.sleep(600)
 

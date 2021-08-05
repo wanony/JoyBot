@@ -5,6 +5,7 @@ from discord.ext import commands
 from data import apis_dict, get_twitter_users_from_db, add_twitter_channel_to_db, remove_twitter_user_from_db, \
     add_twitter_to_db, add_channel, get_twitter_channels_following_user, get_all_twitter_channels_and_twitters
 from embeds import error_embed, success_embed
+from urllib3.exceptions import ProtocolError
 
 
 def authenticator():
@@ -76,9 +77,10 @@ class MyStreamListener(tweepy.StreamListener):
         print(f"status: {status}")
 
     def on_error(self, status_code):
-        print(status_code)
         if status_code == 420:
-            return True  # return False disconnects, True tries reconnect
+            print(f'Stream disconnected on Error Code {status_code}')
+            return False  # return False disconnects, True tries reconnect
+        print(status_code)
         return True
 
 
@@ -88,18 +90,22 @@ class Twitter(commands.Cog):
     def __init__(self, disclient):
         """Initialise client."""
         self.disclient = disclient
-        self.current_stream = tweepy.Stream(authenticator(), MyStreamListener(self.disclient))
-        self.current_stream.filter(follow=get_users_to_stream(), is_async=True)
         self.client = TwitterClient()
+        try:
+            self.current_stream = tweepy.Stream(authenticator(), MyStreamListener(self.disclient))
+            self.current_stream.filter(follow=get_users_to_stream(), is_async=True)
+        except ProtocolError:
+            print('Protocol Error, restarting stream')
+            self.restart_stream()
 
     def restart_stream(self):
         """"""
-        self.current_stream = tweepy.Stream(authenticator(), MyStreamListener(self.disclient))
-        self.refilter_stream()
-
-    def refilter_stream(self):
-        """"""
-        self.current_stream.filter(follow=get_users_to_stream(), is_async=True)
+        try:
+            self.current_stream = tweepy.Stream(authenticator(), MyStreamListener(self.disclient))
+            self.current_stream.filter(follow=get_users_to_stream(), is_async=True)
+        except ProtocolError:
+            print('Protocol Error, restarting stream')
+            self.restart_stream()
 
     @commands.command(name='follow_twitter', aliases=['followtwitter', 'twitterfollow'])
     @commands.guild_only()
@@ -135,6 +141,7 @@ class Twitter(commands.Cog):
         channel_id = ctx.channel.id
         user_id = self.client.get_twitter_user_id(user_name)
         if not user_id:
+            # TODO make better twitter embed with images of display pics etc
             await ctx.send(embed=error_embed(f'Twitter user `{user_name}` not found!'))
         removed = remove_twitter_user_from_db(channel_id, user_id)
         if removed:
@@ -172,9 +179,9 @@ class Twitter(commands.Cog):
                                   color=discord.Color.blue())
             await ctx.send(embed=embed)
 
-    async def format_new_tweet(self, tweet_data):
+    async def format_new_tweet(self, raw_data):
         """Formats a tweet into a nice discord embed"""
-        tweet_data = json.loads(tweet_data)
+        tweet_data = json.loads(raw_data)
         twitter_id = tweet_data["user"]["id_str"]
         user_name = tweet_data["user"]["name"]
         twitter_at = f'@{tweet_data["user"]["screen_name"]}'
@@ -213,7 +220,6 @@ class Twitter(commands.Cog):
                                   color=discord.Color.blue())
             tweet.set_footer(text=f'Tweet by {twitter_at}',
                              icon_url=profile_image)
-        self.current_stream.listener.new_tweet = None
         await self.send_new_tweet(tweet, twitter_id)
 
     async def send_new_tweet(self, tweet, twitter_id):

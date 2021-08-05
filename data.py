@@ -15,6 +15,8 @@ with open(direc_dict["cache_variables"]) as cache:
 with open(direc_dict["mods"], 'r') as mods:
     mods_dict = json.load(mods)
 
+insta_settings_file = direc_dict["insta_file_path"]
+
 default_prefix = apis_dict["command_prefix"]
 
 
@@ -27,7 +29,7 @@ async def write_cache():
         if x % 3600 == 0:
             dt = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             print(f"Written cache variables for 1 hour at {dt}.")
-        await asyncio.sleep(60)
+        await asyncio.sleep(20)
 
 
 def check_user_is_mod(ctx):
