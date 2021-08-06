@@ -13,7 +13,7 @@ from data import find_group_id, get_member_links_with_tag, get_member_links, fin
     random_link_from_links, member_link_count, get_links_with_tag, get_groups, \
     get_members_of_group_and_link_count, count_links_of_member, get_all_tags_on_member_and_count, \
     last_three_links, count_links, apis_dict, get_auditing_channels, remove_auditing_channel, find_restricted_user_db, \
-    find_perma_db, cache_dict
+    find_perma_db, cache_dict, random_links_without_tags, get_guild_max_duration
 
 
 class Fun(commands.Cog):
@@ -35,6 +35,7 @@ class Fun(commands.Cog):
     #         with open(direc_dict["recents"], 'w') as rece:
     #             json.dump(recent_dict, rece, indent=4)
     #         await asyncio.sleep(5)
+
     @commands.command()
     async def image(self, ctx, group, idol, *tags):
         """
@@ -152,7 +153,7 @@ class Fun(commands.Cog):
                 await ctx.send(embed=error_embed(f"No content for `{idol.title()}` in `{group}`!"))
                 return
         yt_link = 'https://www.youtu'
-        # TODO THIS SEEMS TO BE BROKEN --------------------------------------------------------------- #
+        # THIS SEEMS TO BE BROKEN --------------------------------------------------------------- #
         link_list = [x[0] for x in link_list if x[0].startswith(yt_link)]
         if not link_list:
             await ctx.send(embed=error_embed(f"No fancams added for `{idol.title()}`!"))
@@ -734,6 +735,61 @@ class Fun(commands.Cog):
         else:
             await ctx.send(f"Nothing for tag `{tag}`")
 
+    @commands.command(aliases=['tagupdater'])
+    async def tag_updater(self, ctx, *args):
+        """Returns a number of random links that do not have tags, for the purpose of tagging them.
+        Optional arguments of group, or idol
+        Examples:
+        .tag_updater 2
+        .tag_updater 4 RedVelvet
+        .tag_updater 4 RedVelvet Joy
+        .tag_updater <number_of_links, default=4> <group_name, optional> <idol_name, optional>"""
+        try:
+            int(args[0])
+            number_of_links = int(args[0])
+            group = args[1]
+            if len(args) >= 3:
+                idol = args[2]
+            else:
+                idol = None
+        except ValueError:
+            number_of_links = 4
+            group = args[0]
+            if len(args) >= 2:
+                idol = args[1]
+            else:
+                idol = None
+        if number_of_links > 4:
+            if ctx.guild:
+                await ctx.author.send(
+                    embed=warning_embed('Please refrain from using tag_updater for more than 4 links in a server!'))
+                number_of_links = 4
+        elif number_of_links > 30:
+            number_of_links = 30
+        links = random_links_without_tags(number_of_links, group, idol)
+        print(links)
+        # link is a tuple of 3 parts, 0: link, 1: member name, 2: group name
+        send = f"The following links have no tags assigned to them!\n"
+        if not links:
+            await ctx.send(embed=warning_embed('No links without tags!'))
+            return
+        if number_of_links <= 4:
+            for link in links:
+                # can send all links in one message
+                send = send + f"{link[2]}'s {link[1]}: {link[0]}\n"
+            await ctx.send(send)
+        else:
+            i = 0
+            for link in links:
+                send = send + f"{link[2]}'s {link[1]}: {link[0]}\n"
+                i += 1
+                if i == 4:
+                    await ctx.send(send)
+                    i = 0
+                    send = ''
+            if send:
+                await ctx.send(send)
+
 # --- Timer Commands --- #
 
     @commands.command(aliases=['nohands'])
@@ -776,7 +832,11 @@ class Fun(commands.Cog):
             group = args[2].lower()
             idol = args[3].lower()
             tags = args[4:]
-
+        if ctx.guild:
+            max_duration = get_guild_max_duration(ctx.guild.id)
+            if max_duration:
+                if duration > max_duration[0]:
+                    duration = max_duration[0]
         if interval < 10:
             interval = 10
         if duration > 30:

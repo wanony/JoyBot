@@ -55,6 +55,7 @@ db = conn.connect(
     buffered=True
 )
 
+
 # --- MAKE DATABASE BACKUP ON DAY CYCLES --- #
 
 
@@ -66,6 +67,7 @@ def backup_database():
 
 
 backup_database()
+
 
 # --- CUSTOM COMMANDS --- #
 
@@ -1267,16 +1269,64 @@ def get_channels_with_sub(reddit_name):
     return result
 
 
-def random_link_from_links():
+def random_link_from_links(limit=1):
     cursor = db.cursor()
     sql = """SELECT Link, members.RomanName, groupz.RomanName FROM links
                 INNER JOIN link_members ON link_members.LinkId = links.LinkId
                 INNER JOIN members ON members.MemberId = link_members.MemberId
                 INNER JOIN groupz ON groupz.GroupId = members.GroupId
                 ORDER BY RAND()
-                LIMIT 1;"""
-    cursor.execute(sql)
+                LIMIT %s;"""
+    val = limit
+    cursor.execute(sql, val)
     result = cursor.fetchone()
+    cursor.close()
+    return result
+
+
+def random_links_without_tags(limit=1, group_name=None, idol_name=None):
+    """Returns a list of tuples"""
+    cursor = db.cursor()
+    if group_name and idol_name:
+        print('group and idol name')
+        sql = """SELECT links.Link, members.RomanName, groupz.RomanName FROM links
+                 JOIN link_members ON link_members.LinkId = links.LinkId
+                 JOIN members ON members.MemberId = link_members.MemberId
+                 JOIN groupz ON groupz.GroupId = members.GroupId
+                 JOIN groupz_aliases ON groupz_aliases.GroupId = groupz.GroupId
+                 JOIN member_aliases ON member_aliases.MemberId = members.MemberId
+                 WHERE links.LinkId NOT IN (SELECT link_tags.LinkId FROM link_tags)
+                 AND groupz_aliases.Alias = %s
+                 AND member_aliases.Alias = %s
+                 ORDER BY RAND()
+                 LIMIT %s;"""
+        val = (group_name, idol_name, limit)
+    elif group_name and not idol_name:
+        print('group not idol')
+        sql = """SELECT links.Link, members.RomanName, groupz.RomanName FROM links
+                 JOIN link_members ON link_members.LinkId = links.LinkId
+                 JOIN members ON members.MemberId = link_members.MemberId
+                 JOIN groupz ON groupz.GroupId = members.GroupId
+                 JOIN groupz_aliases ON groupz_aliases.GroupId = groupz.GroupId
+                 WHERE links.LinkId NOT IN (SELECT link_tags.LinkId FROM link_tags)
+                 AND groupz_aliases.Alias = %s
+                 ORDER BY RAND()
+                 LIMIT %s;"""
+        val = (group_name, limit)
+    else:
+        sql = """SELECT links.Link, members.RomanName, groupz.RomanName FROM links
+                 JOIN link_members ON link_members.LinkId = links.LinkId
+                 JOIN members ON members.MemberId = link_members.MemberId
+                 JOIN groupz ON groupz.GroupId = members.GroupId
+                 WHERE links.LinkId NOT IN (SELECT link_tags.LinkId FROM link_tags)
+                 ORDER BY RAND()
+                 LIMIT %s;"""
+        val = (limit,)
+    try:
+        cursor.execute(sql, val)
+    except Exception as e:
+        print(e)
+    result = [x for x in cursor.fetchall()]
     cursor.close()
     return result
 
@@ -1320,6 +1370,37 @@ def set_guild_prefix_db(guild_id, prefix):
     db.commit()
     cursor.close()
     return rowcount > 0
+
+
+def set_guild_max_timer_db(max_time, guild_id):
+    cursor = db.cursor()
+    sql = """UPDATE guilds
+                SET
+                    TimerLimit = %s
+                WHERE
+                    Guild = %s"""
+    val = (max_time, guild_id,)
+    try:
+        cursor.execute(sql, val)
+    except Exception as e:
+        print(e)
+    rowcount = cursor.rowcount
+    db.commit()
+    cursor.close()
+    return rowcount > 0
+
+
+def get_guild_max_duration(guild_id):
+    cursor = db.cursor()
+    sql = "SELECT TimerLimit FROM guilds WHERE Guild = %s"
+    val = (guild_id,)
+    try:
+        cursor.execute(sql, val)
+    except Exception as e:
+        print(e)
+    result = cursor.fetchone()
+    cursor.close()
+    return result
 
 
 def get_banned_words(guild_id):
@@ -1587,7 +1668,6 @@ def get_all_instas_followed_in_guild():
     result = cursor.fetchall()
     cursor.close()
     return result
-
 
 # def get_all_links_from_group(group_name):
 #     cursor = db.cursor()

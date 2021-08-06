@@ -134,6 +134,7 @@ CREATE TABLE guilds (
   GuildId int NOT NULL AUTO_INCREMENT,
   Guild bigint NOT NULL,
   Prefix varchar(255) NOT NULL,
+  TimerLimit int,
   PRIMARY KEY (GuildId),
   UNIQUE (Guild)
 );

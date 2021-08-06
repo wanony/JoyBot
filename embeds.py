@@ -25,6 +25,13 @@ def warning_embed(message):
     return embed
 
 
+def thanks_embed(message):
+    embed = Embed(title='Thank You!',
+                  description=message,
+                  color=Color.green())
+    return embed
+
+
 def banned_word_embed(guild, word):
     message = f'Your message was deleted in {guild.name} because it contained the banned word {word}.'
     embed = Embed(title='Message Deleted!',

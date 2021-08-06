@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 from data import find_user
 from data import apis_dict
-from embeds import success_embed
+from embeds import success_embed, thanks_embed
 
 
 class General(commands.Cog):
@@ -150,6 +150,19 @@ class General(commands.Cog):
         report_chan = self.disclient.get_channel(apis_dict["reporting_channel"])
         await report_chan.send(embed=embed)
         await ctx.send(embed=success_embed('Link reported!'))
+
+    @commands.command(aliases=['suggest'])
+    async def suggestion(self, ctx, *suggestion):
+        """Make a suggestion for the improvement of Joy as a discord bot!"""
+        suggestion_channel = self.disclient.get_channel(apis_dict['suggestion_channel'])
+        embed = discord.Embed(title='Suggestion!',
+                              description=' '.join(suggestion),
+                              color=discord.Color.blurple())
+        embed.set_footer(text=f"Suggested by {ctx.author}",
+                         icon_url=ctx.author.avatar_url)
+        await suggestion_channel.send(embed=embed)
+        await ctx.send(
+            embed=thanks_embed('Your suggestion has been recorded and it will be looked at as soon as possible!'))
 
 
 def setup(disclient):

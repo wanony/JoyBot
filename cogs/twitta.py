@@ -1,11 +1,11 @@
 import json
 import discord
+from discord.utils import escape_markdown
 import tweepy
 from discord.ext import commands
 from data import apis_dict, get_twitter_users_from_db, add_twitter_channel_to_db, remove_twitter_user_from_db, \
     add_twitter_to_db, add_channel, get_twitter_channels_following_user, get_all_twitter_channels_and_twitters
 from embeds import error_embed, success_embed
-from urllib3.exceptions import ProtocolError
 
 
 def authenticator():
@@ -117,14 +117,14 @@ class Twitter(commands.Cog):
         if user_id:
             add_twitter_to_db(user_id)
         else:
-            await ctx.send(embed=error_embed(f'Twitter user `{user_name}` not found!'))
+            await ctx.send(embed=error_embed(f'Twitter user `{escape_markdown(user_name)}` not found!'))
         added = add_twitter_channel_to_db(channel_id, user_id)
         if added:
-            await ctx.send(embed=success_embed(f'Followed twitter user `{user_name}`!'))
+            await ctx.send(embed=success_embed(f'Followed twitter user `{escape_markdown(user_name)}`!'))
             if user_id not in get_users_to_stream():
                 self.restart_stream()
         else:
-            await ctx.send(embed=error_embed(f'Failed to follow twitter user `{user_name}`!'))
+            await ctx.send(embed=error_embed(f'Failed to follow twitter user `{escape_markdown(user_name)}`!'))
 
     @commands.command(name='unfollow_twitter', aliases=['unfollowtwitter', 'twitterunfollow'])
     @commands.guild_only()
@@ -180,7 +180,7 @@ class Twitter(commands.Cog):
         tweet_data = json.loads(raw_data)
         try:
             twitter_id = tweet_data["user"]["id_str"]
-        except ValueError:
+        except KeyError:
             print('ValueError in formatting tweet')
             print(tweet_data)
             return
