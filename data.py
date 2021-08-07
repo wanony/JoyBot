@@ -1277,7 +1277,7 @@ def random_link_from_links(limit=1):
                 INNER JOIN groupz ON groupz.GroupId = members.GroupId
                 ORDER BY RAND()
                 LIMIT %s;"""
-    val = limit
+    val = (limit,)
     cursor.execute(sql, val)
     result = cursor.fetchone()
     cursor.close()
