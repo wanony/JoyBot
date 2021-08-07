@@ -177,6 +177,8 @@ class Instagram(commands.Cog):
     @commands.guild_only()
     @commands.has_permissions(administrator=True)
     async def follow_insta(self, ctx, user_name):
+        """Follows an Instagram user in this channel.
+        Example: `.follow_insta <username or link>`"""
         if 'instagram.com' in user_name:
             user_name = user_name.split('/')[-1]
         user_id = self.insta.get_user_id(user_name)
@@ -194,6 +196,8 @@ class Instagram(commands.Cog):
     @commands.guild_only()
     @commands.has_permissions(administrator=True)
     async def unfollow_insta(self, ctx, user_name):
+        """Unfollows an Instagram user in this channel.
+        Example: `.unfollow_insta <username or link>`"""
         if 'instagram.com' in user_name:
             user_name = user_name.split('/')[-1]
         user_id = self.insta.get_user_id(user_name)
@@ -209,6 +213,7 @@ class Instagram(commands.Cog):
     @commands.command()
     @commands.guild_only()
     async def instas(self, ctx):
+        """Returns a list of all instagram users followed in this server!"""
         guild = ctx.guild
         chans = get_all_instas_followed_in_guild()
         chan_dict = {}

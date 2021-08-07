@@ -6,9 +6,7 @@ from embeds import success_embed
 
 
 class Custom(commands.Cog):
-    """This category contains commands that can be made
-    by users that are for fun, such a their own memes or
-    reaction gfys or youtube links.
+    """Commands for creating your own custom command, such as a meme!
     """
     def __init__(self, disclient):
         """Initialise client"""

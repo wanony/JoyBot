@@ -19,7 +19,6 @@ from data import find_group_id, get_member_links_with_tag, get_member_links, fin
 class Fun(commands.Cog):
     """All of the commands listed here are for gfys, images, or fancams.
     All groups with multiple word names are written as one word.
-    Example: Red Velvet will become RedVelvet
     """
     def __init__(self, disclient):
         """Initialise client."""
@@ -832,11 +831,13 @@ class Fun(commands.Cog):
             group = args[2].lower()
             idol = args[3].lower()
             tags = args[4:]
+        msg = ''
         if ctx.guild:
             max_duration = get_guild_max_duration(ctx.guild.id)
             if max_duration:
                 if duration > max_duration[0]:
                     duration = max_duration[0]
+                    msg = msg + f'Duration reduced to server max duration of `{max_duration[0]}`.\n'
         if interval < 10:
             interval = 10
         if duration > 30:
@@ -857,7 +858,8 @@ class Fun(commands.Cog):
             checklist.sort()
             author = checklist[-1] + "_"
         t = len(str(author)) - len(str(ctx.author)) + 1
-        await ctx.send(f"This is timer number `{t}` for `{ctx.author}`.")
+        msg = msg + f"This is timer number `{t}` for `{ctx.author}`."
+        await ctx.send(msg)
         loop_and_author = {author: loops}
         self.loops[channel].update(loop_and_author)
         try:

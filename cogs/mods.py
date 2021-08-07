@@ -17,7 +17,7 @@ from embeds import success_embed, error_embed, permission_denied_embed
 
 
 class Owner(commands.Cog):
-    """Commands for owner usage.
+    """Commands for the owner.
     """
     def __init__(self, disclient):
         """Initialise client."""
@@ -130,43 +130,11 @@ class Owner(commands.Cog):
 
 
 class Moderation(commands.Cog):
-    """Commands for moderators.
+    """Commands for Joy moderators.
     """
     def __init__(self, disclient):
         """Initialise client."""
         self.disclient = disclient
-
-    @commands.command()
-    @commands.has_permissions(kick_members=True)
-    async def kick(self, ctx, member: discord.Member, *, reason="None!"):
-        """Kicks a member."""
-        await member.kick(reason=reason)
-        await ctx.send(
-                    f"{member.mention} kicked by {ctx.author} for: {reason}")
-
-    @commands.command()
-    @commands.has_permissions(ban_members=True)
-    async def ban(self, ctx, member: discord.Member, *, reason="None!"):
-        """Bans a member."""
-        await member.ban(reason=reason)
-        await ctx.send(
-                    f"{member.mention} banned by {ctx.author} for: {reason}")
-
-    @commands.command()
-    @commands.has_permissions(manage_messages=True)
-    async def clear(self, ctx, number: int):
-        """Deletes a specified number of messages in the channel
-        the command is invoked in.
-        """
-        channel = ctx.channel
-        await channel.purge(limit=number+1)
-        if number == 1:
-            msg = "Cleared 1 message!"
-        else:
-            msg = f"Cleared `{number}` messages!"
-        await ctx.send(embed=success_embed(msg))
-
-    # --- Commands to moderate content --- #
 
     @commands.command(aliases=['addgroups', 'addgroup', 'add_groups'])
     async def add_group(self, ctx, *args):

@@ -24,7 +24,7 @@ def create_reddit_instance():
 
 
 class Reddit(commands.Cog):
-    """Get new posts from your favourite Subreddits
+    """Get new posts from your favourite Subreddits!
     """
     def __init__(self, disclient):
         """Initialise client."""

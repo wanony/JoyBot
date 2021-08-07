@@ -9,7 +9,6 @@ from embeds import error_embed, permission_denied_embed, banned_word_embed
 
 class Events(commands.Cog):
     """Events that handle user errors and messages.
-    No user commands added here... Yet.
     """
     def __init__(self, disclient):
         """Initialise client."""

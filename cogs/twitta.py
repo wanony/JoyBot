@@ -89,7 +89,7 @@ class MyStreamListener(tweepy.StreamListener):
 
 
 class Twitter(commands.Cog):
-    """Get new posts from your favourite Subreddits
+    """Get new posts from your favourite Twitter users!
     """
     def __init__(self, disclient):
         """Initialise client."""

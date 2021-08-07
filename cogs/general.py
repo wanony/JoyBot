@@ -1,13 +1,12 @@
 import discord
 from discord.ext import commands
-from data import find_user
+from data import find_user, check_user_is_mod
 from data import apis_dict
 from embeds import success_embed, thanks_embed
 
 
 class General(commands.Cog):
-    """
-    General commands that are useful to get information about users or help!
+    """General commands that are useful to get information about users or help!
     """
     def __init__(self, disclient):
         self.disclient = disclient
@@ -22,10 +21,19 @@ class General(commands.Cog):
             halp = discord.Embed(title=titl,
                                  description=desc,
                                  color=discord.Color.blurple())
-            cogs_desc = "\n".join(
-                [f'`{name}` - {cog.__doc__}'
-                 for name, cog in self.disclient.cogs.items()]
-            )
+            cogs_desc = ''
+            # cogs_desc = "\n".join(
+            #     [f'`{name}` - {cog.__doc__}'
+            #      for name, cog in self.disclient.cogs.items()]
+            # )
+            if not check_user_is_mod(ctx):
+                for name, cog in self.disclient.cogs.items():
+                    if name != 'Events' and name != 'Owner' and name != 'Moderation':
+                        cogs_desc = cogs_desc + f'`{name}` - {cog.__doc__}\n'
+            else:
+                for name, cog in self.disclient.cogs.items():
+                    if name != 'Events' and name != 'Owner':
+                        cogs_desc = cogs_desc + f'`{name}` - {cog.__doc__}\n'
             halp.add_field(name='Categories',
                            value=cogs_desc,
                            inline=False)
