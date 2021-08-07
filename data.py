@@ -1333,8 +1333,8 @@ def random_links_without_tags(limit=1, group_name=None, idol_name=None):
 
 def add_guild_db(guild_id):
     cursor = db.cursor()
-    sql = """INSERT INTO guilds(Guild, Prefix) VALUES(%s, %s)"""
-    val = (guild_id, default_prefix)
+    sql = """INSERT INTO guilds(Guild, Prefix, TimerLimit) VALUES(%s, %s, %s)"""
+    val = (guild_id, default_prefix, 10)
     try:
         cursor.execute(sql, val)
     except mysql.connector.errors.IntegrityError:
