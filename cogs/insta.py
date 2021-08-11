@@ -52,24 +52,30 @@ def format_user_feed_result(result):
     link = f"https://www.instagram.com/p/{result['code']}/"
     image_url = None
     if result['media_type'] == 1:
+        # one picture
         for images in result['image_versions2']['candidates']:
             if result['original_width'] == images['width']:
                 image_url = images['url']
+        msg = f'{text}\n{link}'
     elif result['media_type'] == 2:
+        # one video
         image_url = result['image_versions2']['candidates'][0]['url']
+        msg = f'{text}\n{link}'
     else:
+        # multiple photos or videos
         if result['carousel_media'][0]['media_type'] == 1:
             for images in result['carousel_media'][0]['image_versions2']['candidates']:
                 if result['carousel_media'][0]['original_width'] == images['width']:
                     image_url = images['url']
         else:
             image_url = result['carousel_media'][0]['image_versions2']['candidates'][0]['url']
+        msg = f"{text}\n{link} (1/{len(result['carousel_media'])})"
     embed = discord.Embed(title=f'{name} ({username})',
-                          description=f"{text}\n{link}",
+                          description=msg,
                           color=insta_colour)
     if image_url:
         embed.set_image(url=image_url)
-    embed.set_footer(text=f"Posted to instagram by {result['user']['username']}",
+    embed.set_footer(text=f"Posted to Instagram by {result['user']['username']}",
                      icon_url=profile_pic_url)
     return embed
 
@@ -77,6 +83,7 @@ def format_user_feed_result(result):
 class InstaClient:
     def __init__(self):
         self.device_id = None
+        # TODO remove cache dependancy and instead use datetime object in database
         self.min_timestamps = cache_dict["instagram"]["min_timestamps"]
         try:
             if os.path.isfile(insta_settings_file):
@@ -99,10 +106,9 @@ class InstaClient:
         self.cookie_expiry = self.api.cookie_jar.auth_expires
         print(f"Cookie Expiry: {datetime.datetime.fromtimestamp(self.cookie_expiry).strftime('%Y-%m-%dT%H:%M:%SZ')}")
 
-    def get_user_id(self, user_name):
+    def get_user(self, user_name):
         user_info = self.api.username_info(user_name)
-        user_id = user_info['user']['pk']
-        return user_id
+        return user_info
 
     def get_user_name(self, user_id):
         user_info = self.api.user_info(user_id)
@@ -173,7 +179,7 @@ class Instagram(commands.Cog):
                         self.sent_posts[user_str][chan_str].pop(0)
             await asyncio.sleep(600)
 
-    @commands.command()
+    @commands.command(aliases=['followinsta', 'instafollow', 'insta_follow', 'follow_instagram', 'instagram_follow'])
     @commands.guild_only()
     @commands.has_permissions(administrator=True)
     async def follow_insta(self, ctx, user_name):
@@ -181,18 +187,30 @@ class Instagram(commands.Cog):
         Example: `.follow_insta <username or link>`"""
         if 'instagram.com' in user_name:
             user_name = user_name.split('/')[-1]
-        user_id = self.insta.get_user_id(user_name)
+        user = self.insta.get_user(user_name)
+        user_id = user['user']['pk']
+        if not user_id:
+            await ctx.send(embed=error_embed(f'No instagram user found called {escape_markdown(user_name)}!'))
         if user_id:
             add_insta_user_to_db(user_id)
         channel_id = ctx.channel.id
         add_channel(channel_id)
         followed = follow_insta_user_db(user_id, channel_id)
         if followed:
-            await ctx.send(embed=success_embed(f'Followed {user_name}!'))
+            display_name = user['user']['full_name']
+            profile_pic = user['user']['profile_pic_url']
+            link = f"https://www.instagram.com/{user['user']['username']}"
+            msg = f'This channel will now receive updates when {display_name} posts updates at {link}'
+            embed = discord.Embed(title=f'Successfully followed {display_name}',
+                                  description=msg,
+                                  color=insta_colour)
+            embed.set_thumbnail(url=profile_pic)
+            await ctx.send(embed=embed)
         else:
-            await ctx.send(embed=error_embed(f'Failed to follow {user_name}!'))
+            await ctx.send(embed=error_embed(f'{escape_markdown(user_name)} is already followed in this channel!'))
 
-    @commands.command()
+    @commands.command(aliases=[
+        'unfollowinsta', 'instaunfollow', 'insta_unfollow', 'unfollow_instagram', 'instagram_unfollow'])
     @commands.guild_only()
     @commands.has_permissions(administrator=True)
     async def unfollow_insta(self, ctx, user_name):
@@ -200,15 +218,16 @@ class Instagram(commands.Cog):
         Example: `.unfollow_insta <username or link>`"""
         if 'instagram.com' in user_name:
             user_name = user_name.split('/')[-1]
-        user_id = self.insta.get_user_id(user_name)
+        user = self.insta.get_user(user_name)
+        user_id = user['user']['pk']
         if not user_id:
-            await ctx.send(embed=error_embed(f'No instagram user found called {user_name}!'))
+            await ctx.send(embed=error_embed(f'No instagram user found called {escape_markdown(user_name)}!'))
         channel_id = ctx.channel.id
         unfollowed = unfollow_insta_user_db(user_id, channel_id)
         if unfollowed:
-            await ctx.send(embed=success_embed(f'Unfollowed {user_name}!'))
+            await ctx.send(embed=success_embed(f'Unfollowed {escape_markdown(user_name)}!'))
         else:
-            await ctx.send(embed=error_embed(f'Failed to unfollow {user_name}!'))
+            await ctx.send(embed=error_embed(f'Failed to unfollow {escape_markdown(user_name)}!'))
 
     @commands.command()
     @commands.guild_only()
@@ -237,7 +256,7 @@ class Instagram(commands.Cog):
             msg = add_to_start + msg
             embed = discord.Embed(title=f'Instagram Users Followed in {guild.name}!',
                                   description=msg,
-                                  color=discord.Color.blue())
+                                  color=insta_colour)
             await ctx.send(embed=embed)
 
 
