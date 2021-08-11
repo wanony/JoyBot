@@ -142,6 +142,47 @@ def add_link(link, added_by):
     return rowcount
 
 
+def gfy_v2_test(group, idol):
+    """Returns rows of GroupId, MemberId, GroupName, IdolName, Link"""
+    cursor = db.cursor()
+    sql = """SELECT g.GroupId, m.MemberId, g.RomanName, m.RomanName, l.Link FROM links l
+             JOIN link_members lm on l.LinkId = lm.LinkId
+             JOIN members m on lm.MemberId = m.MemberId
+             JOIN member_aliases ma on m.MemberId = ma.MemberId
+             JOIN groupz g on g.GroupId = m.GroupId
+             JOIN groupz_aliases ga on ga.GroupId = g.GroupId
+             WHERE ga.Alias = %s AND ma.Alias = %s;"""
+    vals = (group, idol)
+    try:
+        cursor.execute(sql, vals)
+    except Exception as e:
+        print(e)
+    result = cursor.fetchall()
+    cursor.close()
+    return result
+
+
+def gfy_v2_test_tags(group, idol, tag):
+    cursor = db.cursor()
+    sql = """SELECT g.GroupId, m.MemberId, g.RomanName, m.RomanName, l.Link FROM links l
+             JOIN link_members lm on l.LinkId = lm.LinkId
+             JOIN members m on lm.MemberId = m.MemberId
+             JOIN member_aliases ma on m.MemberId = ma.MemberId
+             JOIN groupz g on g.GroupId = m.GroupId
+             JOIN groupz_aliases ga on ga.GroupId = g.GroupId
+             JOIN link_tags lt on lt.LinkId = l.LinkId
+             JOIN tag_aliases ta on ta.TagId = lt.TagId
+             WHERE ga.Alias = %s AND ma.Alias = %s AND ta.Alias = (%s);"""
+    vals = (group, idol, tag)
+    try:
+        cursor.execute(sql, vals)
+    except Exception as e:
+        print(e)
+    result = cursor.fetchall()
+    cursor.close()
+    return result
+
+
 def count_links():
     """Returns a count of all links, groups, and members."""
     cursor = db.cursor()
@@ -526,7 +567,7 @@ def remove_group(group):
 
 def find_group_id(group_name):
     cursor = db.cursor()
-    sql = """SELECT groupz.GroupId FROM groupz
+    sql = """SELECT groupz.GroupId, RomanName FROM groupz
                 left join groupz_aliases
                     on groupz_aliases.Alias = %s
                 where groupz.GroupId = groupz_aliases.GroupId;"""
@@ -669,7 +710,7 @@ def remove_member(group_id, member_name):
 def find_member_id(group_id, member_name):
     cursor = db.cursor()
     # sql = "SELECT MemberId FROM Members WHERE RomanName = (%s) AND GroupId = (%s)"
-    sql = """SELECT members.MemberId FROM members
+    sql = """SELECT members.MemberId, RomanName FROM members
                 left join member_aliases
                     on member_aliases.MemberId = members.MemberId
                 WHERE alias = %s AND members.GroupId = %s"""
@@ -1624,7 +1665,10 @@ def follow_insta_user_db(user_id, channel_id):
              (SELECT InstagramId FROM instagram WHERE Instagram = %s), 
              (SELECT ChannelId FROM channels WHERE Channel = %s))"""
     vals = (user_id, channel_id)
-    cursor.execute(sql, vals)
+    try:
+        cursor.execute(sql, vals)
+    except Exception as e:
+        print(e)
     result = cursor.rowcount
     db.commit()
     cursor.close()
@@ -1652,10 +1696,10 @@ def unfollow_insta_user_db(user_id, channel_id):
              WHERE instagram.Instagram = %s AND channels.Channel = %s;"""
     vals = (user_id, channel_id)
     cursor.execute(sql, vals)
-    result = cursor.fetchall()
+    rowcount = cursor.rowcount
     db.commit()
     cursor.close()
-    return result
+    return rowcount > 0
 
 
 def get_all_instas_followed_in_guild():
@@ -1669,6 +1713,97 @@ def get_all_instas_followed_in_guild():
     cursor.close()
     return result
 
+
+def add_twitch_channel_to_db(twitch_id):
+    cursor = db.cursor()
+    sql = "INSERT INTO twitch(Twitch, LastLive) VALUES (%s, NOW());"
+    val = (twitch_id,)
+    try:
+        cursor.execute(sql, val)
+    except Exception as e:
+        print(e)
+    db.commit()
+    rowcount = cursor.rowcount
+    cursor.close()
+    return rowcount > 0
+
+
+def follow_twitch_channel_db(channel_id, twitch_id):
+    cursor = db.cursor()
+    sql = """INSERT INTO twitch_channels(ChannelId, TwitchId) VALUES(
+             (SELECT ChannelId FROM channels WHERE Channel = %s),
+             (SELECT TwitchId FROM twitch WHERE Twitch = %s))"""
+    val = (channel_id, twitch_id)
+    cursor.execute(sql, val)
+    db.commit()
+    rowcount = cursor.rowcount
+    cursor.close()
+    return rowcount > 0
+
+
+def unfollow_twitch_channel_db(channel_id, twitch_id):
+    cursor = db.cursor()
+    sql = """DELETE tc FROM twitch_channels tc
+             JOIN channels c ON c.ChannelId = tc.ChannelId
+             JOIN twitch t ON t.TwitchId = tc.TwitchId
+             WHERE c.Channel = %s AND t.Twitch = %s"""
+    val = (channel_id, twitch_id)
+    cursor.execute(sql, val)
+    db.commit()
+    rowcount = cursor.rowcount
+    cursor.close()
+    return rowcount > 0
+
+
+def get_all_twitch_channels_to_check(hour=1):
+    """Returns a list of all twitch ids that have not been live in the last hour"""
+    cursor = db.cursor()
+    sql = """SELECT Twitch, LastLive FROM twitch WHERE LastLive < NOW() - INTERVAL %s HOUR;"""
+    val = (str(hour),)
+    cursor.execute(sql, val)
+    result = dict(cursor.fetchall())
+    cursor.close()
+    return result
+
+
+def get_channels_following_twitch_stream(twitch_id):
+    cursor = db.cursor()
+    sql = """SELECT Channel FROM channels c
+             JOIN twitch_channels tc ON c.ChannelId = tc.ChannelId
+             JOIN twitch t ON t.TwitchId = tc.TwitchId
+             WHERE t.Twitch = %s"""
+    val = (twitch_id,)
+    cursor.execute(sql, val)
+    result = [x[0] for x in cursor.fetchall()]
+    cursor.close()
+    return result
+
+
+def get_all_twitch_followed_in_guild():
+    cursor = db.cursor()
+    sql = """SELECT Channel, Twitch FROM twitch_channels
+             JOIN channels on channels.ChannelId = twitch_channels.ChannelId 
+             JOIN twitch on twitch.TwitchId = twitch_channels.TwitchId
+             ORDER BY Channel"""
+    cursor.execute(sql)
+    result = cursor.fetchall()
+    cursor.close()
+    return result
+
+
+def update_twitch_last_live(twitch_id, time):
+    cursor = db.cursor()
+    sql = """UPDATE twitch
+                SET
+                    LastLive = %s
+                WHERE
+                    Twitch = %s"""
+    val = (time, twitch_id)
+    cursor.execute(sql, val)
+    rowcount = cursor.rowcount
+    db.commit()
+    cursor.close()
+    return rowcount > 0
 # def get_all_links_from_group(group_name):
 #     cursor = db.cursor()
 #     sql = """"""

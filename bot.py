@@ -14,11 +14,11 @@ def get_prefix(disclient, message):
     if guild:
         prefix = get_prefix_db(guild.id)
         if prefix:
-            return prefix
+            return commands.when_mentioned_or(*prefix)(disclient, message)
         else:
-            return default_prefix
+            return commands.when_mentioned_or(*default_prefix)(disclient, message)
     else:
-        return default_prefix
+        return commands.when_mentioned_or(*default_prefix)(disclient, message)
 
 
 disclient = commands.Bot(

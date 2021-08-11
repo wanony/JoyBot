@@ -6,18 +6,20 @@ An open source discord bot using [discord.py](https://github.com/Rapptz/discord.
 
 # Features
 
--  Gfycat, Youtube and Image link storage and retreval
--  Group, Sub-group style SQL database
--  User powered content addition
--  Tagging on links for easier references
--  Custom Command creation for memes and reactions
--  Reddit updates from your favourite subreddits
--  Twitter updates from your favourite tweeters
--  Contribution leaderboards and levels
--  Access user information and avatars
--  Mod controls
--  Auditing of links added to the bot
--  ...And more to come!
+- Gfycat, Youtube and Image link storage and retreval
+- Group, Sub-group style SQL database
+- User powered content addition
+- Tagging on links for easier references
+- Custom Command creation for memes and reactions
+- Reddit updates from your favourite subreddits
+- Twitter updates from your favourite tweeters
+- Instagram updates from your favourite photographers
+- Twitch livestream pings from your favourite streamers
+- Contribution leaderboards and levels
+- Access user information and avatars
+- Mod controls
+- Auditing of links added to the bot
+- ...And more to come!
 
 # Join The Joy Discord
 

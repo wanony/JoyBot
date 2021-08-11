@@ -1,3 +1,4 @@
+import discord
 from discord.ext import commands
 
 from bot import get_prefix
@@ -29,11 +30,27 @@ class Events(commands.Cog):
                 if w:
                     await message.delete()
                     await message.author.send(banned_word_embed(message.guild, w))
-        if msg[0].startswith(get_prefix(self.disclient, message)):
-            command = msg[0][1:]
-            command_list = get_commands()
-            if command in command_list:
-                await message.channel.send(command_list[command])
+        try:
+            if msg[0].startswith(get_prefix(self.disclient, message)):
+                command = msg[0][1:]
+                command_list = get_commands()
+                if command in command_list:
+                    await message.channel.send(command_list[command])
+        except TypeError:
+            pass
+        try:
+            if message.mentions[0] == self.disclient.user and len(message.content.split(" ")) == 1:
+                if message.guild:
+                    msg = f'My prefix in this server is `{get_prefix(self.disclient, message)[-1]}`!'
+                else:
+                    msg = f'My prefix is `{get_prefix(self.disclient, message)[-1]}`!'
+                mention = f'\nYou can always mention me to use the commands, try @{self.disclient.user.name} help'
+                embed = discord.Embed(title=f'My Prefixes',
+                                      description=msg + mention,
+                                      color=discord.Color.blurple())
+                await message.channel.send(embed=embed)
+        except IndexError:
+            pass
 
     @commands.Cog.listener()
     async def on_command(self, ctx):
@@ -58,12 +75,15 @@ class Events(commands.Cog):
                         print('user wrote some ...')
                     else:
                         await ctx.send(embed=error_embed("Command not found!"))
-                        raise error
+                        # raise error
         if isinstance(error, commands.MissingRequiredArgument):
-            await ctx.send(embed=error_embed('Missing argument!'))
+            await ctx.send(embed=error_embed(f'Missing argument! {error}'))
         # always raise errors
         if isinstance(error, commands.CommandInvokeError):
-            await ctx.send(embed=error_embed('Something went wrong!'))
+            if ctx.command.name == 'timer':
+                return
+            else:
+                await ctx.send(embed=error_embed('Something went wrong!'))
         if isinstance(error, commands.NoPrivateMessage):
             await ctx.send(embed=error_embed('This command does not work in DMs!'))
             return
