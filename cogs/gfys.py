@@ -930,15 +930,15 @@ class Fun(commands.Cog):
     async def _destroy_timers(self, ctx, member: discord.Member):
         """Force all timers started by a user to end.
         Usage (invoke this command in the same channel that the timer is running):
-        .stop_user_timer @<user>"""
-        channel = ctx.channel.id
-        member_id = member.id
+        .force_stop @<user>
+        .force_stop <User ID>"""
+        channel = str(ctx.channel.id)
+        member_id = str(member.id)
         destroyed = 0
-        if channel in self.loops.keys():
-            if member_id in self.loops[channel].keys():
-                for x in self.loops[channel][member_id].keys():
-                    self.loops[channel][member_id].pop(x)
-                    destroyed += 1
+        if channel in self.loops:
+            if member_id in self.loops[channel]:
+                destroyed += len(self.loops[channel][member_id])
+                del self.loops[channel][member_id]
             else:
                 await ctx.send(embed=error_embed(f'No timers running for `{member}`!'))
         else:
