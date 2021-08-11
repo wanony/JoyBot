@@ -22,7 +22,6 @@ class Twitch(commands.Cog):
         self.twitch.authenticate_app([])
         self.time_format = '%Y-%m-%d %H:%M:%S'
 
-    @commands.Cog.listener()
     async def get_online_streams(self):
         await self.disclient.wait_until_ready()
         print('Looking for live Twitch streams!')
@@ -46,8 +45,8 @@ class Twitch(commands.Cog):
                     username = stream['user_name']
                     desc = stream['title']
                     msg = f"`{username}` is live! {link}"
-                    image_url = stream['thumbnail_url'].format(width=960,
-                                                               height=540)
+                    image_url = f"""{stream['thumbnail_url'].format(
+                                     width=852, height=480)}?{str(datetime.datetime.now().timestamp())}"""
                     embed = discord.Embed(title=msg,
                                           description=desc,
                                           color=discord.Color.purple())
@@ -76,8 +75,10 @@ class Twitch(commands.Cog):
             # delay 60 seconds before checking again
             await asyncio.sleep(60)
 
-    @commands.command()
-    async def follow_stream(self, ctx, stream):
+    @commands.command(aliases=['followstream', 'follow_stream', 'followtwitch'])
+    async def follow_twitch(self, ctx, stream):
+        """Follows a twitch stream in this channel! Live updates will be posted here.
+        .follow_twitch <username or link>"""
         channel = ctx.channel.id
         if "twitch.tv" in stream:
             stream = stream.split("/")[-1].lower()
@@ -106,8 +107,10 @@ class Twitch(commands.Cog):
             else:
                 await ctx.send(embed=error_embed(f"Failed to follow {stream} in this channel!"))
 
-    @commands.command()
-    async def unfollow_stream(self, ctx, stream):
+    @commands.command(aliases=['unfollowstream', 'unfollow_stream', 'unfollowtwitch'])
+    async def unfollow_twitch(self, ctx, stream):
+        """Unfollows a twitch stream followed in this channel.
+        .unfollow_twitch <username or link>"""
         channel = ctx.channel.id
         if "twitch.tv" in stream:
             stream = stream.split("/")[-1].lower()
@@ -125,10 +128,10 @@ class Twitch(commands.Cog):
             else:
                 await ctx.send(embed=error_embed(f"Failed to unfollow {stream} in this channel!"))
 
-    @commands.command()
+    @commands.command(name='twitch', aliases=['twitchs', 'twitches'])
     @commands.guild_only()
     async def twitches(self, ctx):
-        """Returns a list of all instagram users followed in this server!"""
+        """Returns a list of all twitch users followed in this server!"""
         guild = ctx.guild
         chans = get_all_twitch_followed_in_guild()
         chan_dict = {}
