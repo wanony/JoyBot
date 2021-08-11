@@ -46,7 +46,10 @@ def format_user_feed_result(result):
         username = f"@{escape_markdown(result['user']['username'])}"
     else:
         username = f"@{result['user']['username']}"
-    text = result["caption"]["text"]
+    try:
+        text = result["caption"]["text"]
+    except TypeError:
+        text = ''
     name = result['user']['full_name']
     profile_pic_url = result['user']['profile_pic_url']
     link = f"https://www.instagram.com/p/{result['code']}/"
