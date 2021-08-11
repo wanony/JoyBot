@@ -47,10 +47,9 @@ class TwitterClient:
         """Create client."""
         self.client = tweepy.API(authenticator())
 
-    def get_twitter_user_id(self, user_name):
+    def get_twitter_user(self, user_name):
         user = self.client.get_user(user_name)
-        user_id = user.id_str
-        return user_id
+        return user
 
     def get_twitter_user_name(self, twitter_id):
         user = self.client.get_user(twitter_id)
@@ -113,15 +112,23 @@ class Twitter(commands.Cog):
             user_name = user_name.split('/')[-1]
         channel_id = ctx.channel.id
         add_channel(channel_id)
-        user_id = self.client.get_twitter_user_id(user_name)
-        if user_id:
-            add_twitter_to_db(user_id)
+        user = self.client.get_twitter_user(user_name)
+        if user:
+            add_twitter_to_db(user.id_str)
         else:
             await ctx.send(embed=error_embed(f'Twitter user `{escape_markdown(user_name)}` not found!'))
-        added = add_twitter_channel_to_db(channel_id, user_id)
+        added = add_twitter_channel_to_db(channel_id, user.id_str)
         if added:
-            await ctx.send(embed=success_embed(f'Followed twitter user `{escape_markdown(user_name)}`!'))
-            if user_id not in get_users_to_stream():
+            icon_url = user.profile_image_url
+            display_name = user.name
+            link = f'https://twitter.com/{user.screen_name}'
+            msg = f'This channel will now receive updates when {display_name} tweets at {link}'
+            embed = discord.Embed(title=f'Successfully followed {escape_markdown(display_name)}',
+                                  description=escape_markdown(msg),
+                                  color=discord.Color.blue())
+            embed.set_thumbnail(url=icon_url)
+            await ctx.send(embed=embed)
+            if user.id_str not in get_users_to_stream():
                 self.restart_stream()
         else:
             await ctx.send(embed=error_embed(f'Failed to follow twitter user `{escape_markdown(user_name)}`!'))
@@ -135,15 +142,15 @@ class Twitter(commands.Cog):
         if 'twitter.com' in user_name:
             user_name = user_name.split('/')[-1]
         channel_id = ctx.channel.id
-        user_id = self.client.get_twitter_user_id(user_name)
-        if not user_id:
+        user = self.client.get_twitter_user(user_name)
+        if not user.id_str:
             # TODO make better twitter embed with images of display pics etc
-            await ctx.send(embed=error_embed(f'Twitter user `{user_name}` not found!'))
-        removed = remove_twitter_user_from_db(channel_id, user_id)
+            await ctx.send(embed=error_embed(f'Twitter user `{escape_markdown(user_name)}` not found!'))
+        removed = remove_twitter_user_from_db(channel_id, user.id_str)
         if removed:
-            await ctx.send(embed=success_embed(f'Unfollowed twitter user `{user_name}`!'))
+            await ctx.send(embed=success_embed(f'Unfollowed twitter user `{escape_markdown(user_name)}`!'))
         else:
-            await ctx.send(embed=error_embed(f'Failed to unfollow twitter user `{user_name}`!'))
+            await ctx.send(embed=error_embed(f'Failed to unfollow twitter user `{escape_markdown(user_name)}`!'))
 
     @commands.command()
     @commands.guild_only()
@@ -184,8 +191,8 @@ class Twitter(commands.Cog):
             print('ValueError in formatting tweet')
             print(tweet_data)
             return
-        user_name = tweet_data["user"]["name"]
-        twitter_at = f'@{tweet_data["user"]["screen_name"]}'
+        user_name = escape_markdown(tweet_data["user"]["name"])
+        twitter_at = f'@{escape_markdown(tweet_data["user"]["screen_name"])}'
         title = f'{user_name} ({twitter_at})'
         profile_image = tweet_data["user"]["profile_image_url_https"]
         text = tweet_data["text"]
