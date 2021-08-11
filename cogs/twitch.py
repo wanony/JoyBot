@@ -76,6 +76,8 @@ class Twitch(commands.Cog):
             await asyncio.sleep(60)
 
     @commands.command(aliases=['followstream', 'follow_stream', 'followtwitch'])
+    @commands.guild_only()
+    @commands.has_permissions(administrator=True)
     async def follow_twitch(self, ctx, stream):
         """Follows a twitch stream in this channel! Live updates will be posted here.
         .follow_twitch <username or link>"""
@@ -108,6 +110,8 @@ class Twitch(commands.Cog):
                 await ctx.send(embed=error_embed(f"Failed to follow {stream} in this channel!"))
 
     @commands.command(aliases=['unfollowstream', 'unfollow_stream', 'unfollowtwitch'])
+    @commands.guild_only()
+    @commands.has_permissions(administrator=True)
     async def unfollow_twitch(self, ctx, stream):
         """Unfollows a twitch stream followed in this channel.
         .unfollow_twitch <username or link>"""
