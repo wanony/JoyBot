@@ -196,3 +196,19 @@ CREATE TABLE instagram_channels (
   FOREIGN KEY (ChannelId) REFERENCES channels (ChannelId),
   FOREIGN KEY (InstagramId) REFERENCES instagram (InstagramId)
 );
+
+CREATE TABLE twitch (
+  TwitchId int NOT NULL AUTO_INCREMENT,
+  Twitch bigint NOT NULL,
+  LastLive datetime NOT NULL,
+  PRIMARY KEY (TwitchId),
+  UNIQUE (Twitch)
+);
+
+CREATE TABLE twitch_channels (
+  ChannelId int NOT NULL,
+  TwitchId int NOT NULL,
+  PRIMARY KEY (ChannelId, TwitchId),
+  FOREIGN KEY (ChannelId) REFERENCES channels (ChannelId),
+  FOREIGN KEY (TwitchId) REFERENCES twitch (TwitchId)
+);
