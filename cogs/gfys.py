@@ -20,23 +20,18 @@ from data import find_group_id, get_member_links_with_tag, get_member_links, fin
 
 
 def is_restricted():
-    def restricted(ctx):
-        if ctx.guild:
-            x = find_restricted_user_db(ctx.guild.id, ctx.author.id)
-            if x:
-                return False
-        return True
-    return commands.check(restricted)
+    async def is_restricted_predicate(ctx):
+        if ctx.guild is None:
+            return True
+        x = find_restricted_user_db(ctx.guild.id, ctx.author.id)
+        return False if x else True
+    return commands.check(is_restricted_predicate)
 
 
 def is_perma():
     async def perma(ctx):
-        find_perma_db(ctx.author.id)
-        if perma:
-            await ctx.author.send(embed=perma_embed())
-            return False
-        else:
-            return True
+        x = find_perma_db(ctx.author.id)
+        return False if x else True
     return commands.check(perma)
 
 
