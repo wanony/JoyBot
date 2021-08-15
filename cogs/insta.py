@@ -3,10 +3,12 @@ import datetime
 import json
 import os
 import asyncio
+import pyshorteners
 
 import discord
 from discord.utils import escape_markdown
-from instagram_private_api import Client, ClientLoginRequiredError, ClientCookieExpiredError
+from instagram_private_api import Client, ClientLoginRequiredError, ClientCookieExpiredError, \
+    ClientChallengeRequiredError
 from instagram_private_api_extensions.pagination import page
 from discord.ext import commands
 from data import apis_dict, insta_settings_file, get_insta_users_to_check, get_channels_following_insta_user, \
@@ -54,6 +56,7 @@ def format_user_feed_result(result):
     profile_pic_url = result['user']['profile_pic_url']
     link = f"https://www.instagram.com/p/{result['code']}/"
     image_url = None
+    links = []
     if result['media_type'] == 1:
         # one picture
         for images in result['image_versions2']['candidates']:
@@ -66,13 +69,23 @@ def format_user_feed_result(result):
         msg = f'{text}\n{link}'
     else:
         # multiple photos or videos
-        if result['carousel_media'][0]['media_type'] == 1:
-            for images in result['carousel_media'][0]['image_versions2']['candidates']:
-                if result['carousel_media'][0]['original_width'] == images['width']:
-                    image_url = images['url']
-        else:
-            image_url = result['carousel_media'][0]['image_versions2']['candidates'][0]['url']
-        msg = f"{text}\n{link} (1/{len(result['carousel_media'])})"
+        short = pyshorteners.Shortener()
+        for i in range(len(result['carousel_media'])):
+            if result['carousel_media'][i]['media_type'] == 1:
+                for images in result['carousel_media'][i]['image_versions2']['candidates']:
+                    if result['carousel_media'][i]['original_width'] == images['width']:
+                        image_url = images['url']
+                        links.append(short.tinyurl.short(image_url))
+            else:
+                image_url = result['carousel_media'][0]['image_versions2']['candidates'][0]['url']
+                links.append(image_url)
+        msg = f"{text}\n{link}"
+        embed = discord.Embed(title=f'{name} ({username})',
+                              description=msg,
+                              color=insta_colour)
+        embed.set_footer(text=f"Posted to Instagram by {result['user']['username']}",
+                         icon_url=profile_pic_url)
+        return embed, links
     embed = discord.Embed(title=f'{name} ({username})',
                           description=msg,
                           color=insta_colour)
@@ -84,9 +97,9 @@ def format_user_feed_result(result):
 
 
 class InstaClient:
-    def __init__(self):
+    def __init__(self, disclient):
         self.device_id = None
-        # TODO remove cache dependancy and instead use datetime object in database
+        self.disclient = disclient
         self.min_timestamps = cache_dict["instagram"]["min_timestamps"]
         try:
             if os.path.isfile(insta_settings_file):
@@ -106,6 +119,11 @@ class InstaClient:
                               apis_dict["instagram_secret"],
                               device_id=self.device_id,
                               on_login=lambda x: onlogin_callback(x, insta_settings_file))
+        except ClientChallengeRequiredError:
+            msg = 'Client Challenge Required Error, please log in manually to Instagram Captcha required.'
+            channel = self.disclient.get_channel(apis_dict['error_channel'])
+            owner = self.disclient.get_user(107215130785243136)
+            self.disclient.loop.create_task(channel.send(f'{owner.mention} {msg}'))
         self.cookie_expiry = self.api.cookie_jar.auth_expires
         print(f"Cookie Expiry: {datetime.datetime.fromtimestamp(self.cookie_expiry).strftime('%Y-%m-%dT%H:%M:%SZ')}")
 
@@ -151,7 +169,7 @@ class Instagram(commands.Cog):
         """Initialise client."""
         self.disclient = disclient
         self.sent_posts = cache_dict["instagram"]["sent_posts"]
-        self.insta = InstaClient()
+        self.insta = InstaClient(self.disclient)
         self.disclient.loop.create_task(self.check_for_new_posts())
 
     async def check_for_new_posts(self):
@@ -176,7 +194,14 @@ class Instagram(commands.Cog):
                     if info['id'] not in self.sent_posts[user_str][chan_str]:
                         channel = self.disclient.get_channel(channels)
                         refined = format_user_feed_result(info)
-                        await channel.send(embed=refined)
+                        if isinstance(refined, discord.Embed):
+                            await channel.send(embed=refined)
+                        else:
+                            await channel.send(embed=refined[0])
+                            i = 0
+                            while i < (len(refined[1])):
+                                await channel.send('\n'.join(refined[1][i:i + 4]))
+                                i += 4
                         self.sent_posts[user_str][chan_str].append(info['id'])
                     if len(self.sent_posts[user_str][chan_str]) > 5:
                         self.sent_posts[user_str][chan_str].pop(0)

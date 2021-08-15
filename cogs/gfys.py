@@ -497,10 +497,12 @@ class Fun(commands.Cog):
             self.recent_posts[group][idol].append(finale)
         return finale
 
-    @commands.command(name='gfy')
+    @commands.command(name='gfy', aliases=['gif', 'gyf', 'jif'])
     @is_restricted()
     async def _gfyv2(self, ctx, group, idol, *tags):
-        """reworked gfy command"""
+        """Returns a gfy from the requested group and idol!
+        Examples: `.gfy <group> <idol>`, `.gfy RV Joy`
+        You can also add tags after the idol arguement"""
         group = group.lower()
         idol = idol.lower()
         tags = tags
@@ -543,9 +545,20 @@ class Fun(commands.Cog):
     @is_restricted()
     async def tags(self, ctx):  # link=None
         """Returns a list of the tags!"""
-        tag_list = [x[0] for x in get_all_tag_names()]
-        msg = f"`{format_list(tag_list)}`\nSome tags have aliases, to check these try `.tagalias <tag>`"
+        tag_list = [x[0] for x in get_all_tag_names() if len(x[0]) != 6 and not x[0].isdecimal()]
+        msg = f"`{format_list(tag_list)}`\nSome tags have aliases, to check these try `.tagalias <tag>`\n" \
+              f"Dates are also available, check out `.dates` to see them!"
         embed = discord.Embed(title="Tags:",
+                              description=msg,
+                              color=discord.Color.blurple())
+        await ctx.send(embed=embed)
+
+    @commands.command()
+    @is_restricted()
+    async def dates(self, ctx):
+        date_list = [x[0] for x in get_all_tag_names() if len(x[0]) == 6 and x[0].isdecimal()]
+        msg = f"`{format_list(date_list)}`"
+        embed = discord.Embed(title="Dates:",
                               description=msg,
                               color=discord.Color.blurple())
         await ctx.send(embed=embed)

@@ -16,6 +16,20 @@ from data import remove_tag, check_user_is_mod, check_user_is_owner
 from embeds import success_embed, error_embed, permission_denied_embed
 
 
+def is_owner():
+    def check_owner(ctx):
+        x = check_user_is_owner(ctx)
+        return True if x else False
+    return commands.check(check_owner)
+
+
+def is_mod():
+    async def check_mod(ctx):
+        x = check_user_is_mod(ctx)
+        return True if x else False
+    return commands.check(check_mod)
+
+
 class Owner(commands.Cog):
     """Commands for the owner.
     """
@@ -24,19 +38,16 @@ class Owner(commands.Cog):
         self.disclient = disclient
 
     @commands.command(name='muc', aliases=['merge_user_cont', 'mergeusercont'])
+    @is_owner()
     async def merge_user_contribution(self, ctx, member1: discord.Member, member2: discord.Member):
         """Add contribution from first arguement to second argument"""
-        if not check_user_is_owner(ctx):
-            await ctx.send(embed=permission_denied_embed())
-            return
         add_cont_from_one_user_to_other(member1.id, member2.id)
+        ctx.send(embed=success_embed('Merged user contribution'))
 
     @commands.command()
+    @is_owner()
     async def remove_moderator(self, ctx, member: discord.Member):
         """Add user to moderator list."""
-        if not check_user_is_owner(ctx):
-            await ctx.send(embed=permission_denied_embed())
-            return
         removed = remove_moderator(member.id)
         if removed:
             await ctx.send(embed=success_embed(f'{member} is no longer a moderator!'))
@@ -44,11 +55,9 @@ class Owner(commands.Cog):
             await ctx.send(embed=error_embed(f'{member} is not a moderator!'))
 
     @commands.command()
+    @is_owner()
     async def add_moderator(self, ctx, member: discord.Member):
         """Add user to moderator list."""
-        if not check_user_is_owner(ctx):
-            await ctx.send(embed=permission_denied_embed())
-            return
         added = add_moderator(member.id)
         if added:
             await ctx.send(embed=success_embed(f'{member} is now a moderator!'))
@@ -56,11 +65,9 @@ class Owner(commands.Cog):
             await ctx.send(embed=error_embed(f'{member} is already a moderator!'))
 
     @commands.command()
+    @is_owner()
     async def reload(self, ctx, cog_name=None):
         """Reload cog."""
-        if not check_user_is_owner(ctx):
-            await ctx.send(embed=permission_denied_embed())
-            return
         embed = discord.Embed(title='Reloading Results',
                               description='\uFEFF',
                               color=discord.Color.blurple())
@@ -106,11 +113,9 @@ class Owner(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.command()
+    @is_owner()
     async def perma_user(self, ctx, user_id):
         """Stops user from added anything to the bot"""
-        if not check_user_is_owner(ctx):
-            await ctx.send(embed=permission_denied_embed())
-            return
         perma = perma_user_db(user_id)
         if perma:
             await ctx.send(embed=success_embed("User successfully perma'd."))
@@ -118,10 +123,9 @@ class Owner(commands.Cog):
             await ctx.send(embed=error_embed("Failed to perma user."))
 
     @commands.command()
+    @is_owner()
     async def remove_perma_user(self, ctx, user_id):
         """Removes user from perma ban"""
-        if not check_user_is_owner(ctx):
-            return
         unperma = remove_perma_user_db(user_id)
         if unperma:
             await ctx.send(embed=success_embed("User un-perma'd."))
@@ -137,11 +141,9 @@ class Moderation(commands.Cog):
         self.disclient = disclient
 
     @commands.command(aliases=['addgroups', 'addgroup', 'add_groups'])
+    @is_mod()
     async def add_group(self, ctx, *args):
         """Adds a group or list of groups"""
-        if not check_user_is_mod(ctx):
-            await ctx.send(embed=permission_denied_embed())
-            return
         group_list = args
         if not group_list:
             await ctx.send(embed=error_embed('No group(s) given!'))
@@ -173,15 +175,13 @@ class Moderation(commands.Cog):
                 await ctx.send(embed=error_embed(msg))
 
     @commands.command(aliases=['addgroupalias'])
+    @is_mod()
     async def add_group_alias(self, ctx, group, *aliases):
         """Adds an alias to an existing group that can then be used to
         reference the group in other commands. A list of aliases can be
         passed through in one command, but only one group.
         Example: .add_group_alias redvelvet rv
         Example: .add_group_alias <group> <alias1> <alias2>"""
-        if not check_user_is_mod(ctx):
-            await ctx.send(embed=permission_denied_embed())
-            return
         group = group.lower()
         added_aliases = []
         invalid_aliases = []
@@ -208,14 +208,12 @@ class Moderation(commands.Cog):
             await ctx.send(embed=error_embed(msg))
 
     @commands.command(aliases=['delgroupalias'])
+    @is_mod()
     async def delete_group_alias(self, ctx, group, *aliases):
         """Removes an alias from an existing group.
         A list of aliases can be passed through in one command, but only one group.
         Example: .remove_group_alias redvelvet rv
         Example: .remove_group_alias <group> <alias1> <alias2>"""
-        if not check_user_is_mod(ctx):
-            await ctx.send(embed=permission_denied_embed())
-            return
         group = group.lower()
         removed_aliases = []
         invalid_aliases = []
@@ -242,11 +240,9 @@ class Moderation(commands.Cog):
             await ctx.send(embed=error_embed(msg))
 
     @commands.command(aliases=['addidols', 'addidol', 'add_idol'])
+    @is_mod()
     async def add_idols(self, ctx, group, *args):
         """Adds an idol to an already existing group"""
-        if not check_user_is_mod(ctx):
-            await ctx.send(embed=permission_denied_embed())
-            return
         group = group.lower()
         g_id = find_group_id(group)
         if not g_id:
@@ -284,15 +280,13 @@ class Moderation(commands.Cog):
                 await ctx.send(embed=error_embed(msg))
 
     @commands.command(aliases=['addidolalias'])
+    @is_mod()
     async def add_idol_alias(self, ctx, group, idol, *aliases):
         """Adds an alias to an idol.
         A list of aliases can be passed through in one command, but only one idol.
         Please ensure you use the members name, and not an alias for the second argument.
         Example: .add_idol_alias redvelvet joy j
         Example: .add_idol_alias <group> <idol> <alias1> <alias2>"""
-        if not check_user_is_mod(ctx):
-            await ctx.send(embed=permission_denied_embed())
-            return
         group = group.lower()
         idol = idol.lower()
         added_aliases = []
@@ -320,15 +314,13 @@ class Moderation(commands.Cog):
             await ctx.send(embed=error_embed(msg))
 
     @commands.command(aliases=['delidolalias', 'deleteidolalias'])
+    @is_mod()
     async def delete_idol_alias(self, ctx, group, idol, *aliases):
         """Removes an alias from an idol.
         A list of aliases can be passed through in one command, but only one idol.
         Please ensure you use the members name, and not an alias for the second argument.
         Example: .remove_idol_alias redvelvet joy j
         Example: .remove_idol_alias <group> <idol> <alias1> <alias2>"""
-        if not check_user_is_mod(ctx):
-            await ctx.send(embed=permission_denied_embed())
-            return
         group = group.lower()
         idol = idol.lower()
         removed_aliases = []
@@ -357,15 +349,13 @@ class Moderation(commands.Cog):
             await ctx.send(embed=error_embed(msg))
 
     @commands.command(aliases=['removetag', 'removetagfromlink, remove_tag_from_link'])
+    @is_mod()
     async def remove_tag(self, ctx, link, *tags):
         """
         Removes tag(s) from a link previously added
         Example: <link> <tag> <tag> <tag>
         Any number of tags can be removed in one command.
         """
-        if not check_user_is_mod(ctx):
-            await ctx.send(embed=permission_denied_embed())
-            return
         tags_list = tags
         # rework lists to strings once working
         removed = []
@@ -393,6 +383,7 @@ class Moderation(commands.Cog):
             await ctx.send(embed=error_embed(f'Link did not have tag(s): {nt}!'))
 
     @commands.command(aliases=['createtag'])
+    @is_mod()
     async def create_tag(self, ctx, tag):
         """Adds a new tag, which will be available for use."""
         if not check_user_is_mod(ctx):
@@ -409,12 +400,10 @@ class Moderation(commands.Cog):
             await ctx.send(embed=error_embed(f'{tag} already exists!'))
 
     @commands.command(aliases=['deletetag', 'deltag'])
+    @is_mod()
     async def delete_tag(self, ctx, tag):
         """Completely deletes a tag.
         All links with this tag, will no longer have this tag."""
-        if not check_user_is_mod(ctx):
-            await ctx.send(embed=permission_denied_embed())
-            return
         tag = tag.lower()
         removed = remove_tag(tag)
         if removed:
@@ -425,15 +414,13 @@ class Moderation(commands.Cog):
             await ctx.send(embed=error_embed(f'{tag} does not exist!'))
 
     @commands.command(aliases=['addtagalias'])
+    @is_mod()
     async def add_tag_alias(self, ctx, tag, *aliases):
         """Adds an alias to a tag.
         A list of aliases can be passed through in one command, but only one tag.
         Please ensure you use the tag name, and not an alias for the first argument.
         Example: .add_tag_alias <tag> <alias>
         Example: .add_tag_alias <tag> <alias1> <alias2>"""
-        if not check_user_is_mod(ctx):
-            await ctx.send(embed=permission_denied_embed())
-            return
         tag = tag.lower()
         added_aliases = []
         invalid_aliases = []
@@ -460,15 +447,13 @@ class Moderation(commands.Cog):
             await ctx.send(embed=error_embed(msg))
 
     @commands.command(aliases=['deltagalias', 'removetagalias', 'dta'])
+    @is_mod()
     async def delete_tag_alias(self, ctx, tag, *aliases):
         """Removes an alias from a tag.
         A list of aliases can be passed through in one command, but only one tag.
         Please ensure you use the tag name, and not an alias for the first argument.
         Example: .delete_tag_alias <tag> <alias>
         Example: .delete_tag_alias <tag> <alias1> <alias2>"""
-        if not check_user_is_mod(ctx):
-            await ctx.send(embed=permission_denied_embed())
-            return
         tag = tag.lower()
         removed_aliases = []
         invalid_aliases = []
@@ -497,14 +482,12 @@ class Moderation(commands.Cog):
     @commands.command(aliases=[
         'delfancam', 'delete_fancam', 'delete_image', 'delimage', 'delete_gfy', 'delgfy', 'del', 'dellink'
     ])
+    @is_mod()
     async def delete_link(self, ctx, group, idol, *links):
         """
         Deletes link(s) from an idol.
         Example: .delete_link <group> <idol> <link> <link> <link>
         """
-        if not check_user_is_mod(ctx):
-            await ctx.send(embed=permission_denied_embed())
-            return
         link_list = links
         group = group.lower()
         idol = idol.lower()
@@ -512,6 +495,8 @@ class Moderation(commands.Cog):
         failed = []
         success = []
         for link in link_list:
+            if '-' in link:
+                link = link.split('-')[0]
             removed = remove_link(group, idol, link)
             if removed:
                 success.append(link)
@@ -533,14 +518,12 @@ class Moderation(commands.Cog):
             await ctx.send(embed=success_embed(f'Removed {len(success)} links!'))
 
     @commands.command(aliases=['delgroup', 'deletegroup'])
+    @is_mod()
     async def delete_group(self, ctx, group):
         """
         Deletes an entire group and all idols within
         Example: .delete_group <group>
         """
-        if not check_user_is_mod(ctx):
-            await ctx.send(permission_denied_embed())
-            return
         group = group.lower()
         removed = remove_group(group)
         if removed:
@@ -551,14 +534,12 @@ class Moderation(commands.Cog):
             await ctx.send(embed=error_embed(f'No group added called {group}!'))
 
     @commands.command(aliases=['delidol', 'delidols', 'deleteidol', 'deleteidols'])
+    @is_mod()
     async def delete_idols(self, ctx, group, *args):
         """
         Deletes all idol(s) specified in a group
         Example: .delete_idols <group> <idol_1> <idol_2>
         """
-        if not check_user_is_mod(ctx):
-            await ctx.send(embed=permission_denied_embed())
-            return
         group = group.lower()
         g_id = find_group_id(group)
         if not g_id:
@@ -595,6 +576,7 @@ class Moderation(commands.Cog):
                 await ctx.send(embed=error_embed(f'Failed to delete {f}'))
 
     @commands.command(aliases=['addauditing'])
+    @is_mod()
     async def add_auditing(self, ctx):
         """Adds auditing from this channel, as links are added to
         the bot, they will also be posted here so all new additions
@@ -612,11 +594,9 @@ class Moderation(commands.Cog):
             await ctx.send(embed=error_embed(des))
 
     @commands.command(aliases=['removeauditing'])
+    @is_mod()
     async def remove_auditing(self, ctx):
         """Removes auditing from this channel!"""
-        if not check_user_is_mod(ctx):
-            await ctx.send(embed=permission_denied_embed())
-            return
         removed = remove_auditing_channel(ctx.channel.id)
         if removed:
             des = 'Removed this channel from the auditing list!'
@@ -626,11 +606,9 @@ class Moderation(commands.Cog):
             await ctx.send(embed=error_embed(des))
 
     @commands.command(aliases=['delcommand', 'dc'])
+    @is_mod()
     async def delete_command(self, ctx, command):
         """Removes a custom command created previously."""
-        if not check_user_is_mod(ctx):
-            await ctx.send(embed=permission_denied_embed())
-            return
         command = command.lower()
         removed = remove_command(command)
         if removed:

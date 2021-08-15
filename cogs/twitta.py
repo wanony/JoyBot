@@ -1,6 +1,7 @@
 import json
 import discord
 from discord.utils import escape_markdown
+import pyshorteners
 import tweepy
 from discord.ext import commands
 from data import apis_dict, get_twitter_users_from_db, add_twitter_channel_to_db, remove_twitter_user_from_db, \
@@ -199,9 +200,10 @@ class Twitter(commands.Cog):
         if "extended_entities" in tweet_data:
             if len(tweet_data["extended_entities"]["media"]) > 1:
                 images = []
+                short = pyshorteners.Shortener()
                 for media in tweet_data["extended_entities"]["media"]:
                     link = twitter_image_link_formatting(media["media_url_https"])
-                    images.append(link)
+                    images.append(short.tinyurl.short(link))
                 embed = discord.Embed(title=title,
                                       description=text,
                                       color=discord.Color.blue())

@@ -1474,7 +1474,10 @@ def find_restricted_user_db(guild_id, user_id):
              JOIN guilds ON guilds.GuildId = restricted_users.GuildId
              WHERE guilds.Guild = %s AND UserId = %s"""
     val = (guild_id, user_id,)
-    cursor.execute(sql, val)
+    try:
+        cursor.execute(sql, val)
+    except Exception as e:
+        print(e)
     rowcount = cursor.rowcount
     cursor.close()
     return rowcount > 0
@@ -1576,7 +1579,10 @@ def add_twitter_channel_to_db(channel_id, twitter_id):
               (SELECT ChannelId FROM channels WHERE Channel = %s),
               (SELECT TwitterId FROM twitter WHERE Twitter = %s))"""
     vals = (channel_id, twitter_id)
-    cursor.execute(sql, vals)
+    try:
+        cursor.execute(sql, vals)
+    except Exception as e:
+        print(e)
     rowcount = cursor.rowcount
     db.commit()
     cursor.close()
