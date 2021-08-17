@@ -174,38 +174,43 @@ class Instagram(commands.Cog):
 
     async def check_for_new_posts(self):
         await self.disclient.wait_until_ready()
-        while not self.disclient.is_closed():
-            insta_users = get_insta_users_to_check()
-            if not insta_users:
-                await asyncio.sleep(600)
-                continue
-            for user in insta_users:
-                user_str = str(user)
-                if user_str not in self.sent_posts:
-                    self.sent_posts.update({user_str: {}})
-                info = await self.insta.get_user_feed(user)
-                following_user = get_channels_following_insta_user(user)
-                if not following_user:
+        try:
+            while not self.disclient.is_closed():
+                print('checking instagram for posts!')
+                insta_users = get_insta_users_to_check()
+                if not insta_users:
+                    await asyncio.sleep(600)
                     continue
-                for channels in following_user:
-                    chan_str = str(channels)
-                    if chan_str not in self.sent_posts[user_str]:
-                        self.sent_posts[user_str].update({chan_str: []})
-                    if info['id'] not in self.sent_posts[user_str][chan_str]:
-                        channel = self.disclient.get_channel(channels)
-                        refined = format_user_feed_result(info)
-                        if isinstance(refined, discord.Embed):
-                            await channel.send(embed=refined)
-                        else:
-                            await channel.send(embed=refined[0])
-                            i = 0
-                            while i < (len(refined[1])):
-                                await channel.send('\n'.join(refined[1][i:i + 4]))
-                                i += 4
-                        self.sent_posts[user_str][chan_str].append(info['id'])
-                    if len(self.sent_posts[user_str][chan_str]) > 5:
-                        self.sent_posts[user_str][chan_str].pop(0)
-            await asyncio.sleep(600)
+                for user in insta_users:
+                    user_str = str(user)
+                    following_user = get_channels_following_insta_user(user)
+                    if not following_user:
+                        continue
+                    if user_str not in self.sent_posts:
+                        self.sent_posts.update({user_str: {}})
+                    info = await self.insta.get_user_feed(user)
+                    for channels in following_user:
+                        chan_str = str(channels)
+                        if chan_str not in self.sent_posts[user_str]:
+                            self.sent_posts[user_str].update({chan_str: []})
+                        if info['id'] not in self.sent_posts[user_str][chan_str]:
+                            channel = self.disclient.get_channel(channels)
+                            refined = format_user_feed_result(info)
+                            if isinstance(refined, discord.Embed):
+                                await channel.send(embed=refined)
+                            else:
+                                await channel.send(embed=refined[0])
+                                i = 0
+                                while i < (len(refined[1])):
+                                    await channel.send('\n'.join(refined[1][i:i + 4]))
+                                    i += 4
+                            self.sent_posts[user_str][chan_str].append(info['id'])
+                        if len(self.sent_posts[user_str][chan_str]) > 5:
+                            self.sent_posts[user_str][chan_str].pop(0)
+                        await asyncio.sleep(10)
+                await asyncio.sleep(600)
+        except Exception as e:
+            print(e)
 
     @commands.command(aliases=['followinsta', 'instafollow', 'insta_follow', 'follow_instagram', 'instagram_follow'])
     @commands.guild_only()
