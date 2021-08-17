@@ -23,10 +23,10 @@ class Events(commands.Cog):
         # user = message.author
         msg = message.content.split(" ")
         # bonegrip feature
-        regexuoh = re.compile("^u|U+o|O+h|H+$")
-        match = re.search(regexuoh, message.content)
-        if match:
-            await message.add_reaction(emoji='😭')
+        # regexuoh = re.compile("^u|U+o|O+h|H+$")
+        # match = re.search(regexuoh, message.content)
+        # if match:
+        #     await message.add_reaction(emoji='😭')
         if message.guild:
             guild = message.guild.id
             banned_words = get_banned_words(guild)
