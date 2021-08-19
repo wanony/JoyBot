@@ -1667,9 +1667,9 @@ def add_insta_user_to_db(user_id):
 
 def follow_insta_user_db(user_id, channel_id):
     cursor = db.cursor()
-    sql = """INSERT INTO instagram_channels (InstagramId, ChannelId) VALUES(
+    sql = """INSERT INTO instagram_channels (InstagramId, ChannelId, FirstPost) VALUES(
              (SELECT InstagramId FROM instagram WHERE Instagram = %s), 
-             (SELECT ChannelId FROM channels WHERE Channel = %s))"""
+             (SELECT ChannelId FROM channels WHERE Channel = %s), 0)"""
     vals = (user_id, channel_id)
     try:
         cursor.execute(sql, vals)
@@ -1683,21 +1683,33 @@ def follow_insta_user_db(user_id, channel_id):
 
 def get_channels_following_insta_user(user_id):
     cursor = db.cursor()
-    sql = """SELECT Channel FROM channels
+    sql = """SELECT Channel, FirstPost FROM channels
              JOIN instagram_channels on instagram_channels.ChannelId = channels.ChannelId
              JOIN instagram on instagram.InstagramId = instagram_channels.InstagramId
              WHERE instagram.Instagram = %s;"""
     val = (user_id,)
     cursor.execute(sql, val)
-    result = [x[0] for x in cursor.fetchall()]
+    result = cursor.fetchall()
     cursor.close()
     return result
+
+
+def update_first_post_to_false(channel_id):
+    cursor = db.cursor()
+    sql = """UPDATE instagram_channels
+             SET FirstPost = 1
+             WHERE ChannelId = ANY(SELECT ChannelId FROM channels WHERE Channel = %s)"""
+    val = (channel_id,)
+    cursor.execute(sql, val)
+    rowcount = cursor.rowcount
+    cursor.close()
+    return rowcount > 0
 
 
 def unfollow_insta_user_db(user_id, channel_id):
     cursor = db.cursor()
     sql = """DELETE instagram_channels FROM instagram_channels
-             JOIN instagram ON instagram.InstagramId = Instagram_channels.InstagramId
+             JOIN instagram ON instagram.InstagramId = instagram_channels.InstagramId
              JOIN channels ON channels.ChannelId = instagram_channels.ChannelId
              WHERE instagram.Instagram = %s AND channels.Channel = %s;"""
     vals = (user_id, channel_id)
