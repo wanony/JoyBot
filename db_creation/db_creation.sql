@@ -185,6 +185,7 @@ CREATE TABLE twitter_channels (
 CREATE TABLE instagram (
   InstagramId int NOT NULL AUTO_INCREMENT,
   Instagram bigint NOT NULL,
+  FirstPost tinyint NOT NULL
   PRIMARY KEY (InstagramId),
   UNIQUE (Instagram)
 );

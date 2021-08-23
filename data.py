@@ -5,6 +5,7 @@ import mysql.connector.errors
 import threading
 import datetime
 import os
+import pfycat
 
 with open('directories.json') as direc:
     direc_dict = json.load(direc)
@@ -41,6 +42,20 @@ def check_user_is_owner(ctx):
         return True
     else:
         return False
+
+
+class PfyClient:
+    def __init__(self, disclient):
+        self.api_key = apis_dict['gfy_client_id']
+        self.api_sec = apis_dict['gfy_client_secret']
+        self.disclient = disclient
+        self.client = pfycat.Client(self.api_key, self.api_sec)
+
+    async def upload_video(self, video_file_path):
+        # wait until video is downloaded, lets try 10 seconds
+        upload = self.client.upload(video_file_path)
+        gfy_url = f"https://gfycat.com/{upload['gfyname']}"
+        return gfy_url
 
 
 database = 'botdatabase'

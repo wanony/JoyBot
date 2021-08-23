@@ -3,9 +3,13 @@ import datetime
 import json
 import os
 import asyncio
+import time
+
 import pyshorteners
+from data import PfyClient
 
 import discord
+import urllib.request
 from discord.utils import escape_markdown
 from instagram_private_api import Client, ClientLoginRequiredError, ClientCookieExpiredError, \
     ClientChallengeRequiredError
@@ -13,7 +17,7 @@ from instagram_private_api_extensions.pagination import page
 from discord.ext import commands
 from data import apis_dict, insta_settings_file, get_insta_users_to_check, get_channels_following_insta_user, \
     cache_dict, get_all_instas_followed_in_guild, follow_insta_user_db, unfollow_insta_user_db, add_insta_user_to_db, \
-    add_channel
+    add_channel, update_first_post_to_false
 
 # following three functions shamelessly stolen from
 # https://github.com/ping/instagram_private_api/blob/master/examples/savesettings_logincallback.py
@@ -42,65 +46,12 @@ def onlogin_callback(api, new_settings_file):
         print('Written instagram settings file.')
 
 
-def format_user_feed_result(result):
-    # check if post is video, '2' or image, '1', else is for carousel posts
-    if '_' in result['user']['username']:
-        username = f"@{escape_markdown(result['user']['username'])}"
-    else:
-        username = f"@{result['user']['username']}"
-    try:
-        text = result["caption"]["text"]
-    except TypeError:
-        text = ''
-    name = result['user']['full_name']
-    profile_pic_url = result['user']['profile_pic_url']
-    link = f"https://www.instagram.com/p/{result['code']}/"
-    image_url = None
-    links = []
-    if result['media_type'] == 1:
-        # one picture
-        for images in result['image_versions2']['candidates']:
-            if result['original_width'] == images['width']:
-                image_url = images['url']
-        msg = f'{text}\n{link}'
-    elif result['media_type'] == 2:
-        # one video
-        image_url = result['image_versions2']['candidates'][0]['url']
-        msg = f'{text}\n{link}'
-    else:
-        # multiple photos or videos
-        short = pyshorteners.Shortener()
-        for i in range(len(result['carousel_media'])):
-            if result['carousel_media'][i]['media_type'] == 1:
-                for images in result['carousel_media'][i]['image_versions2']['candidates']:
-                    if result['carousel_media'][i]['original_width'] == images['width']:
-                        image_url = images['url']
-                        links.append(short.tinyurl.short(image_url))
-            else:
-                image_url = result['carousel_media'][0]['image_versions2']['candidates'][0]['url']
-                links.append(image_url)
-        msg = f"{text}\n{link}"
-        embed = discord.Embed(title=f'{name} ({username})',
-                              description=msg,
-                              color=insta_colour)
-        embed.set_footer(text=f"Posted to Instagram by {result['user']['username']}",
-                         icon_url=profile_pic_url)
-        return embed, links
-    embed = discord.Embed(title=f'{name} ({username})',
-                          description=msg,
-                          color=insta_colour)
-    if image_url:
-        embed.set_image(url=image_url)
-    embed.set_footer(text=f"Posted to Instagram by {result['user']['username']}",
-                     icon_url=profile_pic_url)
-    return embed
-
-
 class InstaClient:
     def __init__(self, disclient):
         self.device_id = None
         self.disclient = disclient
         self.min_timestamps = cache_dict["instagram"]["min_timestamps"]
+        self.gfy = PfyClient(self.disclient)
         try:
             if os.path.isfile(insta_settings_file):
                 with open(insta_settings_file) as w:
@@ -143,22 +94,100 @@ class InstaClient:
             min_timestamp = self.min_timestamps[user_str]
         else:
             self.min_timestamps.update({user_str: 1})
-            min_timestamp = 1
-        # if possible it would be nice to find a way to just get the one result
+            min_timestamp = int(int(time.time()) * 1000)
+        # grab all results that are posted after the minimum timestamp
+        # TODO min timestamp doesn't work
         for results in page(self.api.user_feed,
                             args={'user_id': str(user_id),
                                   'min_timestamp': min_timestamp},
                             wait=None):
             if results.get('items'):
-                # instead of adding them all to a list... seems dumb
                 result_list.extend(results['items'])
+                # set timestamp to most recent posts time
                 self.min_timestamps[user_str] = result_list[0]['device_timestamp']
-                return result_list[0]
+                return result_list
         return
 
     async def get_feed_no_page(self, user_id):
         results = self.api.user_feed(user_id)
-        return format_user_feed_result(results)
+        return self.format_user_feed_result(results)
+
+    async def format_user_feed_result(self, result):
+        # check if post is video, '2' or image, '1', else is for carousel posts
+        username = f"@{escape_markdown(result['user']['username'])}"
+        try:
+            text = result["caption"]["text"]
+        except TypeError:
+            text = ''
+        name = result['user']['full_name']
+        profile_pic_url = result['user']['profile_pic_url']
+        link = f"https://www.instagram.com/p/{result['code']}/"
+        image_url = None
+        links = []
+        if result['media_type'] == 1:
+            # one picture
+            for images in result['image_versions2']['candidates']:
+                if result['original_width'] == images['width']:
+                    image_url = images['url']
+            msg = f'{text}\n{link}'
+            embed = discord.Embed(title=f'{name} ({username})',
+                                  description=msg,
+                                  color=insta_colour)
+            if image_url:
+                embed.set_image(url=image_url)
+            embed.set_footer(text=f"Posted to Instagram by {result['user']['username']}",
+                             icon_url=profile_pic_url)
+            return embed
+        elif result['media_type'] == 2:
+            # one video
+            video_url = result['video_versions'][0]['url']
+            if not video_url:
+                return
+            try:
+                urllib.request.urlretrieve(video_url, 'insta_video.webm')
+            except Exception as e:
+                print(e)
+                return
+            # rework this to stop pfyclient from being made over and over
+            filename = f'insta_video{datetime.datetime.now().timestamp()}.webm'
+            gfy_url = await self.gfy.upload_video(filename)
+            msg = f'{text}\n{link}'
+            embed = discord.Embed(title=f'{name} ({username})',
+                                  description=msg,
+                                  color=insta_colour)
+            embed.set_footer(text=f"Posted to Instagram by {result['user']['username']}",
+                             icon_url=profile_pic_url)
+            os.remove(filename)
+            return embed, gfy_url
+        else:
+            # multiple photos or videos
+            short = pyshorteners.Shortener()
+            for i in range(len(result['carousel_media'])):
+                if result['carousel_media'][i]['media_type'] == 1:
+                    for images in result['carousel_media'][i]['image_versions2']['candidates']:
+                        if result['carousel_media'][i]['original_width'] == images['width']:
+                            image_url = images['url']
+                            links.append(short.tinyurl.short(image_url))
+                else:
+                    # try:
+                    #     image_url = result['carousel_media'][i]['image_versions2']['candidates'][i]['url']
+                    # except Exception as e:
+                    #     print(result['carousel_media'])
+                    # links.append(short.tinyurl.short(image_url))
+                    video_url = result['carousel_media'][i]['video_versions'][0]['url']
+                    filename = f'insta_video{datetime.datetime.now().timestamp()}.webm'
+                    urllib.request.urlretrieve(video_url, filename)
+                    # use pfyclient in gfycats.py
+                    gfy_url = await self.gfy.upload_video(filename)
+                    links.append(gfy_url)
+                    os.remove(filename)
+            msg = f"{text}\n{link}"
+            embed = discord.Embed(title=f'{name} ({username})',
+                                  description=msg,
+                                  color=insta_colour)
+            embed.set_footer(text=f"Posted to Instagram by {result['user']['username']}",
+                             icon_url=profile_pic_url)
+            return embed, links
 
 
 class Instagram(commands.Cog):
@@ -183,34 +212,45 @@ class Instagram(commands.Cog):
                     continue
                 for user in insta_users:
                     user_str = str(user)
-                    following_user = get_channels_following_insta_user(user)
-                    if not following_user:
+                    following_user_and_fp_status = get_channels_following_insta_user(user)
+                    if not following_user_and_fp_status:
                         continue
                     if user_str not in self.sent_posts:
                         self.sent_posts.update({user_str: {}})
-                    info = await self.insta.get_user_feed(user)
-                    for channels in following_user:
-                        chan_str = str(channels)
+                    try:
+                        info = await self.insta.get_user_feed(user)
+                    except Exception as e:
+                        print(f'cannot get user info for {user}! Probably private account or smthn idk\n{e}')
+                        continue
+                    for tuples in following_user_and_fp_status:
+                        chan_str = str(tuples[0])
                         if chan_str not in self.sent_posts[user_str]:
                             self.sent_posts[user_str].update({chan_str: []})
-                        if info['id'] not in self.sent_posts[user_str][chan_str]:
-                            channel = self.disclient.get_channel(channels)
-                            refined = format_user_feed_result(info)
-                            if isinstance(refined, discord.Embed):
-                                await channel.send(embed=refined)
-                            else:
-                                await channel.send(embed=refined[0])
-                                i = 0
-                                while i < (len(refined[1])):
-                                    await channel.send('\n'.join(refined[1][i:i + 4]))
-                                    i += 4
-                            self.sent_posts[user_str][chan_str].append(info['id'])
-                        if len(self.sent_posts[user_str][chan_str]) > 5:
-                            self.sent_posts[user_str][chan_str].pop(0)
-                        await asyncio.sleep(10)
+                        for post in info[:6]:  # only process 6 posts, 12 are returned
+                            if post['id'] not in self.sent_posts[user_str][chan_str]:
+                                channel = self.disclient.get_channel(tuples[0])
+                                if tuples[1] == 1:  # check it's not first post
+                                    refined = await self.insta.format_user_feed_result(post)
+                                    if isinstance(refined, discord.Embed):
+                                        await channel.send(embed=refined)
+                                    else:
+                                        await channel.send(embed=refined[0])
+                                        if isinstance(refined[1], str):
+                                            await channel.send(refined[1])
+                                        else:
+                                            i = 0
+                                            while i < (len(refined[1])):
+                                                await channel.send('\n'.join(refined[1][i:i + 4]))
+                                                i += 4
+                                self.sent_posts[user_str][chan_str].append(post['id'])
+                            if len(self.sent_posts[user_str][chan_str]) > 12:
+                                self.sent_posts[user_str][chan_str].pop(0)
+                        if tuples[1] == 0:
+                            update_first_post_to_false(tuples[0])
+                    await asyncio.sleep(10)
                 await asyncio.sleep(600)
         except Exception as e:
-            print(e)
+            print(f'Instagram exception: {e}')
 
     @commands.command(aliases=['followinsta', 'instafollow', 'insta_follow', 'follow_instagram', 'instagram_follow'])
     @commands.guild_only()
@@ -221,6 +261,9 @@ class Instagram(commands.Cog):
         if 'instagram.com' in user_name:
             user_name = user_name.split('/')[-1]
         user = self.insta.get_user(user_name)
+        if user['is_private']:
+            await ctx.send(embed=error_embed('This user is private, and cannot be followed!'))
+            return
         user_id = user['user']['pk']
         if not user_id:
             await ctx.send(embed=error_embed(f'No instagram user found called {escape_markdown(user_name)}!'))
@@ -291,6 +334,11 @@ class Instagram(commands.Cog):
                                   description=msg,
                                   color=insta_colour)
             await ctx.send(embed=embed)
+
+    # @commands.command()
+    # async def find_user_by_id(self, ctx, insta_id):
+    #     user = self.insta.get_user_name(insta_id)
+    #     await ctx.send(user)
 
 
 def setup(disclient):

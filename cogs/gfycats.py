@@ -1,33 +1,48 @@
-import discord
+import os
+
 from discord.ext import commands
-from data import apis_dict
-import asyncio
-import pfycat
+import urllib.request
+import datetime
 
+from cogs.mods import is_mod
+from data import PfyClient
 
-class PfyClient:
-    def __init__(self):
-        self.api_key = apis_dict['gfy_client_id']
-        self.api_sec = apis_dict['gfy_client_secret']
-        self.client = pfycat.Client(self.api_key, self.api_sec)
-
-    async def upload_video(self, video_file_path):
-        # wait until video is downloaded, lets try 10 seconds
-        await asyncio.sleep(10)
-        upload = self.client.upload(video_file_path)
-        gfy_url = f"https://gfycat.com/{upload['gfyname']}"
-        return gfy_url
+from embeds import error_embed
 
 
 class Gfycat(commands.Cog):
     def __init__(self, disclient):
         self.disclient = disclient
-        self.client = PfyClient()
+        self.pfy = PfyClient(self.disclient)
 
     @commands.command(name='uploadgfy')
-    async def _upload_gfy(self, attachments):
-        """Upload a video to gfycat by uploading it in a discord attachment!"""
-        pass
+    @commands.guild_only()
+    @is_mod()
+    async def _upload_gfy(self, ctx, url=None):
+        """Upload a video to gfycat!
+        Either upload a discord attachment, or provide a valid video url!"""
+        async with ctx.channel.typing():
+            msg = await ctx.send('Processing...')
+            # set unique name for file to save to
+            filename = f'gfy_video{datetime.datetime.now().timestamp()}.webm'
+            # if nothing provided then return error
+            if not ctx.message.attachments and url is None:
+                await msg.edit(embed=error_embed('Make sure to attach a video or provide a valid video URL!'))
+                return
+            # if video is from a url, use urllib to download
+            elif url is not None and 'http' in url:
+                try:
+                    urllib.request.urlretrieve(url, filename)
+                except Exception as e:
+                    print(e)
+                    await msg.edit(embed=error_embed('Could not retrieve the video from that URL!'))
+                    return
+            elif ctx.message.attachments:
+                # only save first video
+                await ctx.message.attachments[0].save(filename)
+            url = await self.pfy.upload_video(filename)
+            await msg.edit(content=f'Successfully uploaded!\n{url}')
+        os.remove(filename)
 
 
 def setup(disclient):

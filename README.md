@@ -2,7 +2,11 @@
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/73ccb10ee6d84e85be71a1c397a7c1f8)](https://www.codacy.com/gh/wanony/PublicBot/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=wanony/PublicBot&amp;utm_campaign=Badge_Grade)
 [![Discord Server](https://discord.com/api/guilds/741066661221761135/embed.png)](https://discord.gg/bJvqnhg)
 
-An open source discord bot using [discord.py](https://github.com/Rapptz/discord.py) and powered by a MySQL/MariaDB Database. Joy's main focus is storing and accessing embeddable links on the fly. Links stored in the bot are accessable between all servers and in direct messages!
+An free and open source Discord bot using [discord.py](https://github.com/Rapptz/discord.py) and powered by a MySQL/MariaDB Database. Joy's main focus is storing and accessing embeddable links on the fly. Links stored in the bot are accessable between all servers and in direct messages!
+
+The main goal of the Joy Discord bot is to maximise the interaction in Discord servers.
+
+This is achieved by providing a range of media formats and commands that can bring all the fun to the table, without having to leave Discord.
 
 # Features
 
