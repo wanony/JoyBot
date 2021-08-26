@@ -1,10 +1,11 @@
+import re
+
 import discord
 from discord.ext import commands
 
 from bot import get_prefix
-from data import get_banned_words, add_guild_db, apis_dict
+from data import get_banned_words, add_guild_db
 from data import get_commands
-import re
 from embeds import error_embed, permission_denied_embed, banned_word_embed
 
 
@@ -23,10 +24,10 @@ class Events(commands.Cog):
         # user = message.author
         msg = message.content.split(" ")
         # bonegrip feature
-        # regexuoh = re.compile("^u|U+o|O+h|H+$")
-        # match = re.search(regexuoh, message.content)
-        # if match:
-        #     await message.add_reaction(emoji='😭')
+        regexuoh = re.compile(r'\b[uU]+[oO]+[hH]+\b')
+        match = re.search(regexuoh, message.content)
+        if match:
+            await message.add_reaction(emoji='😭')
         if message.guild:
             guild = message.guild.id
             banned_words = get_banned_words(guild)

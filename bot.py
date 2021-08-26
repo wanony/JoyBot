@@ -1,3 +1,5 @@
+import concurrent.futures
+
 import discord
 import os
 from discord.ext import commands
@@ -7,6 +9,8 @@ from data import get_prefix_db
 
 intents = discord.Intents.default()
 intents.members = True
+
+executor = concurrent.futures.ThreadPoolExecutor()
 
 
 def get_prefix(disclient, message):
@@ -57,5 +61,8 @@ try:
 except OSError:
     print("No cogs to load!")
 
+try:
+    disclient.run(apis_dict["discord_token"])
+finally:
+    executor.shutdown()
 
-disclient.run(apis_dict["discord_token"])

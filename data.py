@@ -5,7 +5,6 @@ import mysql.connector.errors
 import threading
 import datetime
 import os
-import pfycat
 
 with open('directories.json') as direc:
     direc_dict = json.load(direc)
@@ -42,20 +41,6 @@ def check_user_is_owner(ctx):
         return True
     else:
         return False
-
-
-class PfyClient:
-    def __init__(self, disclient):
-        self.api_key = apis_dict['gfy_client_id']
-        self.api_sec = apis_dict['gfy_client_secret']
-        self.disclient = disclient
-        self.client = pfycat.Client(self.api_key, self.api_sec)
-
-    async def upload_video(self, video_file_path):
-        # wait until video is downloaded, lets try 10 seconds
-        upload = self.client.upload(video_file_path)
-        gfy_url = f"https://gfycat.com/{upload['gfyname']}"
-        return gfy_url
 
 
 database = 'botdatabase'
@@ -1668,7 +1653,7 @@ def get_insta_users_to_check():
 
 def add_insta_user_to_db(user_id):
     cursor = db.cursor()
-    sql = "INSERT INTO instagram (Instagram) VALUES (%s);"
+    sql = "INSERT INTO instagram (Instagram, MinTimestamp) VALUES (%s, UNIX_TIMESTAMP());"
     val = (user_id,)
     try:
         cursor.execute(sql, val)
@@ -1698,27 +1683,39 @@ def follow_insta_user_db(user_id, channel_id):
 
 def get_channels_following_insta_user(user_id):
     cursor = db.cursor()
-    sql = """SELECT Channel, FirstPost FROM channels
+    sql = """SELECT Channel FROM channels
              JOIN instagram_channels on instagram_channels.ChannelId = channels.ChannelId
              JOIN instagram on instagram.InstagramId = instagram_channels.InstagramId
              WHERE instagram.Instagram = %s;"""
     val = (user_id,)
     cursor.execute(sql, val)
-    result = cursor.fetchall()
+    result = [x[0] for x in cursor.fetchall()]
     cursor.close()
     return result
 
 
-def update_first_post_to_false(channel_id):
+def set_min_timestamp(insta_id, timestamp):
     cursor = db.cursor()
-    sql = """UPDATE instagram_channels
-             SET FirstPost = 1
-             WHERE ChannelId = ANY(SELECT ChannelId FROM channels WHERE Channel = %s)"""
-    val = (channel_id,)
-    cursor.execute(sql, val)
+    sql = """UPDATE instagram
+             SET MinTimestamp = %s
+             WHERE Instagram = %s"""
+    vals = (timestamp, insta_id)
+    cursor.execute(sql, vals)
     rowcount = cursor.rowcount
+    db.commit()
     cursor.close()
     return rowcount > 0
+
+
+def get_min_timestamp(insta_id):
+    cursor = db.cursor()
+    sql = """SELECT MinTimestamp FROM instagram WHERE Instagram = %s"""
+    vals = (insta_id,)
+    cursor.execute(sql, vals)
+    result = cursor.fetchone()
+    db.commit()
+    cursor.close()
+    return result[0]
 
 
 def unfollow_insta_user_db(user_id, channel_id):
