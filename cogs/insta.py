@@ -219,7 +219,7 @@ class Instagram(commands.Cog):
                         posts = await self.insta.get_user_feed(user)
                     except Exception as e:
                         print(f'No new posts, or user is private. {e}')
-                        await asyncio.sleep(150)
+                        await asyncio.sleep(600)
                         continue
                     await self.insta.format_user_feed_result(posts,
                                                              following_user)
