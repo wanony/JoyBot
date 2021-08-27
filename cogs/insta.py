@@ -212,18 +212,14 @@ class Instagram(commands.Cog):
                 if not insta_users:
                     continue
                 for user in insta_users:
-                    try:
-                        following_user = get_channels_following_insta_user(user)
-                    except Exception as e:
-                        print(e)
-                        await asyncio.sleep(150)
-                        continue
+                    following_user = get_channels_following_insta_user(user)
                     if not following_user:
                         continue
                     try:
                         posts = await self.insta.get_user_feed(user)
                     except Exception as e:
                         print(f'No new posts, or user is private. {e}')
+                        await asyncio.sleep(150)
                         continue
                     await self.insta.format_user_feed_result(posts,
                                                              following_user)
