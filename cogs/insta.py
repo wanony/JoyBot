@@ -212,7 +212,12 @@ class Instagram(commands.Cog):
                 if not insta_users:
                     continue
                 for user in insta_users:
-                    following_user = get_channels_following_insta_user(user)
+                    try:
+                        following_user = get_channels_following_insta_user(user)
+                    except Exception as e:
+                        print(e)
+                        await asyncio.sleep(150)
+                        continue
                     if not following_user:
                         continue
                     try:
