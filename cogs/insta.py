@@ -151,7 +151,6 @@ class InstaClient:
         return []
 
     async def format_user_feed_result(self, post_list, channels):
-        print(post_list)
         for post in post_list:
             username = f"@{escape_markdown(post['user']['username'])}"
             try:
@@ -223,7 +222,7 @@ class Instagram(commands.Cog):
                         continue
                     await self.insta.format_user_feed_result(posts,
                                                              following_user)
-                    await asyncio.sleep(10)
+                    await asyncio.sleep(30)
             except Exception as e:
                 print(f'Instagram exception: {e}')
             finally:
