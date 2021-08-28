@@ -219,15 +219,15 @@ class Instagram(commands.Cog):
                         posts = await self.insta.get_user_feed(user)
                     except Exception as e:
                         print(f'No new posts, or user is private. {e}')
-                        await asyncio.sleep(600)
+                        await asyncio.sleep(1800)
                         continue
                     await self.insta.format_user_feed_result(posts,
                                                              following_user)
-                    await asyncio.sleep(30)
+                    await asyncio.sleep(1800 // len(insta_users))
             except Exception as e:
                 print(f'Instagram exception: {e}')
             finally:
-                await asyncio.sleep(600)
+                await asyncio.sleep(1800)
 
     @commands.command(aliases=['followinsta', 'instafollow', 'insta_follow', 'follow_instagram', 'instagram_follow'])
     @commands.guild_only()
