@@ -1667,9 +1667,9 @@ def add_insta_user_to_db(user_id):
 
 def follow_insta_user_db(user_id, channel_id):
     cursor = db.cursor()
-    sql = """INSERT INTO instagram_channels (InstagramId, ChannelId, FirstPost) VALUES(
+    sql = """INSERT INTO instagram_channels (InstagramId, ChannelId) VALUES(
              (SELECT InstagramId FROM instagram WHERE Instagram = %s), 
-             (SELECT ChannelId FROM channels WHERE Channel = %s), 0)"""
+             (SELECT ChannelId FROM channels WHERE Channel = %s)"""
     vals = (user_id, channel_id)
     try:
         cursor.execute(sql, vals)
