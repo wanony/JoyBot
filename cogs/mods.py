@@ -120,7 +120,7 @@ class Owner(commands.Cog):
                 if cog[:-3] == cog_name:
                     cog = f"cogs.{cog.replace('.py', '')}"
                     try:
-                        self.disclient.load_extension(cog)
+                        self.disclient.unload_extension(cog)
                     except commands.ExtensionNotLoaded:
                         await ctx.send('Failed to unload cog.')
         await ctx.send('Unloaded cog!')
@@ -133,10 +133,10 @@ class Owner(commands.Cog):
                 if cog[:-3] == cog_name:
                     cog = f"cogs.{cog.replace('.py', '')}"
                     try:
-                        self.disclient.unload_extension(cog)
+                        self.disclient.load_extension(cog)
                     except commands.ExtensionNotLoaded:
-                        await ctx.send('Failed to unload cog.')
-        await ctx.send('Unloaded cog!')
+                        await ctx.send('Failed to load cog.')
+        await ctx.send('Loaded cog!')
 
     @commands.command()
     @is_owner()
