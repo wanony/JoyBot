@@ -120,6 +120,19 @@ class Owner(commands.Cog):
                 if cog[:-3] == cog_name:
                     cog = f"cogs.{cog.replace('.py', '')}"
                     try:
+                        self.disclient.load_extension(cog)
+                    except commands.ExtensionNotLoaded:
+                        await ctx.send('Failed to unload cog.')
+        await ctx.send('Unloaded cog!')
+
+    @commands.command()
+    @is_owner()
+    async def load(self, ctx, cog_name):
+        for cog in os.listdir("./cogs"):
+            if cog.endswith(".py"):
+                if cog[:-3] == cog_name:
+                    cog = f"cogs.{cog.replace('.py', '')}"
+                    try:
                         self.disclient.unload_extension(cog)
                     except commands.ExtensionNotLoaded:
                         await ctx.send('Failed to unload cog.')
