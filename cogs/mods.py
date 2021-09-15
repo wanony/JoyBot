@@ -114,6 +114,19 @@ class Owner(commands.Cog):
 
     @commands.command()
     @is_owner()
+    async def unload(self, ctx, cog_name):
+        for cog in os.listdir("./cogs"):
+            if cog.endswith(".py"):
+                if cog[:-3] == cog_name:
+                    cog = f"cogs.{cog.replace('.py', '')}"
+                    try:
+                        self.disclient.unload_extension(cog)
+                    except commands.ExtensionNotLoaded:
+                        await ctx.send('Failed to unload cog.')
+        await ctx.send('Unloaded cog!')
+
+    @commands.command()
+    @is_owner()
     async def perma_user(self, ctx, user_id):
         """Stops user from added anything to the bot"""
         perma = perma_user_db(user_id)
@@ -248,6 +261,7 @@ class Moderation(commands.Cog):
         if not g_id:
             await ctx.send(embed=error_embed(f'Group {group} does not exist!'))
             return
+
         if not args:
             await ctx.send(embed=error_embed('No idols provided!'))
         else:
@@ -389,6 +403,7 @@ class Moderation(commands.Cog):
         if not check_user_is_mod(ctx):
             await ctx.send(embed=permission_denied_embed())
             return
+
         tag = tag.lower()
         added = add_tag(tag, ctx.author.id)
         add_tag_alias_db(tag, tag, ctx.author.id)
@@ -545,6 +560,7 @@ class Moderation(commands.Cog):
         if not g_id:
             await ctx.send(embed=error_embed(f'No group added named {group}!'))
             return
+
         if not args:
             await ctx.send(embed=error_embed('No idols provided!'))
         else:
@@ -584,6 +600,7 @@ class Moderation(commands.Cog):
         if not check_user_is_mod(ctx):
             await ctx.send(embed=permission_denied_embed())
             return
+
         add_channel(ctx.channel.id)
         added = add_auditing_channel(ctx.channel.id)
         if added:
