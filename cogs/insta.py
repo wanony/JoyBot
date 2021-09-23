@@ -208,6 +208,7 @@ class Instagram(commands.Cog):
         while not self.disclient.is_closed():
             try:
                 print('checking instagram for posts!')
+                # TODO rewrite get_insta_users_to_check SQL to only grab followed with join on instagram_channels
                 insta_users = get_insta_users_to_check()
                 if not insta_users:
                     continue
@@ -242,6 +243,7 @@ class Instagram(commands.Cog):
             if user['is_private']:
                 await ctx.send(embed=error_embed('This user is private, and cannot be followed!'))
                 return
+
         except Exception as e:
             print(e)
         user_id = user['user']['pk']

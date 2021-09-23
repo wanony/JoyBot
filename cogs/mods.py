@@ -7,7 +7,7 @@ from datetime import datetime
 
 # import lots of shit
 from data import add_channel, add_tag_alias_db, remove_tag_alias_db, add_group_alias_db, remove_group_alias_db, \
-    add_cont_from_one_user_to_other, perma_user_db, remove_perma_user_db
+    add_cont_from_one_user_to_other, perma_user_db, remove_perma_user_db, delete_link_from_database
 from data import remove_member_alias_db, add_member_alias_db, add_tag, find_group_id, add_group, remove_group
 from data import remove_moderator, add_moderator, get_members_of_group, add_member, remove_member, apis_dict
 from data import remove_auditing_channel, add_auditing_channel, remove_command, remove_link, remove_tag_from_link
@@ -43,6 +43,19 @@ class Owner(commands.Cog):
         """Add contribution from first arguement to second argument"""
         add_cont_from_one_user_to_other(member1.id, member2.id)
         ctx.send(embed=success_embed('Merged user contribution'))
+
+    @commands.command(name='forcedelete', aliases=['forcedel', 'fdel'])
+    @is_owner()
+    async def force_delete_link(self, ctx, *links):
+        delcounter = 0
+        for link in links:
+            removed = delete_link_from_database(link)
+            if removed:
+                delcounter += 1
+            else:
+                await ctx.send(f'failed to removed {link}')
+        if delcounter > 0:
+            await ctx.send(embed=success_embed(f'Removed {delcounter} link(s)!'))
 
     @commands.command()
     @is_owner()
@@ -189,12 +202,12 @@ class Moderation(commands.Cog):
                 exists = ', '.join(already_exists)
                 add = ', '.join(added)
                 act = f"Added group(s): {add}!"
-                await self.moderation_auditing(ctx.author, act)
+                await moderation_auditing(self.disclient, ctx.author, act)
                 msg = f"Added group(s): {add}!\nSkipped adding duplicates: {exists}!"
                 await ctx.send(embed=success_embed(msg))
             elif added and not already_exists:
                 msg = f"Added group(s): {', '.join(added)}!"
-                await self.moderation_auditing(ctx.author, msg)
+                await moderation_auditing(self.disclient, ctx.author, msg)
                 await ctx.send(embed=success_embed(msg))
             else:
                 msg = f"Skipped adding duplicates: {', '.join(already_exists)}!"
@@ -222,12 +235,12 @@ class Moderation(commands.Cog):
             exists = ', '.join(invalid_aliases)
             add = ', '.join(added_aliases)
             act = f"Added alias(es): {add} to {group}!"
-            await self.moderation_auditing(ctx.author, act)
+            await moderation_auditing(self.disclient, ctx.author, act)
             msg = f"Added alias(es): {add} to {group}!\nSkipped adding duplicates: {exists}!"
             await ctx.send(embed=success_embed(msg))
         elif added_aliases and not invalid_aliases:
             msg = f"Added aliases(s): {', '.join(added_aliases)} to {group}!"
-            await self.moderation_auditing(ctx.author, msg)
+            await moderation_auditing(self.disclient, ctx.author, msg)
             await ctx.send(embed=success_embed(msg))
         else:
             msg = f"Skipped adding duplicate alias(es): {', '.join(invalid_aliases)}!"
@@ -254,12 +267,12 @@ class Moderation(commands.Cog):
             exists = ', '.join(invalid_aliases)
             rem = ', '.join(removed_aliases)
             act = f"Removed alias(es): {rem} from {group}!"
-            await self.moderation_auditing(ctx.author, act)
+            await moderation_auditing(self.disclient, ctx.author, act)
             msg = f"Removed alias(es): {rem} from {group}!\nFailed to removed: {exists}!"
             await ctx.send(embed=success_embed(msg))
         elif removed_aliases and not invalid_aliases:
             msg = f"Removed aliases(s): {', '.join(removed_aliases)} from {group}!"
-            await self.moderation_auditing(ctx.author, msg)
+            await moderation_auditing(self.disclient, ctx.author, msg)
             await ctx.send(embed=success_embed(msg))
         else:
             msg = f"Failed to remove alias(es): {', '.join(invalid_aliases)} from {group}!"
@@ -295,12 +308,12 @@ class Moderation(commands.Cog):
                 exists = ', '.join(already_exists)
                 add = ', '.join(added)
                 act = f"Added idol(s): {add} to {group}!"
-                await self.moderation_auditing(ctx.author, act)
+                await moderation_auditing(self.disclient, ctx.author, act)
                 msg = f"Added idol(s): {add} to {group}!\nSkipped adding duplicates: {exists}!"
                 await ctx.send(embed=success_embed(msg))
             elif added and not already_exists:
                 msg = f"Added idol(s): {', '.join(added)} to {group}!"
-                await self.moderation_auditing(ctx.author, msg)
+                await moderation_auditing(self.disclient, ctx.author, msg)
                 await ctx.send(embed=success_embed(msg))
             else:
                 msg = f"Skipped adding duplicates: {', '.join(already_exists)}!"
@@ -329,12 +342,12 @@ class Moderation(commands.Cog):
             exists = ', '.join(invalid_aliases)
             rem = ', '.join(added_aliases)
             act = f"Added alias(es): {rem} to {idol}!"
-            await self.moderation_auditing(ctx.author, act)
+            await moderation_auditing(self.disclient, ctx.author, act)
             msg = f"Added alias(es): {rem} to {group}!\nFailed to add: {exists}!"
             await ctx.send(embed=success_embed(msg))
         elif added_aliases and not invalid_aliases:
             msg = f"Added aliases(s): {', '.join(added_aliases)} to {idol}!"
-            await self.moderation_auditing(ctx.author, msg)
+            await moderation_auditing(self.disclient, ctx.author, msg)
             await ctx.send(embed=success_embed(msg))
         else:
             msg = f"Failed to add alias(es): {', '.join(invalid_aliases)} to {idol}!"
@@ -363,12 +376,12 @@ class Moderation(commands.Cog):
             exists = ', '.join(invalid_aliases)
             rem = ', '.join(removed_aliases)
             act = f"Removed alias(es): {rem} from {idol}!"
-            await self.moderation_auditing(ctx.author, act)
+            await moderation_auditing(self.disclient, ctx.author, act)
             msg = f"Removed alias(es): {rem} from {group}!\nFailed to removed: {exists}!"
             await ctx.send(embed=success_embed(msg))
         elif removed_aliases and not invalid_aliases:
             msg = f"Removed aliases(s): {', '.join(removed_aliases)} from {idol}!"
-            await self.moderation_auditing(ctx.author, msg)
+            await moderation_auditing(self.disclient, ctx.author, msg)
             await ctx.send(embed=success_embed(msg))
         else:
             msg = f"""Failed to remove alias(es): {', '.join(invalid_aliases)} from {idol}!
@@ -398,12 +411,12 @@ class Moderation(commands.Cog):
             r = ', '.join(removed)
             nt = ', '.join(not_there)
             act = f"Removed tag(s): {r} from {link}"
-            await self.moderation_auditing(ctx.author, act)
+            await moderation_auditing(self.disclient, ctx.author, act)
             await ctx.send(embed=success_embed(f'Removed {r} tag(s) from link!\nLink did not have: {nt}'))
         elif removed:
             r = ', '.join(removed)
             act = f"Removed tag(s): {r} from the link:\n{link}"
-            await self.moderation_auditing(ctx.author, act)
+            await moderation_auditing(self.disclient, ctx.author, act)
             await ctx.send(embed=success_embed(f'Removed {r} tag(s) from link!'))
         else:
             nt = ', '.join(not_there)
@@ -422,7 +435,7 @@ class Moderation(commands.Cog):
         add_tag_alias_db(tag, tag, ctx.author.id)
         if added:
             act = f'Added tag: {tag}!'
-            await self.moderation_auditing(ctx.author, act)
+            await moderation_auditing(self.disclient, ctx.author, act)
             await ctx.send(embed=success_embed(act))
         else:
             await ctx.send(embed=error_embed(f'{tag} already exists!'))
@@ -436,7 +449,7 @@ class Moderation(commands.Cog):
         removed = remove_tag(tag)
         if removed:
             act = f'Deleted tag: {tag}!'
-            await self.moderation_auditing(ctx.author, act)
+            await moderation_auditing(self.disclient, ctx.author, act)
             await ctx.send(embed=success_embed(act))
         else:
             await ctx.send(embed=error_embed(f'{tag} does not exist!'))
@@ -463,12 +476,12 @@ class Moderation(commands.Cog):
             exists = ', '.join(invalid_aliases)
             add = ', '.join(added_aliases)
             act = f"Added alias(es): {add} to {tag}!"
-            await self.moderation_auditing(ctx.author, act)
+            await moderation_auditing(self.disclient, ctx.author, act)
             msg = f"Added alias(es): {add} to {tag}!\nSkipped adding duplicates: {exists}!"
             await ctx.send(embed=success_embed(msg))
         elif added_aliases and not invalid_aliases:
             msg = f"Added aliases(s): {', '.join(added_aliases)} to {tag}!"
-            await self.moderation_auditing(ctx.author, msg)
+            await moderation_auditing(self.disclient, ctx.author, msg)
             await ctx.send(embed=success_embed(msg))
         else:
             msg = f"Skipped adding duplicate alias(es): {', '.join(invalid_aliases)}!"
@@ -496,12 +509,12 @@ class Moderation(commands.Cog):
             exists = ', '.join(invalid_aliases)
             rem = ', '.join(removed_aliases)
             act = f"Removed alias(es): {rem} from {tag}!"
-            await self.moderation_auditing(ctx.author, act)
+            await moderation_auditing(self.disclient, ctx.author, act)
             msg = f"Removed alias(es): {rem} from {tag}!\nFailed to removed: {exists}!"
             await ctx.send(embed=success_embed(msg))
         elif removed_aliases and not invalid_aliases:
             msg = f"Removed aliases(s): {', '.join(removed_aliases)} from {tag}!"
-            await self.moderation_auditing(ctx.author, msg)
+            await moderation_auditing(self.disclient, ctx.author, msg)
             await ctx.send(embed=success_embed(msg))
         else:
             msg = f"Failed to remove alias(es): {', '.join(invalid_aliases)} from {tag}!"
@@ -537,12 +550,12 @@ class Moderation(commands.Cog):
             f = ', '.join(failed)
             s = '\n' + '\n'.join(success)
             act = f'Deleted link(s) from {group} {idol}: {s}'
-            await self.moderation_auditing(ctx.author, act)
+            await moderation_auditing(self.disclient, ctx.author, act)
             await ctx.send(embed=success_embed(f'Removed {len(success)} links!\nFailed to delete: {f}'))
         else:
             s = '\n' + '\n'.join(success)
             act = f'Deleted link(s) from {group} {idol}: {s}'
-            await self.moderation_auditing(ctx.author, act)
+            await moderation_auditing(self.disclient, ctx.author, act)
             await ctx.send(embed=success_embed(f'Removed {len(success)} links!'))
 
     @commands.command(aliases=['delgroup', 'deletegroup'])
@@ -556,7 +569,7 @@ class Moderation(commands.Cog):
         removed = remove_group(group)
         if removed:
             act = f"Deleted group: {group}"
-            await self.moderation_auditing(ctx.author, act)
+            await moderation_auditing(self.disclient, ctx.author, act)
             await ctx.send(embed=success_embed(f'Removed {group}'))
         else:
             await ctx.send(embed=error_embed(f'No group added called {group}!'))
@@ -593,12 +606,12 @@ class Moderation(commands.Cog):
                 s = ', '.join(success)
                 f = ', '.join(failed)
                 act = f"Deleted {s} from {group}."
-                await self.moderation_auditing(ctx.author, act)
+                await moderation_auditing(self.disclient, ctx.author, act)
                 await ctx.send(embed=success_embed(f'Deleted: {s}!\nFailed to delete {f}!'))
             elif success and not failed:
                 s = ', '.join(success)
                 act = f"Deleted: {s} from {group}!"
-                await self.moderation_auditing(ctx.author, act)
+                await moderation_auditing(self.disclient, ctx.author, act)
                 await ctx.send(embed=success_embed(act))
             else:
                 f = ', '.join(failed)
@@ -643,19 +656,20 @@ class Moderation(commands.Cog):
         removed = remove_command(command)
         if removed:
             act = f"Removed command: {command}"
-            await self.moderation_auditing(ctx.author, act)
+            await moderation_auditing(self.disclient, ctx.author, act)
             await ctx.send(embed=success_embed(f'Removed {command}!'))
         else:
             await ctx.send(embed=error_embed(f'Command {command} does not exist!'))
 
-    async def moderation_auditing(self, author, action):
-        """Posts moderator actions to the mod auditing channel in the discord."""
-        mod_audcha = self.disclient.get_channel(apis_dict["mod_audit_channel"])
-        dt = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        s = f'`{dt}`: `{author}`:\n{action}'
-        embed = discord.Embed(title=s,
-                              color=discord.Color.blurple())
-        await mod_audcha.send(embed=embed)
+
+async def moderation_auditing(disclient, author, action):
+    """Posts moderator actions to the mod auditing channel in the discord."""
+    mod_audcha = disclient.get_channel(apis_dict["mod_audit_channel"])
+    dt = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    s = f'`{dt}`: `{author}`:\n{action}'
+    embed = discord.Embed(title=s,
+                          color=discord.Color.blurple())
+    await mod_audcha.send(embed=embed)
 
 
 def setup(disclient):

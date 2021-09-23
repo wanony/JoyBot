@@ -139,7 +139,21 @@ def add_link(link, added_by):
     rowcount = cursor.rowcount
     db.commit()
     cursor.close()
-    return rowcount
+    return rowcount > 0
+
+
+def delete_link_from_database(link):
+    cursor = db.cursor()
+    sql = "DELETE FROM links WHERE Link = %s"
+    val = (link,)
+    try:
+        cursor.execute(sql, val)
+    except Exception as e:
+        print(e)
+    rowcount = cursor.rowcount
+    db.commit()
+    cursor.close()
+    return rowcount > 0
 
 
 def gfy_v2_test(group, idol):
@@ -311,6 +325,17 @@ def add_tag_alias(tag_id, alias, added_by):
 
 
 def get_all_tag_names():
+    """Returns all tag names."""
+    cursor = db.cursor()
+    sql = "SELECT TagName FROM tags ORDER BY TagName"
+    # sql = """SELECT Alias FROM Tag_Aliases ORDER BY Alias"""
+    cursor.execute(sql)
+    result = cursor.fetchall()
+    cursor.close()
+    return result
+
+
+def get_all_tag_alias_names():
     """Returns all tag names."""
     cursor = db.cursor()
     sql = "SELECT Alias FROM tag_aliases ORDER BY Alias"

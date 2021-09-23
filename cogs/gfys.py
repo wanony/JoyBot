@@ -3,7 +3,7 @@ from discord.ext import commands
 from random import SystemRandom
 import asyncio
 from datetime import datetime
-from embeds import error_embed, warning_embed, success_embed, restricted_embed, perma_embed
+from embeds import error_embed, warning_embed, success_embed, restricted_embed
 
 # import lots of shit from datafile.
 from data import find_group_id, get_member_links_with_tag, get_member_links, find_member_id, get_all_alias_of_tag, \
@@ -13,7 +13,8 @@ from data import find_group_id, get_member_links_with_tag, get_member_links, fin
     random_link_from_links, member_link_count, get_links_with_tag, get_groups, \
     get_members_of_group_and_link_count, count_links_of_member, get_all_tags_on_member_and_count, \
     last_three_links, count_links, apis_dict, get_auditing_channels, remove_auditing_channel, find_restricted_user_db, \
-    find_perma_db, cache_dict, random_links_without_tags, get_guild_max_duration, gfy_v2_test, gfy_v2_test_tags
+    find_perma_db, cache_dict, random_links_without_tags, get_guild_max_duration, gfy_v2_test, gfy_v2_test_tags, \
+    get_all_tag_alias_names
 
 
 # custom decorators
@@ -121,9 +122,9 @@ class Fun(commands.Cog):
         self.disclient = disclient
         self.loops = cache_dict["gfys"]["loops"]  # dict for timers
         self.recent_posts = cache_dict["gfys"]["recent_posts"]
-        self.VALID_LINK_GFY = ("https://gfycat.com/",
-                               "https://www.redgifs.com/",
-                               "https://www.gifdeliverynetwork.com/")
+        self.VALID_LINK_GFY = ("https://gfycat.com",
+                               "https://www.redgifs.com",
+                               "https://www.gifdeliverynetwork.com")
         # self.disclient.loop.create_task(self.write_recent())
 
     # @commands.Cog.listener()
@@ -318,7 +319,7 @@ class Fun(commands.Cog):
             tags_added = {}
             duplicate_links = 0
             added_links = 0
-            valid_tags = [x[0] for x in get_all_tag_names()]
+            valid_tags = [x[0] for x in get_all_tag_alias_names()]
             fts = (".JPG", ".jpg", ".JPEG", ".jpeg", ".PNG", ".png")
             for link in links:
                 if link.endswith("/"):
@@ -426,6 +427,9 @@ class Fun(commands.Cog):
                 found = find_user(author)
                 if found:
                     add_user_contribution(author, added_links)
+                    # TODO add messaging to users adding a lot, to invite them to main discord
+                    # check add check to database as to whether they have been messaged
+                    # also check that they are not currently in the discord
                 else:
                     add_user(author, 0, added_links)
             if tags_added:
@@ -467,7 +471,7 @@ class Fun(commands.Cog):
         else:
             rows = rows_of_links(group, idol)
         # row = (groupid, memberid, gromanname, mromanname, link)
-        if rows:
+        if len(rows) >= 1:
             return self.return_link_from_rows(rows)
         else:
             # handle error here
@@ -479,10 +483,9 @@ class Fun(commands.Cog):
         """x: row: (gid, mid, gname, mname, link)"""
         group = rows[0][2]
         idol = rows[0][3]
-        if group not in self.recent_posts:
-            self.recent_posts.update({group: {}})
-        if idol not in self.recent_posts[group]:
-            self.recent_posts[group].update({idol: []})
+        self.add_to_recent_posts(group, idol)
+        if len(rows) <= 1:
+            self.recent_posts[group][idol] = []
         links = [
             x[-1] for x in rows if x[-1] not in self.recent_posts[x[2]][x[3]] and x[-1].startswith(self.VALID_LINK_GFY)]
         crypto = SystemRandom()
@@ -599,7 +602,7 @@ class Fun(commands.Cog):
             "https://www.youtu"
         )
         valid_fts = (".JPG", ".jpg", ".JPEG", ".jpeg", ".PNG", ".png")
-        valid_tags = [x[0] for x in get_all_tag_names()]
+        valid_tags = [x[0] for x in get_all_tag_alias_names()]
         author = ctx.author.id
         invalid_tags = []
         duplicate_tags = []
@@ -669,7 +672,7 @@ class Fun(commands.Cog):
         Example: .tagged <tag>
         """
         tag = tag.lower()
-        valid_tags = [x[0] for x in get_all_tag_names()]
+        valid_tags = [x[0] for x in get_all_tag_alias_names()]
         if tag in valid_tags:
             tag = get_tag_parent_from_alias(tag)[0]
             if tag not in self.recent_posts:
@@ -705,7 +708,7 @@ class Fun(commands.Cog):
                 return
         tag = tag.lower()
         valid_fts = (".JPG", ".jpg", ".JPEG", ".jpeg", ".PNG", ".png")
-        valid_tags = [x[0] for x in get_all_tag_names()]
+        valid_tags = [x[0] for x in get_all_tag_alias_names()]
         twitter = "https://pbs.twimg"
         if tag in valid_tags:
             tag = get_tag_parent_from_alias(tag)[0]
@@ -739,7 +742,7 @@ class Fun(commands.Cog):
             "https://gifdeliverynetwork"
         )
         tag = tag.lower()
-        valid_tags = [x[0] for x in get_all_tag_names()]
+        valid_tags = [x[0] for x in get_all_tag_alias_names()]
         if tag in valid_tags:
             tag = get_tag_parent_from_alias(tag)[0]
             if tag not in self.recent_posts:
@@ -768,7 +771,7 @@ class Fun(commands.Cog):
             "https://www.you"
         )
         tag = tag.lower()
-        valid_tags = [x[0] for x in get_all_tag_names()]
+        valid_tags = [x[0] for x in get_all_tag_alias_names()]
         if tag in valid_tags:
             tag = get_tag_parent_from_alias(tag)[0]
             if tag not in self.recent_posts:
