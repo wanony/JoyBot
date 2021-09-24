@@ -465,10 +465,13 @@ class Fun(commands.Cog):
 
     def return_gfys(self, group, idol, tags):
         if tags:
+            print("there are tags")
             rows = rows_of_links_with_tags(group, idol, tags)
             if not rows:
+                print("nothing for that tag")
                 rows = rows_of_links(group, idol)
         else:
+            print("no tags")
             rows = rows_of_links(group, idol)
         # row = (groupid, memberid, gromanname, mromanname, link)
         if len(rows) >= 1:
@@ -484,10 +487,13 @@ class Fun(commands.Cog):
         group = rows[0][2]
         idol = rows[0][3]
         self.add_to_recent_posts(group, idol)
-        if len(rows) <= 1:
-            self.recent_posts[group][idol] = []
         links = [
             x[-1] for x in rows if x[-1] not in self.recent_posts[x[2]][x[3]] and x[-1].startswith(self.VALID_LINK_GFY)]
+        print(links)
+        if not links:
+            print("not a single link left, resetting recent post")
+            links = [x[-1] for x in rows if x[-1].startswith(self.VALID_LINK_GFY)]
+            self.recent_posts[group][idol] = []
         crypto = SystemRandom()
         try:
             rand = crypto.randrange(len(links) - 1)
