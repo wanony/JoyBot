@@ -37,10 +37,12 @@ async def finish_upload(embed, channels, disclient, url_to_path_pairs):
         chan = disclient.get_channel(channel)
         await chan.send(embed=embed)
         links = url_to_path_pairs  # list of urls
-        i = 0
-        while i < (len(links)):
-            await chan.send('\n'.join(link for link, _ in links[i:i+4]))
-            i += 4
+        # i = 0
+        # while i < (len(links)):
+        #     await chan.send('\n'.join(link for link, _ in links[i:i+4]))
+        #     i += 4
+        for link, _ in links:
+            await chan.send(link)
     for p in [path for _, path in url_to_path_pairs if path]:
         os.remove(p)
 
@@ -180,12 +182,13 @@ class InstaClient:
             else:
                 # multiple photos or videos
                 links = []  # hold the links for each post
-                short = pyshorteners.Shortener()
+                # short = pyshorteners.Shortener()
                 for item in post['carousel_media']:
                     if item['media_type'] == 1:
                         for images in item['image_versions2']['candidates']:
                             if item['original_width'] == images['width']:
-                                links.append(short.tinyurl.short(images['url']))  # simply append the image urls
+                                # links.append(short.tinyurl.short(images['url']))  # simply append the image urls
+                                links.append(images['url'])  # simply append the image urls
                     else:
                         filename = download_url(item['video_versions'][0]['url'], 'instavid')
                         links.append(filename)

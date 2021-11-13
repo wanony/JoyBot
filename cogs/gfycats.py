@@ -39,12 +39,13 @@ class PfyClient:
     def upload_multiple_videos(self, video_file_paths):
         """Returns a list of tuples, containing link and filepath"""
         return_list = []
+        print(video_file_paths)
         if video_file_paths:
             for path in video_file_paths:
-                if 'tinyurl' in path:
-                    return_list.append((path, None))
-                else:
+                if path.endswith('.webm'):
                     return_list.append((self.upload_video(path), path))
+                else:
+                    return_list.append((path, None))
         return return_list
 
 
