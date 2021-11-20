@@ -3,7 +3,7 @@ from bot import executor
 from discord.ext import commands
 import urllib.request
 import datetime
-from data import apis_dict
+from data import apis_dict, default_prefix
 import pfycat
 import concurrent.futures
 from pathlib import Path
@@ -24,9 +24,9 @@ async def finish_upload(message, path, url, author):
 
 
 class PfyClient:
-    def __init__(self, disclient):
-        self.api_key = apis_dict['gfy_client_id']
-        self.api_sec = apis_dict['gfy_client_secret']
+    def __init__(self, disclient, api_key, api_sec):
+        self.api_key = api_key
+        self.api_sec = api_sec
         self.disclient = disclient
         self.client = pfycat.Client(self.api_key, self.api_sec)
 
@@ -52,14 +52,14 @@ class PfyClient:
 class Uploading(commands.Cog):
     """Upload videos to Gfycat through discord!"""
 
-    def __init__(self, disclient):
+    def __init__(self, disclient, api_key, api_sec):
         self.disclient = disclient
-        self.pfy = PfyClient(self.disclient)
+        self.pfy = PfyClient(self.disclient, api_key, api_sec)
 
     @commands.group(name='upload', pass_context=True)
     async def _upload(self, ctx):
         if ctx.invoked_subcommand is None:
-            await ctx.send(embed=error_embed('Invalid subcommand passed... Try `.help Uploading`'))
+            await ctx.send(embed=error_embed(f"Invalid subcommand passed... Try `{default_prefix}help Uploading`"))
 
     @_upload.command(name='gfy')
     @commands.guild_only()  # force guild to attempt to avoid spam
@@ -103,4 +103,13 @@ class Uploading(commands.Cog):
 
 
 def setup(disclient):
-    disclient.add_cog(Uploading(disclient))
+    try:
+        api_key = apis_dict['gfy_client_id']
+        api_sec = apis_dict['gfy_client_secret']
+        if api_key.strip() == "" or api_sec.strip() == "":
+            print(f"Api key or secret missing, skipping loading cog gfycat")
+            return
+        disclient.add_cog(Uploading(disclient, api_key, api_sec))
+    except Exception as e:
+        print(f"gfycats cog could not be loaded")
+        print(e)

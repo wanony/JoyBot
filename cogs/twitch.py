@@ -14,11 +14,10 @@ from embeds import success_embed, error_embed
 class Twitch(commands.Cog):
     """Get live updates for your favourite twitch streamers
     """
-    def __init__(self, disclient):
+    def __init__(self, disclient, twitch_id, twitch_sec):
         self.disclient = disclient
         self.disclient.loop.create_task(self.get_online_streams())
-        self.twitch = Twitchy(apis_dict["twitch_id"],
-                              apis_dict["twitch_secret"])
+        self.twitch = Twitchy(twitch_id, twitch_sec,)
         self.twitch.authenticate_app([])
         self.time_format = '%Y-%m-%d %H:%M:%S'
 
@@ -166,4 +165,13 @@ class Twitch(commands.Cog):
 
 
 def setup(disclient):
-    disclient.add_cog(Twitch(disclient))
+    try:
+        twitch_key = apis_dict['twitch_id']
+        twitch_sec = apis_dict['twitch_secret']
+        if twitch_key.strip() == "" or twitch_sec.strip() == "":
+            print(f"Api key or secret missing, skipping loading cog twitch")
+            return
+        disclient.add_cog(Twitch(disclient, twitch_key, twitch_sec))
+    except Exception as e:
+        print(f"twitch cog could not be loaded")
+        print(e)

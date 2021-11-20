@@ -3,6 +3,7 @@ from discord.ext import commands
 from data import find_user, check_user_is_mod
 from data import apis_dict
 from embeds import success_embed, thanks_embed
+from data import default_prefix
 
 
 class General(commands.Cog):
@@ -17,7 +18,7 @@ class General(commands.Cog):
         """Gets all categories and commands of the bot."""
         if not args:
             titl = 'Category List'
-            desc = 'Use `.help <Category>` to find out more about them! \n'
+            desc = f"Use `{default_prefix}help <Category>` to find out more about them! \n"
             halp = discord.Embed(title=titl,
                                  description=desc,
                                  color=discord.Color.blurple())

@@ -5,7 +5,7 @@ jsons/*
 cogs/directories.json
 directories.json
 test.py
-Pipfile.lock
 .git
 .idea
 __pycache__/
+*.lock

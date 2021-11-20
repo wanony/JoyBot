@@ -26,10 +26,10 @@ def create_reddit_instance():
 class Reddit(commands.Cog):
     """Get new posts from your favourite Subreddits!
     """
-    def __init__(self, disclient):
+    def __init__(self, disclient, recent_posts):
         """Initialise client."""
         self.disclient = disclient
-        self.recent_posts = cache_dict["reddit"]["recent_posts"]
+        self.recent_posts = recent_posts
         self.disclient.loop.create_task(self.post_new())
 
     async def post_new(self):
@@ -203,4 +203,12 @@ class Reddit(commands.Cog):
 
 
 def setup(disclient):
-    disclient.add_cog(Reddit(disclient))
+    try:
+        recent_posts = cache_dict["reddit"]["recent_posts"]
+        if recent_posts.strip() == "":
+            print(f"Recent posts missing, skipping loading cog reddit")
+            return
+        disclient.add_cog(Reddit(disclient, recent_posts))
+    except Exception as e:
+        print(f"reddit cog could not be loaded")
+        print(e)

@@ -117,11 +117,11 @@ class Fun(commands.Cog):
     """All of the commands listed here are for gfys, images, or fancams.
     All groups with multiple word names are written as one word.
     """
-    def __init__(self, disclient):
+    def __init__(self, disclient, loops, recent_posts):
         """Initialise client."""
         self.disclient = disclient
-        self.loops = cache_dict["gfys"]["loops"]  # dict for timers
-        self.recent_posts = cache_dict["gfys"]["recent_posts"]
+        self.loops = loops
+        self.recent_posts = recent_posts
         self.VALID_LINK_GFY = ("https://gfycat.com",
                                "https://www.redgifs.com",
                                "https://www.gifdeliverynetwork.com")
@@ -1215,4 +1215,10 @@ def newline(array):
 
 
 def setup(disclient):
-    disclient.add_cog(Fun(disclient))
+    try:
+        loops = cache_dict["gfys"]["loops"]  # dict for timers
+        recent_posts = cache_dict["gfys"]["recent_posts"]
+        disclient.add_cog(Fun(disclient, loops, recent_posts))
+    except Exception as e:
+        print(f"gfys cog could not be loaded")
+        print(e)
