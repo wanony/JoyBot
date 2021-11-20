@@ -35,8 +35,11 @@ disclient.remove_command('help')
 
 @disclient.event
 async def on_ready():
-    await disclient.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="for .help"),
-                                    status=discord.Status.online)
+    await disclient.change_presence(activity=discord.Activity(
+        type=discord.ActivityType.watching,
+        name=f"for {default_prefix}help"),
+        status=discord.Status.online
+    )
     print(f"bot is online as {disclient.user.name} in {len(disclient.guilds)} guilds!:")
     for guild in disclient.guilds:
         # add if guild id not in guild table here...

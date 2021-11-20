@@ -104,10 +104,10 @@ def onlogin_callback(api, new_settings_file):
 
 
 class InstaClient:
-    def __init__(self, disclient):
+    def __init__(self, disclient, api_key, api_sec):
         self.device_id = None
         self.disclient = disclient
-        self.gfy = PfyClient(self.disclient)
+        self.gfy = PfyClient(self.disclient, api_key, api_sec)
         try:
             if os.path.isfile(insta_settings_file):
                 with open(insta_settings_file) as w:
@@ -200,10 +200,10 @@ class Instagram(commands.Cog):
     """Get new posts from your favourite Instagram accounts!
     """
 
-    def __init__(self, disclient):
+    def __init__(self, disclient, api_key, api_sec):
         """Initialise client."""
         self.disclient = disclient
-        self.insta = InstaClient(self.disclient)
+        self.insta = InstaClient(self.disclient, api_key, api_sec)
         self.disclient.loop.create_task(self.check_for_new_posts())
 
     async def check_for_new_posts(self):
@@ -325,4 +325,13 @@ class Instagram(commands.Cog):
 
 
 def setup(disclient):
-    disclient.add_cog(Instagram(disclient))
+    try:
+        api_key = apis_dict['gfy_client_id']
+        api_sec = apis_dict['gfy_client_secret']
+        if api_key.strip() == "" or api_sec.strip() == "":
+            print(f"Api key or secret missing, skipping loading cog gfycat")
+            return
+        disclient.add_cog(Instagram(disclient, api_key, api_sec))
+    except Exception as e:
+        print(f"gfycats cog could not be loaded")
+        print(e)
