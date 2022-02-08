@@ -1,13 +1,14 @@
 import os
 
-import discord
-from discord.ext import commands
+import nextcord as discord
+from nextcord.ext import commands
 
 from datetime import datetime
 
-# import lots of shit
+# import lots of methods
 from data import add_channel, add_tag_alias_db, remove_tag_alias_db, add_group_alias_db, remove_group_alias_db, \
-    add_cont_from_one_user_to_other, perma_user_db, remove_perma_user_db, delete_link_from_database
+    add_cont_from_one_user_to_other, perma_user_db, remove_perma_user_db, delete_link_from_database, gfy_v2_test, \
+    find_member_id
 from data import remove_member_alias_db, add_member_alias_db, add_tag, find_group_id, add_group, remove_group
 from data import remove_moderator, add_moderator, get_members_of_group, add_member, remove_member, apis_dict
 from data import remove_auditing_channel, add_auditing_channel, remove_command, remove_link, remove_tag_from_link
@@ -170,6 +171,43 @@ class Owner(commands.Cog):
             await ctx.send(embed=success_embed("User un-perma'd."))
         else:
             await ctx.send(embed=error_embed("Failed to un-perma user."))
+
+    @commands.command()
+    @is_owner()
+    async def list_links(self, ctx, group, idol):
+        links = gfy_v2_test(group, idol)
+        num_of_links = len(links)
+        embed = discord.Embed(
+            title="List of Links",
+            description=f"All {num_of_links} links of {links[0][2]}'s {links[0][3]}.",
+            color=discord.Color.blurple()
+        )
+        await ctx.send(embed=embed)
+        for i, link in enumerate(links):
+            await ctx.send(f"{i + 1}. {link[-1]}")
+
+    @commands.command()
+    @is_owner()
+    async def link_duplicate_members(self, ctx, group_one, member_one, group_two, member_two):
+        """Create a link between two members links, therefore allowing their links to seamlessly be accessed
+        no matter what group they are referenced from. For example, if one idol is part of two different groups,
+        we can link the link tables together to reference the same ID, in a sense creating an alias on top of the
+        aliases they may already have."""
+        # get member one's ID
+        group_one_id = find_group_id(group_one)
+        member_one_id = find_member_id(group_one_id, member_one)
+
+        # get member two's ID
+        group_two_id = find_group_id(group_two)
+        member_two_id = find_member_id(group_two_id, member_two)
+
+        # create the link entries again with the two sets of ID's
+        pass
+
+    @commands.command()
+    @is_owner()
+    async def unlink_duplicate_members(self, ctx, group_one, member_one, group_two, member_two):
+        pass
 
 
 class Moderation(commands.Cog):

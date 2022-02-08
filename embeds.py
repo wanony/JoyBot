@@ -1,5 +1,5 @@
-from discord import Embed
-from discord import Color
+from nextcord import Embed
+from nextcord import Color
 
 # File for keeping embeds that are used frequently
 

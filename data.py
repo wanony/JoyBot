@@ -197,6 +197,26 @@ def gfy_v2_test_tags(group, idol, tag):
     return result
 
 
+def get_link_from_user_favourites(user_id):
+    pass
+
+
+def add_link_to_user_favs(link, user_id):
+    cursor = db.cursor()
+    sql = """INSERT INTO user_favourites VALUES (
+             (SELECT LinkId FROM links WHERE Link = %s),
+             %s)"""
+    vals = (link, user_id)
+    try:
+        cursor.execute(sql, vals)
+    except Exception as e:
+        print(e)
+    result = cursor.rowcount
+    cursor.close()
+    db.commit()
+    return result > 0
+
+
 def count_links():
     """Returns a count of all links, groups, and members."""
     cursor = db.cursor()
@@ -224,44 +244,6 @@ def get_link_id(link):
 def remove_link(group, member, link):
     """Removes a link from a member."""
     cursor = db.cursor()
-    # sql = """UPDATE Links, Link_Members, Link_Tags
-    #             SET
-    #                 Links.IsDeleted = 1,
-    #                 Links_Members.IsDeleted = 1,
-    #                 Links_Tags.IsDeleted = 1
-    #             WHERE
-    #                 Links.LinkId = %s
-    #                 AND
-    #                 Links.LinkId = Link_Tags.LinkId
-    #                 AND
-    #                 Link_Members.MemberId = %s
-    #                 AND
-    #                 Link_Members.LinkId = Links.LinkId;
-    #         """
-    # sql = """DELETE Link_Members FROM Link_Members
-    #             INNER JOIN Links
-    #                 ON Link_Members.LinkId = Links.LinkId
-    #             INNER JOIN Members
-    #                 ON Members.MemberId = Link_Members.MemberId
-    #             INNER JOIN Groupz
-    #                 ON Groupz.GroupId = Members.GroupId
-    #             WHERE
-    #                 Groupz.RomanName = %s
-    #                 AND
-    #                 Members.RomanName = %s
-    #                 AND
-    #                 Links.Link = %s
-    #                 """
-    # sql = """DELETE link_members, link_tags, links  FROM links
-    #             left JOIN groupz
-    #                 ON groupz.RomanName = %s
-    #             left JOIN members
-    #                 ON members.RomanName = %s
-    #             left JOIN link_members
-    #                 ON members.MemberId = link_members.MemberId
-    #             left JOIN link_tags
-    #                 ON link_tags.LinkId = link_members.linkId
-    #             WHERE links.Link = %s;"""
     sql = """delete links FROM links
              left JOIN groupz_aliases
              ON groupz_aliases.Alias = %s
@@ -405,10 +387,6 @@ def find_tag_id(tag_name):
     """Returns the unique ID of a tag by name."""
     cursor = db.cursor()
     sql = "SELECT TagId FROM tags WHERE TagName = %s"
-    # sql = """SELECT tags.TagId FROM Tags
-    #             left join tag_aliases
-    #                 on tag_aliases.TagId = tags.TagId
-    #             WHERE tag_aliases.Alias = %s"""
     val = (tag_name,)
     cursor.execute(sql, val)
     tag_id = cursor.fetchone()
@@ -434,18 +412,6 @@ def find_tags_on_link(link):
 
 def remove_tag(tag):
     cursor = db.cursor()
-    # sql = """UPDATE Tags, Link_Tags
-    #             SET
-    #                 Tags.IsDeleted = 1,
-    #                 Link_Tags.IsDeleted = 1
-    #             WHERE
-    #                 Tags.TagId = %s
-    #                 AND
-    #                 Link_Tags.TagId = Tags.TagId;
-    #                 """
-    # sql = """DELETE tags, link_tags FROM tags
-    #             INNER JOIN link_tags ON tags.TagId = link_tags.TagId
-    #             WHERE tags.TagName = %s;"""
     sql = "DELETE FROM tags WHERE TagName = %s"
     value = (tag,)
     cursor.execute(sql, value)
@@ -457,9 +423,6 @@ def remove_tag(tag):
 
 def add_link_tags(link, tag_name):
     cursor = db.cursor()
-    # sql = """INSERT INTO Link_Tags(LinkId, TagId) SELECT Links.LinkId, Tags.TagId FROM Links
-    #          LEFT JOIN Tags ON Tags.TagName = %s
-    #          WHERE Links.Link = %s"""
     sql = """INSERT INTO link_tags(LinkId, TagId) SELECT links.LinkId, tags.TagId FROM links
              LEFT JOIN tag_aliases ON tag_aliases.Alias = %s
              LEFT JOIN tags ON tags.TagId = tag_aliases.TagId
@@ -478,17 +441,6 @@ def add_link_tags(link, tag_name):
 
 def remove_tag_from_link(link, tag):
     cursor = db.cursor()
-    # sql = """UPDATE Link_Tags
-    #             INNER JOIN Links ON
-    #                 Links.LinkId = Link_Tags.LinkId
-    #             INNER JOIN Tags ON
-    #                 Tags.TagId = Link_Tags.TagId
-    #             SET
-    #                 Link_Tags.IsDeleted = 1
-    #             WHERE
-    #                 Links.Link = %s
-    #                 AND
-    #                 Tags.TagName = %s;"""
     sql = """DELETE FROM link_tags
           WHERE LinkId = ANY(SELECT LinkId FROM links WHERE Link = %s) 
           AND TagId = ANY(SELECT TagId FROM tags WHERE TagName = %s)"""
@@ -951,7 +903,10 @@ def add_user(discord_id, xp=0, contri=0):
     cursor = db.cursor()
     sql = "INSERT INTO users(UserId, Xp, Cont) VALUES (%s, %s, %s);"
     values = (discord_id, xp, contri)
-    cursor.execute(sql, values)
+    try:
+        cursor.execute(sql, values)
+    except Exception as e:
+        print(e)
     db.commit()
     cursor.close()
 
@@ -1005,21 +960,6 @@ def add_cont_from_one_user_to_other(from_id, to_id):
         print(e)
     db.commit()
     cursor.close()
-
-
-# def remove_user(discord_id):
-#     cursor = db.cursor()
-#     # sql = """UPDATE Users
-#     #             SET
-#     #                 Users.IsDeleted = 1
-#     #             WHERE
-#     #                 Users.UserId = %s;"""
-#     value = (discord_id,)
-#     cursor.execute(sql, value)
-#     rowcount = cursor.rowcount
-#     db.commit()
-#     cursor.close()
-#     return rowcount > 0
 
 
 def get_leaderboard(number_of_users=10):
@@ -1078,11 +1018,6 @@ def add_moderator(discord_id):
 
 def remove_moderator(discord_id):
     cursor = db.cursor()
-    # sql = """UPDATE Moderators
-    #             SET
-    #                 Moderators.IsDeleted = 1
-    #             WHERE
-    #                 Moderators.UserId = %s;"""
     sql = "DELETE FROM moderators WHERE UserId = %s"
     value = (discord_id,)
     cursor.execute(sql, value)
@@ -1156,13 +1091,6 @@ def add_auditing_channel(discord_id):
 
 def remove_auditing_channel(discord_id):
     cursor = db.cursor()
-    # sql = """UPDATE Auditing_Channels
-    #             SET
-    #                 Auditing_Channels.IsDeleted = 1
-    #             WHERE
-    #                 Auditing_Channels.ChannelId = %s"""
-    # sql = """DELETE FROM auditing_channels
-    #             WHERE ChannelId = %s"""
     sql = """DELETE FROM auditing_channels
                 WHERE ChannelId = ANY(
                 SELECT ChannelId FROM channels
@@ -1214,21 +1142,6 @@ def add_reddit(reddit_name):
     return rowcount > 0
 
 
-# def remove_reddit(reddit_name):
-#     cursor = db.cursor()
-#     sql = """UPDATE Reddit
-#                 SET
-#                     Reddit.IsDeleted
-#                 WHERE
-#                     Reddit.RedditName = %s;"""
-#     value = (reddit_name,)
-#     cursor.execute(sql, value)
-#     rowcount = cursor.rowcount
-#     db.commit()
-#     cursor.close()
-#     return rowcount > 0
-
-
 def get_subreddit_id(reddit_name):
     cursor = db.cursor()
     sql = """SELECT RedditId FROM reddit
@@ -1272,23 +1185,6 @@ def remove_channel_from_subreddit(channel_id, subreddit_name):
     db.commit()
     cursor.close()
     return rowcount > 0
-
-
-# def remove_reddit_channel(channel_id, reddit_id):
-#     cursor = db.cursor()
-#     sql = """UPDATE Reddit_Channels
-#                 SET
-#                     Reddit_Channels.IsDeleted = 1
-#                 WHERE
-#                     Reddit_Channels.ChannelId = %s
-#                     AND
-#                     Reddit_Channels.RedditId = %s;"""
-#     values = (channel_id, reddit_id)
-#     cursor.execute(sql, values)
-#     rowcount = cursor.rowcount
-#     db.commit()
-#     cursor.close()
-#     return rowcount > 0
 
 
 def get_all_reddit_channels():
@@ -1859,11 +1755,3 @@ def update_twitch_last_live(twitch_id, time):
     db.commit()
     cursor.close()
     return rowcount > 0
-# def get_all_links_from_group(group_name):
-#     cursor = db.cursor()
-#     sql = """"""
-#     val = (group_name,)
-#     cursor.execute(sql, val)
-#     result = cursor.fetchall()
-#     cursor.close()
-#     return result

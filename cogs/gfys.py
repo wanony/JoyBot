@@ -1,11 +1,13 @@
-import discord
-from discord.ext import commands
+from datetime import datetime
+
+import nextcord as discord
+from nextcord.ext import commands
 from random import SystemRandom
 import asyncio
-from datetime import datetime
+from time import time
 from embeds import error_embed, warning_embed, success_embed, restricted_embed
 
-# import lots of shit from datafile.
+# import lots from the datafile.
 from data import find_group_id, get_member_links_with_tag, get_member_links, find_member_id, get_all_alias_of_tag, \
     find_member_aliases, find_group_id_and_name, get_group_aliases, find_member_id_and_name, \
     get_tag_parent_from_alias, get_all_tag_names, add_tag, find_tag_id, add_tag_alias, add_link_tags, \
@@ -113,27 +115,31 @@ def format_timer_args(args):
     return duration, interval, group, idol, tags
 
 
+class Timer:
+    def __init__(self, _id, author, loops, interval, channel, guild_id=None):
+        self.id = _id
+        self.author = author
+        self.loops = loops
+        self.interval = interval
+        self.channel = channel
+        self.guild_id = guild_id
+
+    def destroy(self):
+        self.loops = 0
+
+
 class Fun(commands.Cog):
-    """All of the commands listed here are for gfys, images, or fancams.
+    """All the commands listed here are for gfys, images, or fancams.
     All groups with multiple word names are written as one word.
     """
     def __init__(self, disclient):
         """Initialise client."""
         self.disclient = disclient
-        self.loops = cache_dict["gfys"]["loops"]  # dict for timers
+        self.timers = []
         self.recent_posts = cache_dict["gfys"]["recent_posts"]
         self.VALID_LINK_GFY = ("https://gfycat.com",
                                "https://www.redgifs.com",
                                "https://www.gifdeliverynetwork.com")
-        # self.disclient.loop.create_task(self.write_recent())
-
-    # @commands.Cog.listener()
-    # async def write_recent(self):
-    #     await self.disclient.wait_until_ready()
-    #     while not self.disclient.is_closed():
-    #         with open(direc_dict["recents"], 'w') as rece:
-    #             json.dump(recent_dict, rece, indent=4)
-    #         await asyncio.sleep(5)
 
     @commands.command()
     @is_restricted()
@@ -176,7 +182,7 @@ class Fun(commands.Cog):
         fts = (".JPG", ".jpg", ".JPEG", ".jpeg", ".PNG", ".png")
         link_list = [x for x in link_list if x.endswith(fts)]
         if not link_list:
-            await ctx.send(embed=error_embed(f"No fancams added for `{idol.title()}`!"))
+            await ctx.send(embed=error_embed(f"No images added for `{idol.title()}`!"))
         if group not in self.recent_posts:
             updater = {group: {}}
             self.recent_posts.update(updater)
@@ -332,7 +338,7 @@ class Fun(commands.Cog):
                     link = "https://gfycat.com/" + split[-1]
                     currentlink = link
                     last_added = None
-                elif link.startswith("https://www.redgifs.com/"):
+                elif link.startswith("https://www.redgifs.com/") or link.startswith("https://redgifs.com/"):
                     split = link.split("/")
                     link = "https://www.redgifs.com/watch/" + split[-1]
                     currentlink = link
@@ -465,13 +471,10 @@ class Fun(commands.Cog):
 
     def return_gfys(self, group, idol, tags):
         if tags:
-            print("there are tags")
             rows = rows_of_links_with_tags(group, idol, tags)
             if not rows:
-                print("nothing for that tag")
                 rows = rows_of_links(group, idol)
         else:
-            print("no tags")
             rows = rows_of_links(group, idol)
         # row = (groupid, memberid, gromanname, mromanname, link)
         if len(rows) >= 1:
@@ -489,9 +492,7 @@ class Fun(commands.Cog):
         self.add_to_recent_posts(group, idol)
         links = [
             x[-1] for x in rows if x[-1] not in self.recent_posts[x[2]][x[3]] and x[-1].startswith(self.VALID_LINK_GFY)]
-        print(links)
         if not links:
-            print("not a single link left, resetting recent post")
             links = [x[-1] for x in rows if x[-1].startswith(self.VALID_LINK_GFY)]
             self.recent_posts[group][idol] = []
         crypto = SystemRandom()
@@ -855,119 +856,109 @@ class Fun(commands.Cog):
 
 # --- Timer Commands --- #
 
-    @commands.command(name='timer', aliases=['nohands'])
+    # @commands.command(name='timer', aliases=['nohands'])
+    @discord.slash_command(name='timer',
+                           description="""Joy will send you links for a short duration.""",
+                           guild_ids=[755143761922883584])
     @is_restricted()
-    async def _timer(self, ctx, *args):
-        duration, interval, group, idol, tags = format_timer_args(args)
+    async def _timer(self, interaction: discord.Interaction, duration, interval, group, idol, tags='none'):
+        duration = int(duration)
+        interval = int(interval)
+        tags = tags.split(" ")
+        if tags[0].lower() == 'none':
+            tags = None
         msg = ''
-        if ctx.guild:
-            max_duration = get_guild_max_duration(ctx.guild.id)
+        if interaction.guild:
+            max_duration = get_guild_max_duration(interaction.guild_id)
             if max_duration:
                 if duration > max_duration[0]:
                     duration = max_duration[0]
-                    msg = msg + f'\nDuration reduced to server max duration of `{max_duration[0]}`.'
+                    msg = f'\nDuration reduced to server max duration of `{max_duration[0]}`.'
         if tags:
             links = rows_of_links_with_tags(group, idol, tags)
         else:
             links = rows_of_links(group, idol)
+        print(links)
         loops = (abs(duration) * 60) // abs(interval)
         if len(links) < loops:
             loops = len(links)
-        author = str(ctx.author.id)
-        channel = str(ctx.channel.id)
-        if channel not in self.loops:
-            self.loops.update({channel: {}})
-        if author not in self.loops[channel]:
-            self.loops[channel].update({author: {'1': loops}})
-            index = '1'
+        author = interaction.user.id
+        channel = interaction.channel
+        _id = time()  # improve this to be more user-friendly, like "name 1"
+        msg = f"{group}'s {idol} for {duration} minute(s)! {msg}\nTimer ID: {_id}"
+        await interaction.response.send_message(embed=discord.Embed(title='Starting Timer!',
+                                                description=msg,
+                                                color=discord.Color.blurple()))
+        if interaction.guild:
+            timer = Timer(_id, author, loops, interval, channel, interaction.guild_id)
         else:
-            try:
-                index = int(max(self.loops[channel][author].keys())) + 1
-            except ValueError:
-                index = '1'
-            index = str(index)
-            self.loops[channel][author].update({index: loops})
-        msg = f"{group}'s {idol} for {duration} minute(s)!" + msg
-        await ctx.send(embed=discord.Embed(title='Starting Timer!',
-                                           description=msg,
-                                           color=discord.Color.blurple()))
-        try:
-            while self.loops[channel][author][index] > 0:
-                await ctx.send(self.return_link_from_rows(links))
-                self.loops[channel][author][index] -= 1
-                if self.loops[channel][author][index] == 0:
-                    await ctx.send(embed=discord.Embed(title='Timer Finished!',
-                                                       description='',
-                                                       color=discord.Color.blurple()))
-                    break
-                await asyncio.sleep(interval)
-        except KeyError:
-            pass
-        if self.loops[channel][author][index] == 0:
-            self.loops[channel][author].pop(index)
-        if not self.loops[channel][author]:
-            self.loops[channel].pop(author)
-        if not self.loops[channel]:
-            self.loops.pop(channel)
+            timer = Timer(_id, author, loops, interval, channel)
+        self.timers.append(timer)
+        await self.timer_helper(timer, links)
 
-    @commands.command(aliases=['stop', 'cancel', 'end'])
+    async def timer_helper(self, timer, links):
+        while timer.loops > 0:
+            print(f"this is looping with {timer.loops} loops remaining!")
+            await timer.channel.send(self.return_link_from_rows(links))
+            timer.loops -= 1
+            if timer.loops <= 0:
+                await timer.channel.send(embed=discord.Embed(title='Timer Finished!',
+                                                             description='',
+                                                             color=discord.Color.blurple()))
+                del timer
+                return
+            await asyncio.sleep(timer.interval)
+
+    # @commands.command(aliases=['stop', 'cancel', 'end'])
+    @discord.slash_command(name='stoptimer',
+                           description="Stop a timer you previously created",
+                           guild_ids=[755143761922883584])
     @is_restricted()
-    async def stop_timer(self, ctx, timer_number=None):
+    async def _stop_timer(self, interaction: discord.Interaction, timer_id):
         """
         Stops the timer function by user, if you have multiple timers running, specify the timer number.
         You can stop all timers with: .stop all
         """
+        author = interaction.user.id
+        for timer in self.timers:
+            if timer.id == float(timer_id) and timer.author == author:
+                timer.destroy()
+                del timer
+                await interaction.response.send_message("Timer successfully stopped!")
+                return
+        await interaction.response.send_message(f"No timer found with ID: {timer_id} from {interaction.user.name}!",
+                                                ephemeral=True)
 
-        author = str(ctx.author.id)
-        channel = str(ctx.channel.id)
-        if channel not in self.loops:
-            await ctx.send(embed=error_embed('No timer running in this channel.'))
-            return
-        if author not in self.loops[channel]:
-            await ctx.send(embed=error_embed('No timer running for {ctx.author} in this channel.'))
-            return
-        if not timer_number:
-            timer_number = min(self.loops[channel][author].keys())
-        if timer_number == 'all':
-            for element in self.loops[channel][author].keys():
-                self.loops[channel][author].pop(element)
-            await ctx.send(embed=discord.Embed(title='Stopped Timer',
-                                               description=f"Stopped all timers for `{ctx.author}`",
-                                               color=discord.Color.blurple()))
-        else:
-            self.loops[channel][author].pop(timer_number)
-            await ctx.send(embed=discord.Embed(title='Stopped Timer',
-                                               description=f"Stopped timer {timer_number} for {ctx.author}",
-                                               color=discord.Color.blurple()))
-
-    @commands.command(name='force_stop', aliases=['stoptimer', 'stopusertimer', 'forcestop'])
+    # @commands.command(name='force_stop', aliases=['stoptimer', 'stopusertimer', 'forcestop'])
+    @discord.slash_command(name='forcestoptimer',
+                           description="Stop a members timers in your server.",
+                           guild_ids=[755143761922883584])
     @commands.has_permissions(manage_messages=True)
     @commands.guild_only()
     @is_restricted()
-    async def _destroy_timers(self, ctx, member: discord.Member):
+    async def _destroy_timers(self, interaction: discord.Interaction, member: discord.Member):
         """Force all timers started by a user to end.
         Usage (invoke this command in the same channel that the timer is running):
         .force_stop @<user>
         .force_stop <User ID>"""
-        channel = str(ctx.channel.id)
-        member_id = str(member.id)
         destroyed = 0
-        if channel in self.loops:
-            if member_id in self.loops[channel]:
-                destroyed += len(self.loops[channel][member_id])
-                del self.loops[channel][member_id]
-            else:
-                await ctx.send(embed=error_embed(f'No timers running for `{member}`!'))
-        else:
-            await ctx.send(embed=error_embed('No timers running in this channel!'))
+        for timer in self.timers:
+            if timer.author == member.id and timer.guild_id == interaction.guild_id:
+                timer.destroy()
+                destroyed += 1
         if destroyed > 0:
-            await ctx.send(embed=success_embed(f'Destroyed {destroyed} timers running for `{member}`'))
+            interaction.response.send_message(f"Successfully destroyed {destroyed} timers from {member.mention}.")
+        else:
+            interaction.response.send_message(f"No timers from {member.mention} in {interaction.guild}.")
 
 # --- Info Commands --- #
 
-    @commands.command()
+    # @commands.command()
+    @discord.slash_command(name='info',
+                           description="Get info on groups, a group, or an idol",
+                           guild_ids=[755143761922883584])
     @is_restricted()
-    async def info(self, ctx, group=None, idol=None):
+    async def info(self, interaction: discord.Interaction, group='none', idol='none'):
         """
         returns info about the groups added to the bot,
         or the group specified, or the idol specified.
@@ -975,81 +966,98 @@ class Fun(commands.Cog):
         Example: .info <group>
         Example: .info <group> <idol>
         """
-        async with ctx.channel.typing():
-            if group is None:
-                groups = get_groups()
-                groups = [x[0] for x in groups]
-                group_msg = f"`{format_list(groups)}`"
-                s = "Type `.info <group>` for more information on that group!"
-                embed = discord.Embed(title='Groups:',
-                                      description=group_msg + '\n\n' + s,
+        if group == 'none':
+            groups = get_groups()
+            groups = [x[0] for x in groups]
+            group_msg = f"`{format_list(groups)}`"
+            s = """Try `/info group:<group>` for more information on that group!\n
+                   Try `/info group:<group> idol:<idol>` for me information on that idol!"""
+            embed = discord.Embed(title='Groups:',
+                                  description=group_msg + '\n\n' + s,
+                                  color=discord.Color.blurple())
+            await interaction.response.send_message(embed=embed)
+        elif group is not 'none' and idol is 'none':
+            group = group.lower()
+            name_and_g_id = find_group_id_and_name(group)
+            if name_and_g_id:
+                g_id = name_and_g_id[0]
+                g_name = name_and_g_id[-1]
+                message = []
+                aliases = [x[0] for x in get_group_aliases(g_id)]
+                members = get_members_of_group_and_link_count(g_id)
+                for member in members:
+                    name = member[0]
+                    number_of_links = member[1]
+                    spacing = ' ' * (35 - (len(name) + len(str(number_of_links))))
+                    memb = f"{name.title()}{spacing}{number_of_links}"
+                    message.append(memb)
+                nl = "Link Count"
+                mes = f"""`Name {' ' * (30 - len(nl))}{nl}`\n`{format_list_newline(message)}`
+                       \n{g_name} has aliases: `{'`, `'.join(aliases)}`
+                       \nTry `.info {group} <idol>` for more information!"""
+                embed = discord.Embed(title=f"{g_name} Members",
+                                      description=mes,
                                       color=discord.Color.blurple())
-                await ctx.send(embed=embed)
-            elif group is not None and idol is None:
-                group = group.lower()
-                name_and_g_id = find_group_id_and_name(group)
-                if name_and_g_id:
-                    g_id = name_and_g_id[0]
-                    g_name = name_and_g_id[-1]
-                    message = []
-                    aliases = [x[0] for x in get_group_aliases(g_id)]
-                    members = get_members_of_group_and_link_count(g_id)
-                    for member in members:
-                        name = member[0]
-                        number_of_links = member[1]
-                        spacing = ' ' * (35 - (len(name) + len(str(number_of_links))))
-                        memb = f"{name.title()}{spacing}{number_of_links}"
-                        message.append(memb)
-                    nl = "Link Count"
-                    mes = f"""`Name {' ' * (30 - len(nl))}{nl}`\n`{format_list_newline(message)}`
-                           \n{g_name} has aliases: `{'`, `'.join(aliases)}`
-                           \nTry `.info {group} <idol>` for more information!"""
-                    embed = discord.Embed(title=f"{g_name} Members",
-                                          description=mes,
-                                          color=discord.Color.blurple())
-                    await ctx.send(embed=embed)
-                elif name_and_g_id is None:
-                    await ctx.send(embed=error_embed(f'No group called {group}!\nTry `.info` to see a list of groups!'))
-            elif idol is not None and group is not None:
-                idol = idol.lower()
-                group = group.lower()
-                g_id_and_name = find_group_id_and_name(group)
-                if not g_id_and_name:
-                    await ctx.send(embed=error_embed(f"No group called {group}!"))
-                    return
-                g_id = g_id_and_name[0]
-                g_name = g_id_and_name[-1]
-                m_id_and_name = find_member_id_and_name(g_id, idol)
-                if not m_id_and_name:
-                    await ctx.send(embed=error_embed(f"No idol called {idol} in {group}!"))
-                    return
-                m_id = m_id_and_name[0]
-                m_name = m_id_and_name[-1]
-                link_count = count_links_of_member(m_id)
-                member_aliases = [x[0] for x in find_member_aliases(m_id)]
-                is_tagged = []
-                tags_and_count = get_all_tags_on_member_and_count(m_id)
-                for tags in tags_and_count:
-                    is_tagged.append(f"{tags[0]}: {tags[1]}")
-                a = f'{g_name} {m_name.title()} Information'
-                d = hide_links([x[0] for x in last_three_links(m_id)])
-                if is_tagged:
-                    c = format_list(is_tagged)
+                await interaction.response.send_message(embed=embed)
+            elif name_and_g_id is None:
+                await interaction.response.send_message(embed=error_embed(f'No group called {group}!\nTry `.info` to see a list of groups!'))
+        elif idol is not 'none' and group is not 'none':
+            idol = idol.lower()
+            group = group.lower()
+            g_id_and_name = find_group_id_and_name(group)
+            if not g_id_and_name:
+                await interaction.response.send_message(embed=error_embed(f"No group called {group}!"))
+                return
+            g_id = g_id_and_name[0]
+            g_name = g_id_and_name[-1]
+            m_id_and_name = find_member_id_and_name(g_id, idol)
+            if not m_id_and_name:
+                await interaction.response.send_message(embed=error_embed(f"No idol called {idol} in {group}!"))
+                return
+            m_id = m_id_and_name[0]
+            m_name = m_id_and_name[-1]
+            links = get_member_links(m_id)
+            link_count = len(links)
+            fts = (".JPG", ".jpg", ".JPEG", ".jpeg", ".PNG", ".png")
+            pic_links_count = len([x[0] for x in links if x[0].endswith(fts)])
+            member_aliases = [x[0] for x in find_member_aliases(m_id)]
+            is_tagged = []
+            tags_and_count = get_all_tags_on_member_and_count(m_id)
+            total_tagged_links = 0
+            for tags in tags_and_count:
+                total_tagged_links += tags[1]
+                is_tagged.append(f"{tags[0]}: {tags[1]}")
+            a = f'{g_name} {m_name.title()} Information'
+            d = hide_links([x[0] for x in last_three_links(m_id)])
+            untagged_count = int(link_count) - total_tagged_links
+            if is_tagged:
+                c = format_list(is_tagged)
+                if pic_links_count > 1 or pic_links_count == 0:
                     s = (f'`{m_name.title()}` has a total of `{link_count}` link(s)!\n'
+                         f'Out of these links, `{pic_links_count}` are images.\n'
                          f'**Alias(es):** `{"`, `".join(member_aliases)}`\n'
-                         f'**Tags:** `{c}`')
+                         f'**Tags:** `{c}`\n'
+                         f'**Untagged:** {untagged_count}')
                 else:
-                    s = (f'`{m_name.title()}` has `{link_count}` link(s)!\n'
-                         f'**Alias(es):** {format_list(member_aliases)}')
-                if d:
-                    s = s + f'\nThe last 3 links added:\n<{d}>'
-
-                embed = discord.Embed(title=f'**{a}**',
-                                      description=s,
-                                      color=discord.Color.blurple())
-                await ctx.send(embed=embed)
+                    s = (f'`{m_name.title()}` has a total of `{link_count}` link(s)!\n'
+                         f'Out of these links, there is only `{pic_links_count}` image.\n'
+                         f'**Alias(es):** `{"`, `".join(member_aliases)}`\n'
+                         f'**Tags:** `{c}`\n'
+                         f'**Untagged:** {untagged_count}')
             else:
-                await ctx.send(embed=error_embed(f"No group named `{group}`!"))
+                s = (f'`{m_name.title()}` has `{link_count}` link(s)!\n'
+                     f'Out of these links, `{pic_links_count}` are images.\n'
+                     f'**Alias(es):** {format_list(member_aliases)}\n'
+                     f'**Untagged:** {untagged_count}')
+            if d:
+                s = s + f'\nThe last 3 links added:\n<{d}>'
+
+            embed = discord.Embed(title=f'**{a}**',
+                                  description=s,
+                                  color=discord.Color.blurple())
+            await interaction.response.send_message(embed=embed)
+        else:
+            await interaction.response.send_message(embed=error_embed(f"No group named `{group}`!"))
 
     @commands.command(aliases=['linkcount', 'total_links'])
     @is_restricted()

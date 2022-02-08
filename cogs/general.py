@@ -1,5 +1,5 @@
-import discord
-from discord.ext import commands
+import nextcord as discord
+from nextcord.ext import commands
 from data import find_user, check_user_is_mod
 from data import apis_dict
 from embeds import success_embed, thanks_embed
@@ -100,9 +100,9 @@ class General(commands.Cog):
                 await ctx.message.add_reaction(emoji='✉')
                 await ctx.message.author.send(embed=halp)
 
-    @commands.command(aliases=['avatar'])
+    @commands.command(aliases=['avatar', 'av'])
     async def get_avatar(self, ctx, member: discord.Member = None):
-        """Returns the users avatar."""
+        """Returns the users' avatar."""
         if member:
             member = member
         else:
@@ -110,8 +110,8 @@ class General(commands.Cog):
         embed = discord.Embed(colour=member.colour)
         embed.set_author(name=member)
         embed.set_footer(text=f"requested by {ctx.author}",
-                         icon_url=ctx.author.avatar_url)
-        embed.set_image(url=member.avatar_url_as(size=512))
+                         icon_url=ctx.author.display_avatar.url)
+        embed.set_image(url=member.display_avatar.url)
         await ctx.send(embed=embed)
 
     @commands.command(aliases=['profile'])
@@ -121,18 +121,16 @@ class General(commands.Cog):
             member = member
         else:
             member = ctx.author
-        print(member)
         user = find_user(member.id)
-        print(user)
         xp = user[1]
         cont = user[2]
         cr_at = member.created_at.strftime("%a, %#d %B %Y, %I:%M%p UTC")
         jo_at = member.joined_at.strftime("%a, %#d %B %Y, %I:%M%p UTC")
         embed = discord.Embed(colour=member.colour)
         embed.set_author(name=member)
-        embed.set_thumbnail(url=member.avatar_url)
+        embed.set_thumbnail(url=member.display_avatar.url)
         embed.set_footer(text=f"Requested by {ctx.author}",
-                         icon_url=ctx.author.avatar_url)
+                         icon_url=ctx.author.display_avatar.url)
         # need better level system
         embed.add_field(name="Level:", value=xp // 100)
         embed.add_field(name="XP:", value=xp)
@@ -149,12 +147,12 @@ class General(commands.Cog):
         The reason can be as long as you need it to be."""
         author = ctx.author
         if not reason:
-            reason = 'No reason provided!'
+            reason = ['No reason provided!']
         embed = discord.Embed(title='Link Reported!',
                               description=f'Reason: {" ".join(reason)}\n\n{link}',
                               color=discord.Color.orange())
         embed.set_footer(text=f"Reported by {author}",
-                         icon_url=author.avatar_url)
+                         icon_url=author.display_avatar.url)
         report_chan = self.disclient.get_channel(apis_dict["reporting_channel"])
         await report_chan.send(embed=embed)
         await ctx.send(embed=success_embed('Link reported!'))
@@ -167,7 +165,7 @@ class General(commands.Cog):
                               description=' '.join(suggestion),
                               color=discord.Color.blurple())
         embed.set_footer(text=f"Suggested by {ctx.author}",
-                         icon_url=ctx.author.avatar_url)
+                         icon_url=ctx.author.display_avatar.url)
         await suggestion_channel.send(embed=embed)
         await ctx.send(
             embed=thanks_embed('Your suggestion has been recorded and it will be looked at as soon as possible!'))

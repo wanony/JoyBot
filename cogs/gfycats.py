@@ -1,6 +1,6 @@
 import os
 from bot import executor
-from discord.ext import commands
+from nextcord.ext import commands
 import urllib.request
 import datetime
 from data import apis_dict

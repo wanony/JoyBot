@@ -5,8 +5,8 @@ from data import apis_dict, get_all_twitch_channels_to_check, get_channels_follo
     update_twitch_last_live, follow_twitch_channel_db, unfollow_twitch_channel_db, add_twitch_channel_to_db, \
     add_channel, get_all_twitch_followed_in_guild
 import asyncio
-from discord.ext import commands
-import discord
+from nextcord.ext import commands
+import nextcord as discord
 
 from embeds import success_embed, error_embed
 

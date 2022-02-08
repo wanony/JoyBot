@@ -1,6 +1,9 @@
-import discord
-from discord.ext import commands
+import re
 
+import nextcord as discord
+from nextcord.ext import commands
+
+from cogs.mods import is_mod
 from data import set_guild_prefix_db, add_banned_word, remove_restricted_user, add_restricted_user, check_user_is_mod, \
     add_linked_channel_db, set_guild_max_timer_db
 from embeds import error_embed, success_embed, permission_denied_embed
@@ -63,21 +66,19 @@ class Server(commands.Cog):
         else:
             await ctx.send(embed=error_embed(f'{member} is not restricted in {ctx.guild.name}!'))
 
-    # @commands.command(name='link_channel', aliases=['linkchannel', 'channellink'])
-    # @commands.has_permissions(administrator=True)
-    # @commands.guild_only()
-    # async def _link_channel(self, ctx, group, idol):
-    #     """Links channel to a member to automatically add links when posted in here"""
-    #     if not check_user_is_mod(ctx):
-    #         await ctx.send(embed=permission_denied_embed())
-    #         return
-    #     group = group.lower()
-    #     idol = idol.lower()
-    #     added = add_linked_channel_db(ctx.channel.id, group, idol)
-    #     if added:
-    #         await ctx.send(embed=success_embed(f"Linked channel to automatically grab links for {group}'s {idol}!"))
-    #     else:
-    #         await ctx.send(embed=error_embed(f"Failed to add linked channel!"))
+    @commands.command(name='link_channel', aliases=['linkchannel', 'channellink'])
+    @commands.has_permissions(administrator=True)
+    @commands.guild_only()
+    @is_mod()
+    async def _link_channel(self, ctx, group, idol):
+        """Links channel to a member to automatically add links when posted in here"""
+        group = group.lower()
+        idol = idol.lower()
+        added = add_linked_channel_db(ctx.channel.id, group, idol)
+        if added:
+            await ctx.send(embed=success_embed(f"Linked channel to automatically grab links for {group}'s {idol}!"))
+        else:
+            await ctx.send(embed=error_embed(f"Failed to add linked channel!"))
     #
     # @commands.command()
     # @commands.has_permissions(administrator=True)
@@ -105,6 +106,36 @@ class Server(commands.Cog):
     #         await ctx.send(success_embed(f"Added ||{word}|| to banned words!"))
     #     else:
     #         await ctx.send(error_embed(f"Failed to add ||{word}|| to banned words!"))
+
+    @commands.command(name='regexchannel')
+    @commands.has_permissions(administrator=True)
+    async def _regex_channel(self, ctx, regex=None):
+        """Force a specific type of text to be sent in a channel, message that do not match will be
+        automatically deleted."""
+        if not regex:
+            await ctx.send(embed=error_embed('No regex/text format provided!'))
+            return
+
+        if regex == 'gfy':
+            pass
+        elif regex == 'images':
+            pass
+        elif regex == 'videos':
+            pass
+        else:
+            try:
+                regex = rf'{regex}'
+                reg = re.compile(regex)
+            except Exception as e:
+                print(e)
+                await ctx.send(
+                    embed=error_embed(f'Failed to compile regex!: {regex}\n'
+                                      f'There is likely an error with this expression.'
+                                      'Check out <https://regex101.com/> for help!'))
+                return
+
+            await ctx.send(embed=success_embed(f'Regex {regex} is now enforced in this channel!'))
+            pass
 
     @commands.command()
     @commands.has_permissions(kick_members=True)

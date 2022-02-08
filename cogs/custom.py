@@ -1,4 +1,4 @@
-from discord.ext import commands
+from nextcord.ext import commands
 from data import get_commands
 from data import add_command
 from embeds import error_embed
@@ -6,7 +6,7 @@ from embeds import success_embed
 
 
 class Custom(commands.Cog):
-    """Commands for creating your own custom command, such as a meme!
+    """Create your own custom commands
     """
     def __init__(self, disclient):
         """Initialise client"""
@@ -23,7 +23,7 @@ class Custom(commands.Cog):
 
     @commands.command(aliases=['ac', 'addcommand'])
     async def add_command(self, ctx, name, gfy):
-        """Adds a custom command with a valid gfy/red/gif link!
+        """Adds a custom command with a valid gfycat/redgif/YouTube link!
         Example: .addcommand <name> <link>
         You can now call this command with .<name>
         """

@@ -1,14 +1,13 @@
 import concurrent.futures
 
-import discord
+import nextcord as discord
 import os
-from discord.ext import commands
+from nextcord.ext import commands
 from data import apis_dict, add_guild_db, write_cache
 from data import default_prefix
 from data import get_prefix_db
 
-intents = discord.Intents.default()
-intents.members = True
+intents = discord.Intents.all()
 
 executor = concurrent.futures.ThreadPoolExecutor()
 
@@ -65,4 +64,4 @@ try:
     disclient.run(apis_dict["discord_token"])
 finally:
     executor.shutdown()
-
+    disclient.close()

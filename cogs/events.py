@@ -1,7 +1,7 @@
 import re
 
-import discord
-from discord.ext import commands
+import nextcord as discord
+from nextcord.ext import commands
 
 from bot import get_prefix
 from data import get_banned_words, add_guild_db
@@ -21,11 +21,12 @@ class Events(commands.Cog):
     async def on_message(self, message):
         if message.author == self.disclient.user:
             return
+
         # user = message.author
         msg = message.content.split(" ")
         # bonegrip feature
-        regexuoh = re.compile(r'\b[uU]+[oO]+[hH]+\b')
-        match = re.search(regexuoh, message.content)
+        regex_uoh = re.compile(r'\b[uU]+[oO]+[hH]+\b')
+        match = re.search(regex_uoh, message.content)
         if match:
             await message.add_reaction(emoji='😭')
         if message.guild:
@@ -50,9 +51,9 @@ class Events(commands.Cog):
                     msg = f'My prefix in this server is `{get_prefix(self.disclient, message)[-1]}`!'
                 else:
                     msg = f'My prefix is `{get_prefix(self.disclient, message)[-1]}`!'
-                mention = f'\nYou can always mention me to use the commands, try @{self.disclient.user.name} help'
+                mention = f'\nYou can always mention me to use the commands, try `@{self.disclient.user.name} help`'
                 embed = discord.Embed(title=f'My Prefixes',
-                                      description=msg + mention,
+                                      description=f'{msg}{mention}',
                                       color=discord.Color.blurple())
                 await message.channel.send(embed=embed)
         except IndexError:

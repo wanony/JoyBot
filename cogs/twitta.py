@@ -1,9 +1,9 @@
 import json
-import discord
-from discord.utils import escape_markdown
+import nextcord as discord
+from nextcord.utils import escape_markdown
 import pyshorteners
 import tweepy
-from discord.ext import commands
+from nextcord.ext import commands
 from data import apis_dict, get_twitter_users_from_db, add_twitter_channel_to_db, remove_twitter_user_from_db, \
     add_twitter_to_db, add_channel, get_twitter_channels_following_user, get_all_twitter_channels_and_twitters
 from embeds import error_embed, success_embed

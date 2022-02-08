@@ -214,3 +214,11 @@ CREATE TABLE twitch_channels (
   FOREIGN KEY (ChannelId) REFERENCES channels (ChannelId),
   FOREIGN KEY (TwitchId) REFERENCES twitch (TwitchId)
 );
+
+CREATE TABLE user_favourites (
+  LinkId int NOT NULL,
+  UserId bigint NOT NULL,
+  PRIMARY KEY (LinkId, UserId),
+  FOREIGN KEY (LinkId) REFERENCES links (LinkId),
+  FOREIGN KEY (UserId) REFERENCES users (UserId)
+);

@@ -4,12 +4,17 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-"discord.py" = "*"
 asyncpraw = "*"
 mysql-connector-python = "*"
-tweepy = "*"
+tweepy = "==3.8.0"
+pyshorteners = "*"
+instagram-private-api = "*"
+instagram-private-api-extensions = "*"
+twitchAPI = "*"
+pfycat = "*"
+nextcord = "==2.0.0a7"
 
 [dev-packages]
 
 [requires]
-python_version = "3.7.3"
+python_version = "3.8.10"

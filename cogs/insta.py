@@ -7,15 +7,14 @@ import asyncio
 from bot import executor
 from pathlib import Path
 
-import pyshorteners
 from cogs.gfycats import PfyClient
 
-import discord
+import nextcord as discord
 import urllib.request
-from discord.utils import escape_markdown
+from nextcord.utils import escape_markdown
 from instagram_private_api import Client, ClientLoginRequiredError, ClientCookieExpiredError, \
     ClientChallengeRequiredError
-from discord.ext import commands
+from nextcord.ext import commands
 from data import apis_dict, insta_settings_file, get_insta_users_to_check, get_channels_following_insta_user, \
     get_all_instas_followed_in_guild, follow_insta_user_db, unfollow_insta_user_db, add_insta_user_to_db, \
     add_channel, set_min_timestamp, get_min_timestamp

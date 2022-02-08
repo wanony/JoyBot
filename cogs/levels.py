@@ -1,13 +1,11 @@
-import discord
-from discord.ext import commands
+import nextcord as discord
+from nextcord.ext import commands
 from data import find_user, add_user, add_user_xp, get_idol_leaderboard, get_group_leaderboard
 from data import get_leaderboard
 
 
 class Levels(commands.Cog):
-    """Levels, XP, and contribution handling commands found here
-    will let users get information about levels and leaderboards
-    of the top contributors!
+    """Levels, XP, and contribution commands found here
     """
     def __init__(self, disclient):
         """Initialise client."""

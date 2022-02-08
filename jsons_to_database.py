@@ -39,7 +39,10 @@ for user in users:
         usr_cont = 0
     sql = "INSERT INTO users(UserId, Xp, Cont) VALUES (%s, %s, %s);"
     vals = (user, users[user]['xp'], usr_cont)
-    cursor.execute(sql, vals)
+    try:
+        cursor.execute(sql, vals)
+    except Exception as e:
+        print("Duplicate user")
 
 for group in gfys_dict["groups"]:
     # add group to groupz table

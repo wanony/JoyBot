@@ -1,6 +1,6 @@
-import discord
+import nextcord as discord
 import asyncpraw
-from discord.ext import commands
+from nextcord.ext import commands
 import asyncio
 from data import get_all_subreddits, get_channels_with_sub, remove_channel_from_subreddit, add_reddit_channel, \
     add_reddit, get_subreddit_id, find_channel, add_channel, get_all_reddit_channels_and_sub, cache_dict
