@@ -5,8 +5,9 @@ import mysql.connector.errors
 import threading
 import datetime
 import os
+from setup import get_directories_path
 
-with open('directories.json') as direc:
+with open(get_directories_path) as direc:
     direc_dict = json.load(direc)
 with open(direc_dict["apis"], 'r') as apis:
     apis_dict = json.load(apis)
@@ -43,7 +44,7 @@ def check_user_is_owner(ctx):
         return False
 
 
-database = 'botdatabase'
+database = apis_dict["database_name"]
 username = apis_dict["database_user"]
 password = apis_dict["database_password"]
 
