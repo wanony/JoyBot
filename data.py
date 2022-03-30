@@ -34,11 +34,11 @@ async def write_cache():
 
 
 def check_user_is_mod(ctx):
-    return find_moderator(ctx.author.id)
+    return find_moderator(ctx.user.id)
 
 
 def check_user_is_owner(ctx):
-    if ctx.author.id in mods_dict["owners"]:
+    if ctx.user.id in mods_dict["owners"]:
         return True
     else:
         return False
@@ -597,6 +597,87 @@ def get_groups():
     result = cursor.fetchall()
     cursor.close()
     return result
+
+
+def pick_groups(near=None):
+    cursor = db.cursor()
+    if near:
+        sql = """SELECT RomanName FROM groupz
+                    WHERE RomanName LIKE CONCAT(%s, '%')
+                    ORDER BY RomanName
+                    LIMIT 25
+                    """
+        cursor.execute(sql, (near,))
+    else:
+        sql = """SELECT RomanName FROM groupz
+                    ORDER BY RomanName
+                    LIMIT 25
+                    """
+        cursor.execute(sql)
+    result = cursor.fetchall()
+    cursor.close()
+    return [x[0] for x in result]
+
+
+def pick_group_members(group_name):
+    cursor = db.cursor()
+    sql = """SELECT RomanName FROM members
+                WHERE GroupId = (SELECT GroupId FROM groupz WHERE RomanName = %s)
+                ORDER BY RomanName;"""
+    val = (group_name,)
+    cursor.execute(sql, val)
+    result = cursor.fetchall()
+    cursor.close()
+    return [x[0] for x in result]
+
+
+def pick_tags(near=None):
+    cursor = db.cursor()
+    if near:
+        sql = """SELECT Alias FROM tag_aliases
+                    WHERE Alias LIKE CONCAT(%s, '%')
+                    ORDER BY Alias
+                    LIMIT 25
+                    """
+        cursor.execute(sql, (near,))
+    else:
+        sql = """SELECT Alias FROM tag_aliases
+                    ORDER BY Alias
+                    LIMIT 25
+                    """
+        cursor.execute(sql)
+    result = cursor.fetchall()
+    cursor.close()
+    return [x[0] for x in result]
+
+
+def pick_tags_on_idol(group_name, idol_name, near=None):
+    cursor = db.cursor()
+    if near:
+        sql = """SELECT TagName FROM tags
+                    JOIN link_tags on tags.TagId = link_tags.TagId
+                    JOIN link_members on link_members.LinkId = link_tags.LinkId
+                    JOIN members on members.MemberId = link_members.MemberId
+                    JOIN groupz on groupz.GroupId = members.GroupId
+                    WHERE members.RomanName = %s AND groupz.RomanName = %s AND TagName LIKE CONCAT(%s, '%')
+                    GROUP BY TagName
+                    ORDER BY TagName
+                    LIMIT 25"""
+        cursor.execute(sql, (idol_name, group_name, near,))
+    else:
+        sql = """SELECT TagName FROM tags
+                    JOIN link_tags on tags.TagId = link_tags.TagId
+                    JOIN link_members on link_members.LinkId = link_tags.LinkId
+                    JOIN members on members.MemberId = link_members.MemberId
+                    JOIN groupz on groupz.GroupId = members.GroupId
+                    WHERE members.RomanName = %s AND groupz.RomanName = %s
+                    GROUP BY TagName
+                    ORDER BY TagName
+                    LIMIT 25"""
+        cursor.execute(sql, (idol_name, group_name,))
+    result = cursor.fetchall()
+    cursor.close()
+    return [x[0] for x in result]
 
 
 def add_group_alias_db(group_name, alias, user_id):

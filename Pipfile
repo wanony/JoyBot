@@ -12,7 +12,7 @@ instagram-private-api = "*"
 instagram-private-api-extensions = "*"
 twitchAPI = "*"
 pfycat = "*"
-nextcord = "==2.0.0a7"
+nextcord = "*"
 
 [dev-packages]
 

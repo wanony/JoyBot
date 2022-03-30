@@ -36,7 +36,7 @@ disclient.remove_command('help')
 async def on_ready():
     await disclient.change_presence(activity=discord.Activity(
         type=discord.ActivityType.watching,
-        name=f"for {default_prefix}help"),
+        name="for slash commands!"),
         status=discord.Status.online
     )
     print(f"bot is online as {disclient.user.name} in {len(disclient.guilds)} guilds!:")
