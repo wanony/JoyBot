@@ -1,4 +1,5 @@
 import nextcord as discord
+from nextcord import SlashOption
 from nextcord.ext import commands
 from data import find_user, add_user, add_user_xp, get_idol_leaderboard, get_group_leaderboard
 from data import get_leaderboard
@@ -11,53 +12,33 @@ class Levels(commands.Cog):
         """Initialise client."""
         self.disclient = disclient
 
-    @commands.Cog.listener()
-    async def on_message(self, message):
-        if message.author == self.disclient.user:
-            return
-        if message.author.bot:
-            return
-        author = str(message.author.id)
-        found = find_user(author)
-        if not found:
-            add_user(author)
-        add_user_xp(author)
-        # add better leveling system in the future
-
-    @commands.command(aliases=['xp'])
-    async def level(self, ctx, member: discord.Member = None):
-        """Returns information of the users level"""
-        if member:
-            member = member
-        else:
-            member = ctx.author
-        user = find_user(member.id)
-        if user:
-            xp = user[1]
-            cont = user[2]
-            embed = discord.Embed(colour=member.colour, title="Level & XP")
-            embed.set_author(name=member)
-            embed.set_thumbnail(url=member.avatar_url)
-            embed.set_footer(text=f"Requested by {ctx.author}",
-                             icon_url=ctx.author.avatar_url)
-            # need to update level later
-            embed.add_field(name="Level:", value=xp // 100)
-            embed.add_field(name="XP:", value=xp)
-            embed.add_field(name="Contribution:", value=cont)
-            await ctx.send(embed=embed)
-        else:
-            await ctx.send("Member has no XP!")
-
-    @commands.command()
-    async def leaderboard(self, ctx, number_of_users=10):
+    @discord.slash_command(
+        name="leaderboard",
+        description="see some top statistics!"
+    )
+    async def leaderboard(self,
+                          interaction: discord.Interaction,
+                          option: str = SlashOption(
+                              name="option",
+                              description="what leaderboard to view",
+                              required=True
+                          ),
+                          number: str = SlashOption(
+                              name="number",
+                              description="size of leaderboard to display",
+                              required=False
+                          )):
         """Returns a leaderboard of the top 10 contributers!
         This leaderboard is made from all contributers across
         every server the bot is connected to.
         """
-        if number_of_users > 20:
-            number_of_users = 20
-        async with ctx.channel.typing():
-            lb = get_leaderboard(number_of_users)
+        # TODO remove duplicate code harder
+        if number:
+            number = int(number)
+        else:
+            number = 10
+        if option.lower() == "contribution":
+            lb = get_leaderboard(number)
             one_str = ""
             for i, pair in enumerate(lb, start=1):
                 if str(i).endswith('1') and i != 11:
@@ -78,15 +59,9 @@ class Levels(commands.Cog):
             embed = discord.Embed(title="Contribution Leaderboard",
                                   description=one_str,
                                   color=discord.Color.blurple())
-            await ctx.send(embed=embed)
-
-    @commands.command()
-    async def idol_leaderboard(self, ctx, number_of_entries=10):
-        """Returns a leaderboard of the idols with the most links added to them!"""
-        if number_of_entries > 50:
-            number_of_entries = 50
-        async with ctx.channel.typing():
-            lb = get_idol_leaderboard(number_of_entries)
+            await interaction.response.send_message(embed=embed)
+        elif option.lower() == "idols":
+            lb = get_idol_leaderboard(number)
             one_str = ""
             for i, triple in enumerate(lb, start=1):
                 if str(i).endswith('1') and i != 11:
@@ -106,15 +81,9 @@ class Levels(commands.Cog):
             embed = discord.Embed(title="Idol Leaderboard",
                                   description=one_str,
                                   color=discord.Color.blurple())
-            await ctx.send(embed=embed)
-
-    @commands.command()
-    async def group_leaderboard(self, ctx, number_of_entries=10):
-        """Returns a leaderboard of the groups with the most links added to them!"""
-        if number_of_entries > 50:
-            number_of_entries = 50
-        async with ctx.channel.typing():
-            lb = get_group_leaderboard(number_of_entries)
+            await interaction.response.send_message(embed=embed)
+        elif option.lower() == "groups":
+            lb = get_group_leaderboard(number)
             one_str = ""
             for i, pair in enumerate(lb, start=1):
                 if str(i).endswith('1') and i != 11:
@@ -133,7 +102,24 @@ class Levels(commands.Cog):
             embed = discord.Embed(title="Group Leaderboard",
                                   description=one_str,
                                   color=discord.Color.blurple())
-            await ctx.send(embed=embed)
+            await interaction.response.send_message(embed=embed)
+
+    @leaderboard.on_autocomplete("number")
+    async def _leaderboard_helper(self, interaction: discord.Interaction, number: str):
+        if not number:
+            await interaction.response.send_autocomplete(["10", "25"])
+            return
+        get_near_choice = [n for n in ["10", "25"] if n.lower().startswith(number.lower())]
+        await interaction.response.send_autocomplete(get_near_choice)
+
+    @leaderboard.on_autocomplete("option")
+    async def _leaderboard_option(self, interaction: discord.Interaction, option: str):
+        options = ["contribution", "idols", "groups"]
+        if not option:
+            await interaction.response.send_autocomplete(options)
+            return
+        get_near_option = [o for o in options if o.startswith(option.lower())]
+        await interaction.response.send_autocomplete(get_near_option)
 
 
 def setup(disclient):

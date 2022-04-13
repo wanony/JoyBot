@@ -4,11 +4,17 @@ import concurrent.futures
 import json
 import os
 import asyncio
+
+import nextcord
+from nextcord.abc import GuildChannel
+from nextcord.types.channel import Channel
+
 from bot import executor
 from pathlib import Path
 
 from cogs.gfycats import PfyClient
 
+from nextcord import SlashOption, TextChannel
 import nextcord as discord
 import urllib.request
 from nextcord.utils import escape_markdown
@@ -232,66 +238,82 @@ class Instagram(commands.Cog):
             finally:
                 await asyncio.sleep(1800)
 
-    @commands.command(aliases=['followinsta', 'instafollow', 'insta_follow', 'follow_instagram', 'instagram_follow'])
+    @discord.slash_command(
+        name="instagram",
+        description="Handle Instagram integration",
+        guild_ids=[755143761922883584]
+    )
     @commands.guild_only()
     @commands.has_permissions(administrator=True)
-    async def follow_insta(self, ctx, user_name):
+    async def insta_handler(self,
+                            interaction: discord.Interaction,
+                            action: str = SlashOption(
+                                name="action",
+                                description="required action",
+                                choices=["follow", "unfollow", "list"],
+                                required=True
+                            ),
+                            username: str = SlashOption(
+                                name="username",
+                                description="the username of the insta to follow",
+                                required=False
+                                ),
+                            channel: GuildChannel = None,
+                            ):
         """Follows an Instagram user in this channel.
         Example: `.follow_insta <username or link>`"""
-        if 'instagram.com' in user_name:
-            user_name = user_name.split('/')[-1]
-        user = self.insta.get_user(user_name)
-        try:
-            if user['is_private']:
-                await ctx.send(embed=error_embed('This user is private, and cannot be followed!'))
+        if action.lower() == "list":
+            list_embed = self.insta_list_handler(interaction)
+            await interaction.response.send_message(embed=list_embed)
+            return
+        if 'instagram.com' in username:
+            username = username.split('/')[-1]
+        user = self.insta.get_user(username)
+        if action.lower() == "follow":
+            try:
+                if user['is_private']:
+                    await interaction.response.send_message(
+                        embed=error_embed('This user is private, and cannot be followed!'))
+                    return
+            except Exception as e:
+                print(e)
+            user_id = user['user']['pk']
+            if not user_id:
+                await interaction.response.send_message(
+                    embed=error_embed(f'No instagram user found called {escape_markdown(username)}!'))
                 return
-
-        except Exception as e:
-            print(e)
-        user_id = user['user']['pk']
-        if not user_id:
-            await ctx.send(embed=error_embed(f'No instagram user found called {escape_markdown(user_name)}!'))
-            return
-
-        add_insta_user_to_db(user_id)
-        add_channel(ctx.channel.id)
-        if not follow_insta_user_db(user_id, ctx.channel.id):
-            await ctx.send(embed=error_embed(f'{escape_markdown(user_name)} is already followed in this channel!'))
-            return
-
-        name = user['user']['full_name']
-        link = f"https://www.instagram.com/{user['user']['username']}"
-        embed = discord.Embed(title=f'Successfully followed {name}',
-                              description=f'This channel will now receive updates when {name} posts updates at {link}',
-                              color=INSTA_COLOUR)
-        embed.set_thumbnail(url=user['user']['profile_pic_url'])
-        await ctx.send(embed=embed)
-
-    @commands.command(aliases=[
-        'unfollowinsta', 'instaunfollow', 'insta_unfollow', 'unfollow_instagram', 'instagram_unfollow'])
-    @commands.guild_only()
-    @commands.has_permissions(administrator=True)
-    async def unfollow_insta(self, ctx, user_name):
-        """Unfollows an Instagram user in this channel.
-        Example: `.unfollow_insta <username or link>`"""
-        if 'instagram.com' in user_name:
-            user_name = user_name.split('/')[-1]
-        user = self.insta.get_user(user_name)
-        user_id = user['user']['pk']
-        if not user_id:
-            await ctx.send(embed=error_embed(f'No instagram user found called {escape_markdown(user_name)}!'))
-            return
-
-        if unfollow_insta_user_db(user_id, ctx.channel.id):
-            await ctx.send(embed=success_embed(f'Unfollowed {escape_markdown(user_name)}!'))
-        else:
-            await ctx.send(embed=error_embed(f'Failed to unfollow {escape_markdown(user_name)}!'))
+            add_insta_user_to_db(user_id)
+            add_channel(channel.id)
+            if not follow_insta_user_db(user_id, channel.id):
+                await interaction.response.send_message(
+                    embed=error_embed(f'{escape_markdown(username)} is already followed in this channel!'))
+                return
+            name = user['user']['full_name']
+            link = f"https://www.instagram.com/{user['user']['username']}"
+            embed = discord.Embed(title=f'Successfully followed {name}',
+                                  description=f"""The channel {channel.name} will now receive updates when
+                                                  {name} posts updates at {link}""",
+                                  color=INSTA_COLOUR)
+            embed.set_thumbnail(url=user['user']['profile_pic_url'])
+            await interaction.response.send_message(embed=embed)
+        elif action.lower() == "unfollow":
+            user_id = user['user']['pk']
+            if not user_id:
+                await interaction.response.send_message(
+                    embed=error_embed(f'No instagram user found called {escape_markdown(username)}!'))
+                return
+            if unfollow_insta_user_db(user_id, interaction.channel.id):
+                await interaction.response.send_message(
+                    embed=success_embed(f'Unfollowed {escape_markdown(username)}!'))
+            else:
+                await interaction.response.send_message(
+                    embed=error_embed(f'Failed to unfollow {escape_markdown(username)}!'))
 
     @commands.command()
     @commands.guild_only()
-    async def instas(self, ctx):
+    async def insta_list_handler(self, interaction: discord.Interaction):
         """Returns a list of all instagram users followed in this server!"""
-        guild = ctx.guild
+        guild = interaction.guild
         chans = get_all_instas_followed_in_guild()
         chan_dict = {}
         for pair in chans:
@@ -308,19 +330,13 @@ class Instagram(commands.Cog):
                     chan_str = f"`#{channel.name}{' ' * spacing}{insta}`\n"
                     msg = msg + chan_str
         if msg == '':
-            await ctx.send(embed=error_embed('No instagram users followed in this server!'))
+            return error_embed('No instagram users followed in this server!')
         else:
             add_to_start = f"`Channel Name{' ' * 14}Instagram User`\n"
             msg = add_to_start + msg
-            embed = discord.Embed(title=f'Instagram Users Followed in {guild.name}!',
-                                  description=msg,
-                                  color=INSTA_COLOUR)
-            await ctx.send(embed=embed)
-
-    # @commands.command()
-    # async def find_user_by_id(self, ctx, insta_id):
-    #     user = self.insta.get_user_name(insta_id)
-    #     await ctx.send(user)
+            return discord.Embed(title=f'Instagram Users Followed in {guild.name}!',
+                                 description=msg,
+                                 color=INSTA_COLOUR)
 
 
 def setup(disclient):

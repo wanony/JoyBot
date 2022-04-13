@@ -11,22 +11,8 @@ intents = discord.Intents.all()
 
 executor = concurrent.futures.ThreadPoolExecutor()
 
-
-def get_prefix(disclient, message):
-    guild = message.guild
-    if guild:
-        prefix = get_prefix_db(guild.id)
-        if prefix:
-            return commands.when_mentioned_or(*prefix)(disclient, message)
-        else:
-            return commands.when_mentioned_or(*default_prefix)(disclient, message)
-    else:
-        return commands.when_mentioned_or(*default_prefix)(disclient, message)
-
-
 disclient = commands.Bot(
     intents=intents,
-    command_prefix=get_prefix
 )  # , intents=intents)
 disclient.remove_command('help')
 # commands.DefaultHelpCommand(width=100, dm_help=True, dm_help_threshold=100)
@@ -36,7 +22,7 @@ disclient.remove_command('help')
 async def on_ready():
     await disclient.change_presence(activity=discord.Activity(
         type=discord.ActivityType.watching,
-        name="for slash commands!"),
+        name="for Slash Commands!"),
         status=discord.Status.online
     )
     print(f"bot is online as {disclient.user.name} in {len(disclient.guilds)} guilds!:")

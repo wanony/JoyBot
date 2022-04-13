@@ -1,4 +1,6 @@
 from nextcord.ext import commands
+import nextcord as discord
+from nextcord import SlashOption
 from data import get_commands
 from data import add_command
 from embeds import error_embed
@@ -12,17 +14,55 @@ class Custom(commands.Cog):
         """Initialise client"""
         self.disclient = disclient
 
-    @commands.command(aliases=['commands'])
-    async def command_list(self, ctx):
+    @discord.slash_command(name='listcustom',
+                           description="Get help regarding commands or command groups",
+                           guild_ids=[755143761922883584])
+    async def command_list(self, interaction: discord.Interaction):
         """Sends a list of all the custom commands."""
         arrr = get_commands()
         if len(arrr) == 0:
-            await ctx.send(embed=error_embed('No commands added... Yet!'))
+            await interaction.response.send_message(embed=error_embed('No commands added... Yet!'), ephemeral=True)
         else:
-            await ctx.send(f"`{format_list(arrr.keys())}`")
+            await interaction.response.send_message(f"`{format_list(arrr.keys())}`", ephemeral=True)
 
-    @commands.command(aliases=['ac', 'addcommand'])
-    async def add_command(self, ctx, name, gfy):
+    @discord.slash_command(name='custom',
+                           description="customer user added commands",
+                           guild_ids=[755143761922883584])
+    async def custom_command(self,
+                             interaction: discord.Interaction,
+                             command: str = SlashOption(
+                                 name="command",
+                                 description="custom command to return",
+                                 required=True
+                             )):
+        command_list = get_commands()
+        if command in command_list:
+            await interaction.response.send_message(command_list[command])
+
+    @custom_command.on_autocomplete("command")
+    async def _command_picker(self, interaction: discord.Interaction, command_name: str):
+        if not command_name:
+            await interaction.response.send_autocomplete(get_commands().keys())
+            return
+        get_near_commands = [command for command in get_commands(near=command_name).keys()
+                             if command.lower().startswith(command_name.lower())]
+        return get_near_commands
+
+    @discord.slash_command(name='addcustom',
+                           description="Get help regarding commands or command groups",
+                           guild_ids=[755143761922883584])
+    async def add_command(self,
+                          interaction: discord.Interaction,
+                          name: str = SlashOption(
+                              name="name",
+                              description="what the command will be called",
+                              required=True
+                          ),
+                          gfy: str = SlashOption(
+                              name="link",
+                              description="the link returned from this command",
+                              required=True
+                          )):
         """Adds a custom command with a valid gfycat/redgif/YouTube link!
         Example: .addcommand <name> <link>
         You can now call this command with .<name>
@@ -35,13 +75,13 @@ class Custom(commands.Cog):
             "https://www.gifdeliverynetwork.com/"
         )
         if gfy.startswith(valid):
-            added = add_command(name, gfy, ctx.author.id)
+            added = add_command(name, gfy, interaction.user.id)
             if added:
-                await ctx.send(embed=success_embed(f'Added command `{name}`!'))
+                await interaction.response.send_message(embed=success_embed(f'Added command `{name}`!'))
             else:
-                await ctx.send(embed=error_embed('Something went wrong!'))
+                await interaction.response.send_message(embed=error_embed('Something went wrong!'))
         else:
-            await ctx.send(embed=error_embed('Invalid link!'))
+            await interaction.response.send_message(embed=error_embed('Invalid link!'))
 
 
 def format_list(array):

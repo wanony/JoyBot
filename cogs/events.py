@@ -29,31 +29,11 @@ class Events(commands.Cog):
         match = re.search(regex_uoh, message.content)
         if match:
             await message.add_reaction(emoji='😭')
-        if message.guild:
-            guild = message.guild.id
-            banned_words = get_banned_words(guild)
-            if banned_words:
-                w = any(x in banned_words for x in msg)
-                if w:
-                    await message.delete()
-                    await message.author.send(banned_word_embed(message.guild, w))
-        try:
-            if msg[0].startswith(get_prefix(self.disclient, message)):
-                command = msg[0][1:]
-                command_list = get_commands()
-                if command in command_list:
-                    await message.channel.send(command_list[command])
-        except TypeError:
-            pass
         try:
             if message.mentions[0] == self.disclient.user and len(message.content.split(" ")) == 1:
-                if message.guild:
-                    msg = f'My prefix in this server is `{get_prefix(self.disclient, message)[-1]}`!'
-                else:
-                    msg = f'My prefix is `{get_prefix(self.disclient, message)[-1]}`!'
-                mention = f'\nYou can always mention me to use the commands, try `@{self.disclient.user.name} help`'
+                msg = f'See all of my commands by typing `/`'
                 embed = discord.Embed(title=f'My Prefixes',
-                                      description=f'{msg}{mention}',
+                                      description=f'{msg}',
                                       color=discord.Color.blurple())
                 await message.channel.send(embed=embed)
         except IndexError:
@@ -67,30 +47,11 @@ class Events(commands.Cog):
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
         if isinstance(error, commands.CommandNotFound):
-            async for message in ctx.history(limit=1):
-                if message.author == self.disclient.user:
-                    print("sent out a custom command")
-                else:
-                    prefix = get_prefix(self.disclient, ctx.message)[0]
-                    # once guild prefix is enabled need to change regex
-                    regexstr = r'(\..*){}|\{}\{}.*$'.format('{2,}', prefix, prefix)
-                    print(regexstr)
-                    regex2 = re.compile(regexstr)
-                    # regex1 = re.compile(r'(\..*){2,}')
-                    match = re.search(regex2, message.content)
-                    if match:
-                        print('user wrote some ...')
-                    else:
-                        await ctx.send(embed=error_embed("Command not found!"))
-                        # raise error
+            await ctx.send(embed=error_embed("Command not found!"))
         if isinstance(error, commands.MissingRequiredArgument):
             await ctx.send(embed=error_embed(f'Missing argument! {error}'))
-        # always raise errors
         if isinstance(error, commands.CommandInvokeError):
-            if ctx.command.name == 'timer':
-                return
-            else:
-                await ctx.send(embed=error_embed('Something went wrong!'))
+            await ctx.send(embed=error_embed('Something went wrong!'))
         if isinstance(error, commands.NoPrivateMessage):
             await ctx.send(embed=error_embed('This command does not work in DMs!'))
             return

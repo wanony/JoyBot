@@ -85,11 +85,17 @@ def add_command(name, link, added_by):
     return rowcount > 0
 
 
-def get_commands():
+def get_commands(near=None):
     """Returns a dictionary of all commands in the database."""
     cursor = db.cursor()
-    sql = "SELECT CommandName, Command FROM custom_commands ORDER BY CommandName;"
-    cursor.execute(sql)
+    if near:
+        sql = """SELECT CommandName, Command FROM custom_commands
+                    WHERE CommandName LIKE CONCAT(%s, '%')
+                    ORDER BY CommandName;"""
+        cursor.execute(sql, (near,))
+    else:
+        sql = "SELECT CommandName, Command FROM custom_commands ORDER BY CommandName;"
+        cursor.execute(sql)
     result = dict(cursor.fetchall())
     cursor.close()
     return result

@@ -1,5 +1,7 @@
 import datetime
 
+from nextcord import SlashOption
+from nextcord.abc import GuildChannel
 from twitchAPI.twitch import Twitch as Twitchy
 from data import apis_dict, get_all_twitch_channels_to_check, get_channels_following_twitch_stream, \
     update_twitch_last_live, follow_twitch_channel_db, unfollow_twitch_channel_db, add_twitch_channel_to_db, \
@@ -74,68 +76,76 @@ class Twitch(commands.Cog):
             # delay 60 seconds before checking again
             await asyncio.sleep(60)
 
-    @commands.command(aliases=['followstream', 'follow_stream', 'followtwitch'])
+    @discord.slash_command(
+        name="twitch",
+        description="Handle Twitch integration",
+        guild_ids=[755143761922883584]
+    )
     @commands.guild_only()
     @commands.has_permissions(administrator=True)
-    async def follow_twitch(self, ctx, stream):
+    async def twitch_handler(self,
+                             interaction: discord.Interaction,
+                             action: str = SlashOption(
+                                 name="action",
+                                 description="required action",
+                                 choices=["follow", "unfollow", "list"],
+                                 required=True
+                             ),
+                             username: str = SlashOption(
+                                 name="username",
+                                 description="twitch username or URL",
+                                 required=False
+                             ),
+                             channel: GuildChannel = None):
         """Follows a twitch stream in this channel! Live updates will be posted here.
         .follow_twitch <username or link>"""
-        channel = ctx.channel.id
-        if "twitch.tv" in stream:
-            stream = stream.split("/")[-1].lower()
-        else:
-            stream = stream.lower()
-        user = self.twitch.get_users(logins=stream)
-        print(user)
-        if not user:
-            await ctx.send(embed=error_embed(f"Failed to find Twitch user {stream}!"))
+        if action.lower() == "list":
+            list_embed = self.twitch_list_handler(interaction)
+            await interaction.response.send_message(embed=list_embed)
             return
-        for d in user["data"]:
+        if not channel:
+            channel = interaction.channel
+        if "twitch.tv" in username:
+            stream = username.split("/")[-1].lower()
+        else:
+            stream = username.lower()
+        username = self.twitch.get_users(logins=[stream])
+        print(username)
+        if not username:
+            await interaction.response.send_message(
+                embed=error_embed(f"Failed to find Twitch user {stream}!"))
+            return
+        for d in username["data"]:
             ayed = str(d["id"])
-            add_channel(channel)
+            add_channel(channel.id)
             add_twitch_channel_to_db(ayed)
-            followed = follow_twitch_channel_db(channel, ayed)
-            if followed:
-                display_name = d['display_name']
-                profile_image = d['profile_image_url']
-                link = f"https://www.twitch.tv/{d['login']}"
-                msg = f'This channel will now receive updates on when {display_name} goes live at {link}'
-                embed = discord.Embed(title=f'Successfully Followed {display_name}!',
-                                      description=msg,
-                                      color=discord.Color.purple())
-                embed.set_thumbnail(url=profile_image)
-                await ctx.send(embed=embed)
-            else:
-                await ctx.send(embed=error_embed(f"Failed to follow {stream} in this channel!"))
+            if action.lower() == "follow":
+                followed = follow_twitch_channel_db(channel.id, ayed)
+                if followed:
+                    display_name = d['display_name']
+                    profile_image = d['profile_image_url']
+                    link = f"https://www.twitch.tv/{d['login']}"
+                    msg = f'{channel.name} will now receive updates on when {display_name} goes live at {link}'
+                    embed = discord.Embed(title=f'Successfully Followed {display_name}!',
+                                          description=msg,
+                                          color=discord.Color.purple())
+                    embed.set_thumbnail(url=profile_image)
+                    await interaction.response.send_message(embed=embed)
+                else:
+                    await interaction.response.send_message(
+                        embed=error_embed(f"Failed to follow {stream} in {channel.name}!"))
+            elif action.lower() == "unfollow":
+                unfollowed = unfollow_twitch_channel_db(channel.id, ayed)
+                if unfollowed:
+                    await interaction.response.send_message(
+                        embed=success_embed(f"Unfollowed {stream} in {channel.name}!"))
+                else:
+                    await interaction.response.send_message(
+                        embed=error_embed(f"Failed to unfollow {stream} in {channel.name}!"))
 
-    @commands.command(aliases=['unfollowstream', 'unfollow_stream', 'unfollowtwitch'])
-    @commands.guild_only()
-    @commands.has_permissions(administrator=True)
-    async def unfollow_twitch(self, ctx, stream):
-        """Unfollows a twitch stream followed in this channel.
-        .unfollow_twitch <username or link>"""
-        channel = ctx.channel.id
-        if "twitch.tv" in stream:
-            stream = stream.split("/")[-1].lower()
-        else:
-            stream = stream.lower()
-        user = self.twitch.get_users(logins=stream)
-        if not user:
-            await ctx.send(embed=error_embed(f"Failed to find Twitch user {stream}!"))
-            return
-        for d in user["data"]:
-            ayed = str(d["id"])
-            unfollowed = unfollow_twitch_channel_db(channel, ayed)
-            if unfollowed:
-                await ctx.send(embed=success_embed(f"Unfollowed {stream} in this channel!"))
-            else:
-                await ctx.send(embed=error_embed(f"Failed to unfollow {stream} in this channel!"))
-
-    @commands.command(name='twitch', aliases=['twitchs', 'twitches'])
-    @commands.guild_only()
-    async def twitches(self, ctx):
+    async def twitch_list_handler(self, interaction: discord.Interaction) -> discord.Embed:
         """Returns a list of all twitch users followed in this server!"""
-        guild = ctx.guild
+        guild = interaction.guild
         chans = get_all_twitch_followed_in_guild()
         chan_dict = {}
         for pair in chans:
@@ -154,14 +164,13 @@ class Twitch(commands.Cog):
                     chan_str = f"`#{channel.name}{' ' * spacing}{twitch}`\n"
                     msg = msg + chan_str
         if msg == '':
-            await ctx.send(embed=error_embed('No Twitch streams followed in this server!'))
+            return error_embed('No Twitch streams followed in this server!')
         else:
             add_to_start = f"`Channel Name{' ' * 17}Twitch User`\n"
             msg = add_to_start + msg
-            embed = discord.Embed(title=f'Twitch Streams Followed in {guild.name}!',
-                                  description=msg,
-                                  color=discord.Color.purple())
-            await ctx.send(embed=embed)
+            return discord.Embed(title=f'Twitch Streams Followed in {guild.name}!',
+                                 description=msg,
+                                 color=discord.Color.purple())
 
 
 def setup(disclient):

@@ -1,4 +1,7 @@
 import os
+
+import discord
+
 from bot import executor
 from nextcord.ext import commands
 import urllib.request
@@ -11,15 +14,15 @@ from pathlib import Path
 from embeds import error_embed
 
 
-def handle_upload_finish(message, future: concurrent.futures.Future, author, disclient, filename):
+def handle_upload_finish(interaction, future: concurrent.futures.Future, author, disclient, filename):
     if not future.cancelled():
-        disclient.loop.create_task(finish_upload(message, filename, future.result(), author))
+        disclient.loop.create_task(finish_upload(interaction, filename, future.result(), author))
     else:
-        disclient.loop.create_task(message.edit(embed=error_embed('Failed to upload!')))
+        disclient.loop.create_task(interaction.response.send_message(embed=error_embed('Failed to upload!')))
 
 
-async def finish_upload(message, path, url, author):
-    await message.edit(content=f'Successfully uploaded! {author.mention}\n{url}')
+async def finish_upload(interaction, path, url, author):
+    await interaction.response.send_message(content=f'Successfully uploaded! {author.mention}\n{url}')
     os.remove(path)
 
 
@@ -56,23 +59,21 @@ class Uploading(commands.Cog):
         self.disclient = disclient
         self.pfy = PfyClient(self.disclient, api_key, api_sec)
 
-    @commands.group(name='upload', pass_context=True)
-    async def _upload(self, ctx):
-        if ctx.invoked_subcommand is None:
-            await ctx.send(embed=error_embed(f"Invalid subcommand passed... Try `{default_prefix}help Uploading`"))
-
-    @_upload.command(name='gfy')
+    @discord.slash_command(
+        name="uploadgfy",
+        description="upload a video to gfycat"
+    )
     @commands.guild_only()  # force guild to attempt to avoid spam
     # @is_mod()
-    async def _upload_gfy(self, ctx, url=None):
+    async def _upload_gfy(self, interaction: discord.Interaction, url=None):
         """Upload a video to gfycat!
         Either upload a discord attachment, or provide a valid video url!"""
-        msg = await ctx.send('Processing...')
         # set unique name for file to save to
         filename = Path(f'gfy_video{datetime.datetime.now().timestamp()}.webm').resolve()
         # if nothing provided then return error
-        if not ctx.message.attachments and url is None:
-            await msg.edit(embed=error_embed('Make sure to attach a video or provide a valid video URL!'))
+        if not interaction.message.attachments and url is None:
+            await interaction.response.send_message(
+                embed=error_embed('Make sure to attach a video or provide a valid video URL!'))
             return
 
         # if video is from a url, use urllib to download
@@ -81,25 +82,21 @@ class Uploading(commands.Cog):
                 urllib.request.urlretrieve(url, filename)
             except Exception as e:
                 print(e)
-                await msg.edit(embed=error_embed('Could not retrieve the video from that URL!'))
+                await interaction.response.send_message(
+                    embed=error_embed('Could not retrieve the video from that URL!'))
                 return
 
-        elif ctx.message.attachments:
+        elif interaction.message.attachments:
             # video download
-            await ctx.message.attachments[0].save(filename)
+            await interaction.message.attachments[0].save(filename)
             # concurrent future XD
             x = executor.submit(self.pfy.upload_video, filename)
             # pep e731 is for uncool kids :sunglasses: :thumbsup:
 
             def func(future):
-                handle_upload_finish(msg, future, ctx.author, self.disclient, filename)
+                handle_upload_finish(interaction, future, interaction.user, self.disclient, filename)
 
             x.add_done_callback(func)
-
-    # @_upload.command(name='test')
-    # async def _test(self, ctx, url):
-    #     a = self.pfy.client.upload('video.mp4', {'fetchUrl': url})
-    #     print(a)
 
 
 def setup(disclient):

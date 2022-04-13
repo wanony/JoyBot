@@ -236,7 +236,10 @@ class Fun(commands.Cog):
             else:
                 await interaction.response.send_message(finale)
 
-    @commands.command()
+    @discord.slash_command(
+        name="image",
+        description="get an image!"
+    )
     @is_restricted()
     async def image(self, interaction: discord.Interaction, group, idol, *tags):
         """
@@ -252,7 +255,10 @@ class Fun(commands.Cog):
 
     # --- Fancam Commands --- #
 
-    @commands.command()
+    @discord.slash_command(
+        name="fancam",
+        description="get a fancam!"
+    )
     @is_restricted()
     async def fancam(self, interaction: discord.Interaction, group, idol, *tags):
         """
@@ -277,13 +283,18 @@ class Fun(commands.Cog):
             self, interaction: discord.Interaction,
             group: str = SlashOption(
                 name="group",
-                description="Enter the group"
+                description="Enter the group",
+                required=True
             ),
             idol: str = SlashOption(
                 name="idol",
-                description="Enter the idol"
+                description="Enter the idol",
+                required=True
             ),
-            *args
+            links_and_tags: str = SlashOption(
+                name="links",
+                description="Enter links followed by their tags"
+            )
     ):
         """
         Adds a link to the idols list of gfys with tags following the link
@@ -295,7 +306,7 @@ class Fun(commands.Cog):
         """
         group = group.lower()
         idol = idol.lower()
-        links = list(args)
+        links = links_and_tags.split(" ")
         # if ctx.message.attachments:
         #     x = [x.url for x in ctx.message.attachments]
         #     links.extend(x)
@@ -407,7 +418,7 @@ class Fun(commands.Cog):
                 l_id = get_link_id(currentlink)
                 added = add_link_to_member(m_id[0], l_id)
                 if added:
-                    await self.audit_channel(group, idol, str(link), author)
+                    await self.audit_channel(group, idol, str(link), interaction.user)
                     added_links += 1
                     last_added = currentlink
                 else:
@@ -426,9 +437,6 @@ class Fun(commands.Cog):
             found = find_user(author)
             if found:
                 add_user_contribution(author, added_links)
-                # TODO add messaging to users adding a lot, to invite them to main discord
-                # check add check to database as to whether they have been messaged
-                # also check that they are not currently in the discord
             else:
                 add_user(author, 0, added_links)
         if tags_added:
@@ -610,7 +618,7 @@ class Fun(commands.Cog):
                               color=discord.Color.blurple())
         await interaction.response.send_message(embed=embed)
 
-    @commands.command(aliases=['addtag', 'taglink', 'add_tag'])
+    # TODO implement this as slash
     @is_restricted()
     async def tag_link(self, ctx, *tags_or_links):
         """
@@ -694,9 +702,15 @@ class Fun(commands.Cog):
             embed = error_embed("Something went wrong!")
         await ctx.send(embed=embed)
 
-    @commands.command(aliases=['t'])
+    @discord.slash_command(name='tagged',
+                           description='Get a gfy with a specific tag!',
+                           guild_ids=[755143761922883584])
     @is_restricted()
-    async def tagged(self, ctx, tag):
+    async def tagged(self, interaction: discord.Interaction,
+                     tag: str = SlashOption(
+                         name='tag',
+                         description='Enter a tag'
+                     )):
         """
         Sends a random gfy with the specified tag.
         Example: .tagged <tag>
@@ -722,9 +736,9 @@ class Fun(commands.Cog):
                 rand = 0
             finale = refine[rand]
             self.recent_posts[tag].append(finale)
-            await ctx.send(f"Tagged `{tag}`, {finale}")
+            await interaction.response.send_message(f"Tagged `{tag}`, {finale}")
         else:
-            await ctx.send(f"Nothing for tag `{tag}`")
+            await interaction.response.send_message(f"Nothing for tag `{tag}`")
 
     # TODO implement this command
     async def taggedimage(self, ctx, tag):
@@ -953,7 +967,6 @@ class Fun(commands.Cog):
                               color=discord.Color.blurple())
         await interaction.response.send_message(embed=embed)
 
-    # @commands.command(aliases=['stop', 'cancel', 'end'])
     @discord.slash_command(name='stoptimer',
                            description="Stop a timer you previously created",
                            guild_ids=[755143761922883584])
@@ -1129,6 +1142,7 @@ class Fun(commands.Cog):
         await idol_picker(interaction, idol_name)
 
     @tag_alias.on_autocomplete("tag")
+    @tagged.on_autocomplete("tag")
     async def _tag_picker(self, interaction: discord.Interaction, tag_name: str):
         await tag_picker(interaction, tag_name)
 
@@ -1159,6 +1173,7 @@ class Fun(commands.Cog):
                               color=discord.Color.blurple())
         await interaction.response.send_message(embed=embed)
 
+    # TODO update this to include ephemeral pagenation
     # @commands.command(aliases=['list'])
     # async def listlinks(self, ctx, group, idol=None):
     #     """
@@ -1268,7 +1283,7 @@ class Fun(commands.Cog):
         embed = discord.Embed(title=s,
                               color=discord.Color.blurple())
         embed.set_footer(text=f"Added by {author}",
-                         icon_url=author.avatar_url)
+                         icon_url=author.avatar.url)
         await main_audcha.send(embed=embed)
         await main_audcha.send(link)
         aud_chas = get_auditing_channels()
