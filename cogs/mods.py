@@ -2,6 +2,7 @@ import os
 
 import nextcord as discord
 from nextcord import SlashOption
+from nextcord.abc import GuildChannel
 from nextcord.ext import commands
 
 from datetime import datetime
@@ -9,13 +10,16 @@ from datetime import datetime
 # import lots of methods
 from data import add_channel, add_tag_alias_db, remove_tag_alias_db, add_group_alias_db, remove_group_alias_db, \
     add_cont_from_one_user_to_other, perma_user_db, remove_perma_user_db, delete_link_from_database, gfy_v2_test, \
-    find_member_id, pick_groups, get_group_aliases, pick_group_members
+    find_member_id, pick_groups, get_group_aliases, pick_group_members, find_tags_on_link, pick_tags_on_link, pick_tags, \
+    pick_commands
 from data import remove_member_alias_db, add_member_alias_db, add_tag, find_group_id, add_group, remove_group
 from data import remove_moderator, add_moderator, get_members_of_group, add_member, remove_member, apis_dict
 from data import remove_auditing_channel, add_auditing_channel, remove_command, remove_link, remove_tag_from_link
 from data import remove_tag, check_user_is_mod, check_user_is_owner
 
 from embeds import success_embed, error_embed, permission_denied_embed
+
+from bot import joy_guild
 
 
 def is_owner():
@@ -42,47 +46,54 @@ class Owner(commands.Cog):
         """Initialise client."""
         self.disclient = disclient
 
-    @commands.command(name='muc', aliases=['merge_user_cont', 'mergeusercont'])
+    @discord.slash_command(name='mergeusercont',
+                           description="merge user contribution",
+                           guild_ids=[joy_guild])
     @is_owner()
     async def merge_user_contribution(self, ctx, member1: discord.Member, member2: discord.Member):
         """Add contribution from first arguement to second argument"""
         add_cont_from_one_user_to_other(member1.id, member2.id)
-        ctx.send(embed=success_embed('Merged user contribution'))
+        ctx.response.send_message(embed=success_embed('Merged user contribution'))
 
-    @commands.command(name='forcedelete', aliases=['forcedel', 'fdel'])
+    @discord.slash_command(name='forcedeletelink',
+                           description="force delete a link",
+                           guild_ids=[joy_guild])
     @is_owner()
-    async def force_delete_link(self, ctx, *links):
-        delcounter = 0
-        for link in links:
-            removed = delete_link_from_database(link)
-            if removed:
-                delcounter += 1
-            else:
-                await ctx.send(f'failed to removed {link}')
-        if delcounter > 0:
-            await ctx.send(embed=success_embed(f'Removed {delcounter} link(s)!'))
+    async def force_delete_link(self, ctx, link):
+        removed = delete_link_from_database(link)
+        if removed:
+            await ctx.response.send_message(embed=success_embed(f'Removed {link}!'))
+        else:
+            await ctx.response.send_message(
+                embed=error_embed(f'failed to removed {link}'))
 
-    @commands.command()
+    @discord.slash_command(name='removemoderator',
+                           description="remove a joy mod",
+                           guild_ids=[joy_guild])
     @is_owner()
     async def remove_moderator(self, ctx, member: discord.Member):
         """Add user to moderator list."""
         removed = remove_moderator(member.id)
         if removed:
-            await ctx.send(embed=success_embed(f'{member} is no longer a moderator!'))
+            await ctx.response.send_message(embed=success_embed(f'{member} is no longer a moderator!'))
         else:
-            await ctx.send(embed=error_embed(f'{member} is not a moderator!'))
+            await ctx.response.send_message(embed=error_embed(f'{member} is not a moderator!'))
 
-    @commands.command()
+    @discord.slash_command(name='addmoderator',
+                           description="add a mod to joy",
+                           guild_ids=[joy_guild])
     @is_owner()
     async def add_moderator(self, ctx, member: discord.Member):
         """Add user to moderator list."""
         added = add_moderator(member.id)
         if added:
-            await ctx.send(embed=success_embed(f'{member} is now a moderator!'))
+            await ctx.response.send_message(embed=success_embed(f'{member} is now a moderator!'))
         else:
-            await ctx.send(embed=error_embed(f'{member} is already a moderator!'))
+            await ctx.response.send_message(embed=error_embed(f'{member} is already a moderator!'))
 
-    @commands.command()
+    @discord.slash_command(name='reloadcog',
+                           description="reload a cog",
+                           guild_ids=[joy_guild])
     @is_owner()
     async def reload(self, ctx, cog_name=None):
         """Reload cog."""
@@ -128,9 +139,13 @@ class Owner(commands.Cog):
                 if failed:
                     embed.add_field(name=f"Failed to load:",
                                     value=', '.join(failed))
-        await ctx.send(embed=embed)
+        await ctx.response.send_message(embed=embed)
 
+    # TODO implement remaining owner commands, test these are restricted
     @commands.command()
+    @discord.slash_command(name='',
+                           description="",
+                           guild_ids=[joy_guild])
     @is_owner()
     async def unload(self, ctx, cog_name):
         for cog in os.listdir("./cogs"):
@@ -144,6 +159,9 @@ class Owner(commands.Cog):
         await ctx.send('Unloaded cog!')
 
     @commands.command()
+    @discord.slash_command(name='',
+                           description="",
+                           guild_ids=[joy_guild])
     @is_owner()
     async def load(self, ctx, cog_name):
         for cog in os.listdir("./cogs"):
@@ -157,6 +175,9 @@ class Owner(commands.Cog):
         await ctx.send('Loaded cog!')
 
     @commands.command()
+    @discord.slash_command(name='',
+                           description="",
+                           guild_ids=[joy_guild])
     @is_owner()
     async def perma_user(self, ctx, user_id):
         """Stops user from added anything to the bot"""
@@ -167,6 +188,9 @@ class Owner(commands.Cog):
             await ctx.send(embed=error_embed("Failed to perma user."))
 
     @commands.command()
+    @discord.slash_command(name='',
+                           description="",
+                           guild_ids=[joy_guild])
     @is_owner()
     async def remove_perma_user(self, ctx, user_id):
         """Removes user from perma ban"""
@@ -177,6 +201,9 @@ class Owner(commands.Cog):
             await ctx.send(embed=error_embed("Failed to un-perma user."))
 
     @commands.command()
+    @discord.slash_command(name='listlinks',
+                           description="list all links on idol",
+                           guild_ids=[joy_guild])
     @is_owner()
     async def list_links(self, ctx, group, idol):
         links = gfy_v2_test(group, idol)
@@ -190,28 +217,28 @@ class Owner(commands.Cog):
         for i, link in enumerate(links):
             await ctx.send(f"{i + 1}. {link[-1]}")
 
-    @commands.command()
-    @is_owner()
-    async def link_duplicate_members(self, ctx, group_one, member_one, group_two, member_two):
-        """Create a link between two members links, therefore allowing their links to seamlessly be accessed
-        no matter what group they are referenced from. For example, if one idol is part of two different groups,
-        we can link the link tables together to reference the same ID, in a sense creating an alias on top of the
-        aliases they may already have."""
-        # get member one's ID
-        group_one_id = find_group_id(group_one)
-        member_one_id = find_member_id(group_one_id, member_one)
-
-        # get member two's ID
-        group_two_id = find_group_id(group_two)
-        member_two_id = find_member_id(group_two_id, member_two)
-
-        # create the link entries again with the two sets of ID's
-        pass
-
-    @commands.command()
-    @is_owner()
-    async def unlink_duplicate_members(self, ctx, group_one, member_one, group_two, member_two):
-        pass
+    # @commands.command()
+    # @is_owner()
+    # async def link_duplicate_members(self, ctx, group_one, member_one, group_two, member_two):
+    #     """Create a link between two members links, therefore allowing their links to seamlessly be accessed
+    #     no matter what group they are referenced from. For example, if one idol is part of two different groups,
+    #     we can link the link tables together to reference the same ID, in a sense creating an alias on top of the
+    #     aliases they may already have."""
+    #     # get member one's ID
+    #     group_one_id = find_group_id(group_one)
+    #     member_one_id = find_member_id(group_one_id, member_one)
+    #
+    #     # get member two's ID
+    #     group_two_id = find_group_id(group_two)
+    #     member_two_id = find_member_id(group_two_id, member_two)
+    #
+    #     # create the link entries again with the two sets of ID's
+    #     pass
+    #
+    # @commands.command()
+    # @is_owner()
+    # async def unlink_duplicate_members(self, ctx, group_one, member_one, group_two, member_two):
+    #     pass
 
 
 class Moderation(commands.Cog):
@@ -423,179 +450,187 @@ class Moderation(commands.Cog):
                    \nPlease make sure you do not use an alias for the idol slash option!."""
             await interaction.response.send_message(embed=error_embed(msg))
 
-    @commands.command(aliases=['removetag', 'removetagfromlink, remove_tag_from_link'])
+    @discord.slash_command(
+        name="removetag",
+        description="Remove a tag from a link"
+    )
     @is_mod()
-    async def remove_tag(self, ctx, link, *tags):
-        """
-        Removes tag(s) from a link previously added
-        Example: <link> <tag> <tag> <tag>
-        Any number of tags can be removed in one command.
-        """
-        tags_list = tags
-        # rework lists to strings once working
-        removed = []
-        not_there = []
-        for tag in tags_list:
-            tag = tag.lower()
-            remove = remove_tag_from_link(link, tag)
-            if remove:
-                removed.append(tag)
-            else:
-                not_there.append(tag)
-        if removed and not_there:
-            r = ', '.join(removed)
-            nt = ', '.join(not_there)
-            act = f"Removed tag(s): {r} from {link}"
-            await moderation_auditing(self.disclient, ctx.author, act)
-            await ctx.send(embed=success_embed(f'Removed {r} tag(s) from link!\nLink did not have: {nt}'))
-        elif removed:
-            r = ', '.join(removed)
-            act = f"Removed tag(s): {r} from the link:\n{link}"
-            await moderation_auditing(self.disclient, ctx.author, act)
-            await ctx.send(embed=success_embed(f'Removed {r} tag(s) from link!'))
-        else:
-            nt = ', '.join(not_there)
-            await ctx.send(embed=error_embed(f'Link did not have tag(s): {nt}!'))
-
-    @commands.command(aliases=['createtag'])
-    @is_mod()
-    async def create_tag(self, ctx, tag):
-        """Adds a new tag, which will be available for use."""
-        if not check_user_is_mod(ctx):
-            await ctx.send(embed=permission_denied_embed())
-            return
-
+    async def remove_tag(self,
+                         interaction: discord.Interaction,
+                         link: str = SlashOption(
+                             name="link",
+                             description="link to remove tag from",
+                             required=True
+                         ),
+                         tag: str = SlashOption(
+                             name="tag",
+                             description="tag to remove from link",
+                             required=True
+                         )):
         tag = tag.lower()
-        added = add_tag(tag, ctx.author.id)
-        add_tag_alias_db(tag, tag, ctx.author.id)
+        remove = remove_tag_from_link(link, tag)
+        if remove:
+            act = f"Removed tag: {tag} from {link}!"
+            await moderation_auditing(self.disclient, interaction.user, act)
+            await interaction.response.send_message(embed=success_embed(act))
+        else:
+            await interaction.response.send_message(
+                embed=error_embed(f'Link did not have tag(s): {tag}!'))
+
+    @discord.slash_command(
+        name="createtag",
+        description="Create a new tag for use"
+    )
+    @is_mod()
+    async def create_tag(self, interaction: discord.Interaction, tag):
+        """Adds a new tag, which will be available for use."""
+        tag = tag.lower()
+        added = add_tag(tag, interaction.user.id)
+        add_tag_alias_db(tag, tag, interaction.user.id)
         if added:
             act = f'Added tag: {tag}!'
-            await moderation_auditing(self.disclient, ctx.author, act)
-            await ctx.send(embed=success_embed(act))
+            await moderation_auditing(self.disclient, interaction.user, act)
+            await interaction.response.send_message(embed=success_embed(act))
         else:
-            await ctx.send(embed=error_embed(f'{tag} already exists!'))
+            await interaction.response.send_message(embed=error_embed(f'{tag} already exists!'))
 
-    @commands.command(aliases=['deletetag', 'deltag'])
+    @discord.slash_command(
+        name="deletetag",
+        description="Deletes a tag from Joy entirely"
+    )
     @is_mod()
-    async def delete_tag(self, ctx, tag):
-        """Completely deletes a tag.
-        All links with this tag, will no longer have this tag."""
+    async def delete_tag(self,
+                         interaction: discord.Interaction,
+                         tag: str = SlashOption(
+                             name="tag",
+                             description="tag to be deleted",
+                             required=True
+                         )):
         tag = tag.lower()
         removed = remove_tag(tag)
         if removed:
             act = f'Deleted tag: {tag}!'
-            await moderation_auditing(self.disclient, ctx.author, act)
-            await ctx.send(embed=success_embed(act))
+            await moderation_auditing(self.disclient, interaction.user, act)
+            await interaction.response.send_message(embed=success_embed(act))
         else:
-            await ctx.send(embed=error_embed(f'{tag} does not exist!'))
+            await interaction.response.send_message(embed=error_embed(f'{tag} does not exist!'))
 
-    @commands.command(aliases=['addtagalias'])
+    @discord.slash_command(
+        name="addtagalias",
+        description="add an alias to a tag"
+    )
     @is_mod()
-    async def add_tag_alias(self, ctx, tag, *aliases):
+    async def add_tag_alias(self,
+                            interaction: discord.Interaction,
+                            tag: str = SlashOption(
+                                name="tag",
+                                description="tag to add alias to",
+                                required=True
+                            ),
+                            alias: str = SlashOption(
+                                name="alias",
+                                description="alias to add to tag",
+                                required=True
+                            )):
         """Adds an alias to a tag.
         A list of aliases can be passed through in one command, but only one tag.
         Please ensure you use the tag name, and not an alias for the first argument.
         Example: .add_tag_alias <tag> <alias>
         Example: .add_tag_alias <tag> <alias1> <alias2>"""
-        tag = tag.lower()
-        added_aliases = []
-        invalid_aliases = []
-        for alias in aliases:
-            alias = alias.lower()
-            added = add_tag_alias_db(tag, alias, ctx.author.id)
-            if added:
-                added_aliases.append(alias)
-            else:
-                invalid_aliases.append(alias)
-        if invalid_aliases and added_aliases:
-            exists = ', '.join(invalid_aliases)
-            add = ', '.join(added_aliases)
-            act = f"Added alias(es): {add} to {tag}!"
-            await moderation_auditing(self.disclient, ctx.author, act)
-            msg = f"Added alias(es): {add} to {tag}!\nSkipped adding duplicates: {exists}!"
-            await ctx.send(embed=success_embed(msg))
-        elif added_aliases and not invalid_aliases:
-            msg = f"Added aliases(s): {', '.join(added_aliases)} to {tag}!"
-            await moderation_auditing(self.disclient, ctx.author, msg)
-            await ctx.send(embed=success_embed(msg))
+        alias = alias.lower()
+        added = add_tag_alias_db(tag, alias, interaction.user.id)
+        if added:
+            act = f"Added alias: {alias} to {tag}!"
+            await moderation_auditing(self.disclient, interaction.user, act)
+            await interaction.response.send_message(embed=success_embed(act))
         else:
-            msg = f"Skipped adding duplicate alias(es): {', '.join(invalid_aliases)}!"
-            await ctx.send(embed=error_embed(msg))
+            msg = f"Skipped adding duplicate alias: {alias}!"
+            await interaction.response.send_message(embed=error_embed(msg))
 
-    @commands.command(aliases=['deltagalias', 'removetagalias', 'dta'])
+    @discord.slash_command(
+        name="deletetagalias",
+        description="Deletes an alias from a tag"
+    )
     @is_mod()
-    async def delete_tag_alias(self, ctx, tag, *aliases):
+    async def delete_tag_alias(self,
+                               interaction: discord.Interaction,
+                               tag: str = SlashOption(
+                                   name="tag",
+                                   description="tag to delete from",
+                                   required=True
+                               ),
+                               alias: str = SlashOption(
+                                   name="alias",
+                                   description="alias to delete",
+                                   required=True
+                               )):
         """Removes an alias from a tag.
         A list of aliases can be passed through in one command, but only one tag.
         Please ensure you use the tag name, and not an alias for the first argument.
         Example: .delete_tag_alias <tag> <alias>
         Example: .delete_tag_alias <tag> <alias1> <alias2>"""
         tag = tag.lower()
-        removed_aliases = []
-        invalid_aliases = []
-        for alias in aliases:
-            alias = alias.lower()
-            removed = remove_tag_alias_db(tag, alias)
-            if removed:
-                removed_aliases.append(alias)
-            else:
-                invalid_aliases.append(alias)
-        if invalid_aliases and removed_aliases:
-            exists = ', '.join(invalid_aliases)
-            rem = ', '.join(removed_aliases)
-            act = f"Removed alias(es): {rem} from {tag}!"
-            await moderation_auditing(self.disclient, ctx.author, act)
-            msg = f"Removed alias(es): {rem} from {tag}!\nFailed to removed: {exists}!"
-            await ctx.send(embed=success_embed(msg))
-        elif removed_aliases and not invalid_aliases:
-            msg = f"Removed aliases(s): {', '.join(removed_aliases)} from {tag}!"
-            await moderation_auditing(self.disclient, ctx.author, msg)
-            await ctx.send(embed=success_embed(msg))
+        alias = alias.lower()
+        removed = remove_tag_alias_db(tag, alias)
+        if removed:
+            act = f"Removed alias: {alias} from {tag}!"
+            await moderation_auditing(self.disclient, interaction.user, act)
+            await interaction.response.send_message(embed=success_embed(act))
         else:
-            msg = f"Failed to remove alias(es): {', '.join(invalid_aliases)} from {tag}!"
-            await ctx.send(embed=error_embed(msg))
+            msg = f"Failed to remove alias: {alias} from {tag}!"
+            await interaction.response.send_message(embed=error_embed(msg))
 
-    @commands.command(aliases=[
-        'delfancam', 'delete_fancam', 'delete_image', 'delimage', 'delete_gfy', 'delgfy', 'del', 'dellink'
-    ])
+    @discord.slash_command(
+        name="deletelink",
+        description="deletes a link from joy"
+    )
     @is_mod()
-    async def delete_link(self, ctx, group, idol, *links):
+    async def delete_link(self,
+                          interaction: discord.Interaction,
+                          group: str = SlashOption(
+                              name="group",
+                              description="group to delete from",
+                              required=True
+                          ),
+                          idol: str = SlashOption(
+                              name="idol",
+                              description="idol from group",
+                              required=True
+                          ),
+                          link: str = SlashOption(
+                              name="link",
+                              description="link to be deleted",
+                              required=True
+                          )):
         """
         Deletes link(s) from an idol.
         Example: .delete_link <group> <idol> <link> <link> <link>
         """
-        link_list = links
         group = group.lower()
         idol = idol.lower()
-        # change list to string later
-        failed = []
-        success = []
-        for link in link_list:
-            if '-' in link:
-                link = link.split('-')[0]
-            removed = remove_link(group, idol, link)
-            if removed:
-                success.append(link)
-            else:
-                failed.append(link)
-        if failed and not success:
-            f = ', '.join(failed)
-            await ctx.send(embed=error_embed(f'Failed to delete: {f}'))
-        elif len(success) > 0 and failed:
-            f = ', '.join(failed)
-            s = '\n' + '\n'.join(success)
-            act = f'Deleted link(s) from {group} {idol}: {s}'
-            await moderation_auditing(self.disclient, ctx.author, act)
-            await ctx.send(embed=success_embed(f'Removed {len(success)} links!\nFailed to delete: {f}'))
+        if '-' in link:
+            link = link.split('-')[0]
+        removed = remove_link(group, idol, link)
+        if removed:
+            act = f'Deleted link from {group} {idol}: {link}'
+            await moderation_auditing(self.disclient, interaction.user, act)
+            await interaction.response.send_message(embed=success_embed(act))
         else:
-            s = '\n' + '\n'.join(success)
-            act = f'Deleted link(s) from {group} {idol}: {s}'
-            await moderation_auditing(self.disclient, ctx.author, act)
-            await ctx.send(embed=success_embed(f'Removed {len(success)} links!'))
+            await interaction.response.send_message(
+                embed=error_embed(f'Failed to delete: {link} from {group} {idol}'))
 
-    @commands.command(aliases=['delgroup', 'deletegroup'])
+    @discord.slash_command(
+        name="deletegroup",
+        description="deletes a group from joy"
+    )
     @is_mod()
-    async def delete_group(self, ctx, group):
+    async def delete_group(self,
+                           interaction: discord.Interaction,
+                           group: str = SlashOption(
+                               name="group",
+                               description="group to delete",
+                               required=True
+                           )):
         """
         Deletes an entire group and all idols within
         Example: .delete_group <group>
@@ -604,14 +639,28 @@ class Moderation(commands.Cog):
         removed = remove_group(group)
         if removed:
             act = f"Deleted group: {group}"
-            await moderation_auditing(self.disclient, ctx.author, act)
-            await ctx.send(embed=success_embed(f'Removed {group}'))
+            await moderation_auditing(self.disclient, interaction.user, act)
+            await interaction.response.send_message(embed=success_embed(f'Removed {group}'))
         else:
-            await ctx.send(embed=error_embed(f'No group added called {group}!'))
+            await interaction.response.send_message(embed=error_embed(f'No group added called {group}!'))
 
-    @commands.command(aliases=['delidol', 'delidols', 'deleteidol', 'deleteidols'])
+    @discord.slash_command(
+        name="deleteidol",
+        description="deletes an idol from a group"
+    )
     @is_mod()
-    async def delete_idols(self, ctx, group, *args):
+    async def delete_idols(self,
+                           interaction: discord.Interaction,
+                           group: str = SlashOption(
+                               name="group",
+                               description="group the idol is in",
+                               required=True
+                           ),
+                           idol: str = SlashOption(
+                               name="idol",
+                               description="idol to delete from grouo",
+                               required=True
+                           )):
         """
         Deletes all idol(s) specified in a group
         Example: .delete_idols <group> <idol_1> <idol_2>
@@ -619,87 +668,91 @@ class Moderation(commands.Cog):
         group = group.lower()
         g_id = find_group_id(group)
         if not g_id:
-            await ctx.send(embed=error_embed(f'No group added named {group}!'))
+            await interaction.response.send_message(
+                embed=error_embed(f'No group added named {group}!'))
             return
-
-        if not args:
-            await ctx.send(embed=error_embed('No idols provided!'))
+        idol = idol.lower()
+        a = remove_member(g_id[0], idol)
+        if a:
+            act = f"Deleted {idol} from {group}."
+            await moderation_auditing(self.disclient, interaction.user, act)
+            await interaction.response.send_message(embed=success_embed(act))
         else:
-            members = get_members_of_group(group)
-            members = [x[0] for x in members]
-            members = set(members)
-            args = set(args)
-            idol_list = members.intersection(args)
-            failed = args - members
-            success = []
-            for idol in idol_list:
-                idol = idol.lower()
-                a = remove_member(g_id[0], idol)
-                if a:
-                    success.append(idol)
-            if success and failed:
-                s = ', '.join(success)
-                f = ', '.join(failed)
-                act = f"Deleted {s} from {group}."
-                await moderation_auditing(self.disclient, ctx.author, act)
-                await ctx.send(embed=success_embed(f'Deleted: {s}!\nFailed to delete {f}!'))
-            elif success and not failed:
-                s = ', '.join(success)
-                act = f"Deleted: {s} from {group}!"
-                await moderation_auditing(self.disclient, ctx.author, act)
-                await ctx.send(embed=success_embed(act))
-            else:
-                f = ', '.join(failed)
-                await ctx.send(embed=error_embed(f'Failed to delete {f}'))
+            await interaction.response.send_message(
+                embed=error_embed(f'Failed to delete {idol} from {group}'))
 
-    @commands.command(aliases=['addauditing'])
+    @discord.slash_command(
+        name="addauditing",
+        description="add Joy auditing to a channel"
+    )
     @is_mod()
-    async def add_auditing(self, ctx):
+    async def add_auditing(self,
+                           interaction: discord.Interaction,
+                           channel: GuildChannel = SlashOption(
+                               name="channel",
+                               description="channel to add auditing to"
+                           )):
         """Adds auditing from this channel, as links are added to
         the bot, they will also be posted here so all new additions
         can be viewed."""
-        if not check_user_is_mod(ctx):
-            await ctx.send(embed=permission_denied_embed())
-            return
-
-        add_channel(ctx.channel.id)
-        added = add_auditing_channel(ctx.channel.id)
+        add_channel(channel.id)
+        added = add_auditing_channel(channel.id)
         if added:
             des = 'Added this channel to the auditing list!'
-            await ctx.send(embed=success_embed(des))
+            await interaction.response.send_message(embed=success_embed(des))
         else:
             des = 'Channel already in auditing list!'
-            await ctx.send(embed=error_embed(des))
+            await interaction.response.send_message(embed=error_embed(des))
 
-    @commands.command(aliases=['removeauditing'])
+    @discord.slash_command(
+        name="removeauditing",
+        description="remove Joy auditing from a channel"
+    )
     @is_mod()
-    async def remove_auditing(self, ctx):
+    async def remove_auditing(self,
+                              interaction: discord.Interaction,
+                              channel: GuildChannel = SlashOption(
+                                  name="channel",
+                                  description="channel to remove auditing from"
+                              )):
         """Removes auditing from this channel!"""
-        removed = remove_auditing_channel(ctx.channel.id)
+        removed = remove_auditing_channel(channel.id)
         if removed:
             des = 'Removed this channel from the auditing list!'
-            await ctx.send(embed=success_embed(des))
+            await interaction.response.send_message(embed=success_embed(des))
         else:
             des = 'Channel not in the auditing list!'
-            await ctx.send(embed=error_embed(des))
+            await interaction.response.send_message(embed=error_embed(des))
 
-    @commands.command(aliases=['delcommand', 'dc'])
+    @discord.slash_command(
+        name="deletecommand",
+        description="remove Joy auditing from a channel"
+    )
     @is_mod()
-    async def delete_command(self, ctx, command):
+    async def delete_command(self,
+                             interaction: discord.Interaction,
+                             command: str = SlashOption(
+                                 name="command",
+                                 description="command to remove",
+                                 required=True
+                             )):
         """Removes a custom command created previously."""
         command = command.lower()
         removed = remove_command(command)
         if removed:
             act = f"Removed command: {command}"
-            await moderation_auditing(self.disclient, ctx.author, act)
-            await ctx.send(embed=success_embed(f'Removed {command}!'))
+            await moderation_auditing(self.disclient, interaction.user, act)
+            await interaction.response.send_message(embed=success_embed(f'Removed {command}!'))
         else:
-            await ctx.send(embed=error_embed(f'Command {command} does not exist!'))
+            await interaction.response.send_message(embed=error_embed(f'Command {command} does not exist!'))
 
     @add_group_alias.on_autocomplete("group")
     @add_idols.on_autocomplete("group")
     @add_idol_alias.on_autocomplete("group")
     @delete_idol_alias.on_autocomplete("group")
+    @delete_link.on_autocomplete("group")
+    @delete_group.on_autocomplete("group")
+    @delete_idols.on_autocomplete("group")
     async def group_picker(self, interaction: discord.Interaction, group_name: str):
         if not group_name:
             await interaction.response.send_autocomplete(pick_groups())
@@ -710,6 +763,8 @@ class Moderation(commands.Cog):
 
     @add_idol_alias.on_autocomplete("idol")
     @delete_idol_alias.on_autocomplete("idol")
+    @delete_link.on_autocomplete("idol")
+    @delete_idols.on_autocomplete("idol")
     async def idol_picker(self, interaction: discord.Interaction, idol_name: str):
         group = interaction.data['options'][0]['value']
         if not idol_name:
@@ -726,6 +781,32 @@ class Moderation(commands.Cog):
             return
         get_near_aliases = [a for a in get_group_aliases(group) if a.startswith(alias_name)]
         await interaction.response.send_autocomplete(get_near_aliases)
+
+    @delete_tag.on_autocomplete("tag")
+    @add_tag_alias.on_autocomplete("tag")
+    async def tag_picker(self, interaction: discord.Interaction, tag_name: str):
+        if not tag_name:
+            await interaction.response.send_autocomplete(pick_tags())
+            return
+        get_near_tags = [tag for tag in pick_tags(near=tag_name) if tag.lower().startswith(tag_name)]
+        await interaction.response.send_autocomplete(get_near_tags)
+
+    @remove_tag.on_autocomplete("tag")
+    async def link_tag_picker(self, interaction: discord.Interaction, tag_name: str):
+        link = interaction.data['options'][0]['value']
+        if not tag_name:
+            await interaction.response.send_autocomplete(pick_tags_on_link(link))
+        get_near_tags = [t for t in pick_tags_on_link(link) if t.lower().startswith(tag_name)]
+        await interaction.response.send_autocomplete(get_near_tags)
+
+    @delete_command.on_autocomplete("command")
+    async def command_picker(self, interaction: discord.Interaction, command_name: str):
+        if not command_name:
+            await interaction.response.send_autocomplete(pick_commands())
+            return
+        get_near_commands = [command for command in pick_commands(near=command_name)
+                             if command.lower().startswith(command_name.lower())]
+        return get_near_commands
 
 
 async def moderation_auditing(disclient, author, action):

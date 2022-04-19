@@ -161,7 +161,10 @@ class General(commands.Cog):
         embed.set_image(url=member.display_avatar.url)
         await interaction.response.send_message(embed=embed)
 
-    @commands.command(aliases=['profile'])
+    @discord.slash_command(
+        name="profile",
+        description="Get some user information"
+    )
     async def user_profile(self,
                            interaction: discord.Interaction,
                            member: discord.Member = SlashOption(
@@ -169,13 +172,11 @@ class General(commands.Cog):
                                description="select a user",
                                required=False
                            )):
-        """returns some user information"""
         if member:
             member = member
         else:
             member = interaction.user
         user = find_user(member.id)
-        xp = user[1]
         cont = user[2]
         cr_at = member.created_at.strftime("%a, %#d %B %Y, %I:%M%p UTC")
         jo_at = member.joined_at.strftime("%a, %#d %B %Y, %I:%M%p UTC")

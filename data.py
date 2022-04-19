@@ -101,6 +101,23 @@ def get_commands(near=None):
     return result
 
 
+def pick_commands(near=None):
+    """Returns all commands in the database."""
+    cursor = db.cursor()
+    if near:
+        sql = """SELECT CommandName FROM custom_commands
+                    WHERE CommandName LIKE CONCAT(%s, '%')
+                    ORDER BY CommandName
+                    LIMIT 25;"""
+        cursor.execute(sql, (near,))
+    else:
+        sql = "SELECT CommandName FROM custom_commands ORDER BY CommandName LIMIT 25;"
+        cursor.execute(sql)
+    result = cursor.fetchall()
+    cursor.close()
+    return result
+
+
 def find_command(command_name):
     """Finds a specific command by name in the database."""
     cursor = db.cursor()
@@ -413,6 +430,21 @@ def find_tags_on_link(link):
     val = (link,)
     cursor.execute(sql, val)
     tags = dict(cursor.fetchall())
+    cursor.close()
+    return tags
+
+
+def pick_tags_on_link(link):
+    cursor = db.cursor()
+    sql = """SELECT TagName
+             FROM tags, links
+                WHERE
+                    links.Link = %s
+                    AND
+                    tags.LinkId = links.LinkId;"""
+    val = (link,)
+    cursor.execute(sql, val)
+    tags = cursor.fetchall()
     cursor.close()
     return tags
 

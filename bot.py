@@ -4,12 +4,12 @@ import nextcord as discord
 import os
 from nextcord.ext import commands
 from data import apis_dict, add_guild_db, write_cache
-from data import default_prefix
-from data import get_prefix_db
 
 intents = discord.Intents.all()
 
 executor = concurrent.futures.ThreadPoolExecutor()
+
+joy_guild = None  # set to joy guild
 
 disclient = commands.Bot(
     intents=intents,

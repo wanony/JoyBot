@@ -1,7 +1,7 @@
 from nextcord.ext import commands
 import nextcord as discord
 from nextcord import SlashOption
-from data import get_commands
+from data import get_commands, pick_commands
 from data import add_command
 from embeds import error_embed
 from embeds import success_embed
@@ -15,7 +15,7 @@ class Custom(commands.Cog):
         self.disclient = disclient
 
     @discord.slash_command(name='listcustom',
-                           description="Get help regarding commands or command groups",
+                           description="See a list of custom commands",
                            guild_ids=[755143761922883584])
     async def command_list(self, interaction: discord.Interaction):
         """Sends a list of all the custom commands."""
@@ -42,9 +42,9 @@ class Custom(commands.Cog):
     @custom_command.on_autocomplete("command")
     async def _command_picker(self, interaction: discord.Interaction, command_name: str):
         if not command_name:
-            await interaction.response.send_autocomplete(get_commands().keys())
+            await interaction.response.send_autocomplete(pick_commands())
             return
-        get_near_commands = [command for command in get_commands(near=command_name).keys()
+        get_near_commands = [command for command in pick_commands(near=command_name)
                              if command.lower().startswith(command_name.lower())]
         return get_near_commands
 

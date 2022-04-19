@@ -3,10 +3,7 @@ import re
 import nextcord as discord
 from nextcord.ext import commands
 
-from bot import get_prefix
-from data import get_banned_words, add_guild_db
-from data import get_commands
-from embeds import error_embed, permission_denied_embed, banned_word_embed
+from data import  add_guild_db
 
 
 class Events(commands.Cog):
@@ -45,29 +42,17 @@ class Events(commands.Cog):
         pass
 
     @commands.Cog.listener()
-    async def on_command_error(self, ctx, error):
-        if isinstance(error, commands.CommandNotFound):
-            await ctx.send(embed=error_embed("Command not found!"))
-        if isinstance(error, commands.MissingRequiredArgument):
-            await ctx.send(embed=error_embed(f'Missing argument! {error}'))
-        if isinstance(error, commands.CommandInvokeError):
-            await ctx.send(embed=error_embed('Something went wrong!'))
-        if isinstance(error, commands.NoPrivateMessage):
-            await ctx.send(embed=error_embed('This command does not work in DMs!'))
-            return
-        if isinstance(error, commands.CheckFailure):
-            await ctx.send(embed=permission_denied_embed())
-        raise error
-
-    @commands.Cog.listener()
     async def on_guild_join(self, guild):
         added = add_guild_db(guild.id)
         if added:
             print(f"Added guild: {guild.name}!")
 
     @commands.Cog.listener()
-    async def on_user_join(self, ctx):
-        pass
+    async def on_member_join(self, member: discord.Member):
+        if member.guild.id == 741066661221761135:  # This applies to Joy's server, applying default role
+            joys_role_id = 741066885583470763
+            role: discord.Role = member.guild.get_role(joys_role_id)
+            await member.add_roles(role)
 
 
 def setup(disclient):

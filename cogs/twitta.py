@@ -1,5 +1,7 @@
 import json
 import nextcord as discord
+from nextcord import SlashOption
+from nextcord.abc import GuildChannel
 from nextcord.utils import escape_markdown
 import pyshorteners
 import tweepy
@@ -91,6 +93,7 @@ class MyStreamListener(tweepy.StreamListener):
 class Twitter(commands.Cog):
     """Get new posts from your favourite Twitter users!
     """
+
     def __init__(self, disclient):
         """Initialise client."""
         self.disclient = disclient
@@ -103,85 +106,96 @@ class Twitter(commands.Cog):
         self.current_stream = tweepy.Stream(authenticator(), MyStreamListener(self.disclient))
         self.current_stream.filter(follow=get_users_to_stream(), is_async=True)
 
-    @commands.command(name='follow_twitter', aliases=['followtwitter', 'twitterfollow'])
+    @discord.slash_command(
+        name="twitter",
+        description="Handle Twitter integration",
+        guild_ids=[755143761922883584]
+    )
     @commands.guild_only()
     @commands.has_permissions(administrator=True)
-    async def twitter_follow(self, ctx, user_name):
-        """Follows a twitter user, new tweets will be posted in the channel the command was called!
-        Example: .follow_twitter <username or link>"""
-        if 'twitter.com' in user_name:
-            user_name = user_name.split('/')[-1]
-        channel_id = ctx.channel.id
-        add_channel(channel_id)
-        user = self.client.get_twitter_user(user_name)
-        if user:
-            add_twitter_to_db(user.id_str)
-        else:
-            await ctx.send(embed=error_embed(f'Twitter user `{escape_markdown(user_name)}` not found!'))
-        added = add_twitter_channel_to_db(channel_id, user.id_str)
-        if added:
-            icon_url = user.profile_image_url
-            display_name = user.name
-            link = f'https://twitter.com/{user.screen_name}'
-            msg = f'This channel will now receive updates when {display_name} tweets at {link}'
-            embed = discord.Embed(title=f'Successfully followed {escape_markdown(display_name)}',
-                                  description=escape_markdown(msg),
-                                  color=discord.Color.blue())
-            embed.set_thumbnail(url=icon_url)
-            await ctx.send(embed=embed)
-            if user.id_str not in get_users_to_stream():
-                self.restart_stream()
-        else:
-            await ctx.send(embed=error_embed(f'Failed to follow twitter user `{escape_markdown(user_name)}`!'))
-
-    @commands.command(name='unfollow_twitter', aliases=['unfollowtwitter', 'twitterunfollow'])
-    @commands.guild_only()
-    @commands.has_permissions(administrator=True)
-    async def twitter_unfollow(self, ctx, user_name):
-        """Unfollows a twitter user in this channel.
-        Example: .unfollow_twitter <username or link>"""
-        if 'twitter.com' in user_name:
-            user_name = user_name.split('/')[-1]
-        channel_id = ctx.channel.id
-        user = self.client.get_twitter_user(user_name)
-        if not user.id_str:
-            # TODO make better twitter embed with images of display pics etc
-            await ctx.send(embed=error_embed(f'Twitter user `{escape_markdown(user_name)}` not found!'))
-        removed = remove_twitter_user_from_db(channel_id, user.id_str)
-        if removed:
-            await ctx.send(embed=success_embed(f'Unfollowed twitter user `{escape_markdown(user_name)}`!'))
-        else:
-            await ctx.send(embed=error_embed(f'Failed to unfollow twitter user `{escape_markdown(user_name)}`!'))
-
-    @commands.command()
-    @commands.guild_only()
-    async def twitters(self, ctx):
-        """Returns a list of followed twitters in this server."""
-        guild = ctx.guild
-        chans = get_all_twitter_channels_and_twitters()
-        chan_dict = {}
-        for pair in chans:
-            if pair[0] not in chan_dict:
-                chan_dict.update({pair[0]: [pair[-1]]})
+    async def twitter_handler(self,
+                              interaction: discord.Interaction,
+                              action: str = SlashOption(
+                                  name="action",
+                                  description="required action",
+                                  choices=["follow", "unfollow", "list"],
+                                  required=True
+                              ),
+                              username: str = SlashOption(
+                                  name="username",
+                                  description="twitch username or URL",
+                                  required=False
+                              ),
+                              channel: GuildChannel = None):
+        if action.lower() == "list":
+            guild = interaction.guild
+            chans = get_all_twitter_channels_and_twitters()
+            chan_dict = {}
+            for pair in chans:
+                if pair[0] not in chan_dict:
+                    chan_dict.update({pair[0]: [pair[-1]]})
+                else:
+                    chan_dict[pair[0]].append(pair[-1])
+            msg = ''
+            for channel in guild.channels:
+                if channel.id in chan_dict:
+                    for twitter in chan_dict[channel.id]:
+                        twitter = self.client.get_twitter_user_name(twitter)
+                        spacing = 39 - len(channel.name + twitter)
+                        chan_str = f"`#{channel.name}{' ' * spacing}{twitter}`\n"
+                        msg = msg + chan_str
+            if msg == '':
+                await interaction.response.send_message(
+                    embed=error_embed('No Twitters followed in this server!'))
             else:
-                chan_dict[pair[0]].append(pair[-1])
-        msg = ''
-        for channel in guild.channels:
-            if channel.id in chan_dict:
-                for twitter in chan_dict[channel.id]:
-                    twitter = self.client.get_twitter_user_name(twitter)
-                    spacing = 39 - len(channel.name + twitter)
-                    chan_str = f"`#{channel.name}{' ' * spacing}{twitter}`\n"
-                    msg = msg + chan_str
-        if msg == '':
-            await ctx.send(embed=error_embed('No subreddits followed in this server!'))
-        else:
-            add_to_start = f"`Channel Name{' ' * 19}Subreddit`\n"
-            msg = add_to_start + msg
-            embed = discord.Embed(title=f'Twitters Followed in {guild.name}!',
-                                  description=msg,
-                                  color=discord.Color.blue())
-            await ctx.send(embed=embed)
+                add_to_start = f"`Channel Name{' ' * 19}Subreddit`\n"
+                msg = add_to_start + msg
+                embed = discord.Embed(title=f'Twitters Followed in {guild.name}!',
+                                      description=msg,
+                                      color=discord.Color.blue())
+                await interaction.response.send_message(embed=embed)
+        elif action.lower() == "follow":
+            if 'twitter.com' in username:
+                username = username.split('/')[-1]
+            add_channel(channel.id)
+            user = self.client.get_twitter_user(username)
+            if user:
+                add_twitter_to_db(user.id_str)
+            else:
+                await interaction.response.send_message(
+                    embed=error_embed(f'Twitter user `{escape_markdown(username)}` not found!'))
+            added = add_twitter_channel_to_db(channel.id, user.id_str)
+            if added:
+                icon_url = user.profile_image_url
+                display_name = user.name
+                link = f'https://twitter.com/{user.screen_name}'
+                msg = f'This channel will now receive updates when {display_name} tweets at {link}'
+                embed = discord.Embed(title=f'Successfully followed {escape_markdown(display_name)}',
+                                      description=escape_markdown(msg),
+                                      color=discord.Color.blue())
+                embed.set_thumbnail(url=icon_url)
+                await interaction.response.send_message(embed=embed)
+                if user.id_str not in get_users_to_stream():
+                    self.restart_stream()
+            else:
+                await interaction.response.send_message(
+                    embed=error_embed(f'Failed to follow twitter user `{escape_markdown(username)}`!'))
+        elif action.lower() == "unfollow":
+            if 'twitter.com' in username:
+                username = username.split('/')[-1]
+            channel_id = channel.id
+            user = self.client.get_twitter_user(username)
+            if not user.id_str:
+                # TODO make better twitter embed with images of display pics etc
+                await interaction.response.send_message(
+                    embed=error_embed(f'Twitter user `{escape_markdown(username)}` not found!'))
+            removed = remove_twitter_user_from_db(channel_id, user.id_str)
+            if removed:
+                await interaction.response.send_message(
+                    embed=success_embed(f'Unfollowed twitter user `{escape_markdown(username)}`!'))
+            else:
+                await interaction.response.send_message(
+                    embed=error_embed(f'Failed to unfollow twitter user `{escape_markdown(username)}`!'))
 
     async def format_new_tweet(self, raw_data):
         """Formats a tweet into a nice discord embed"""
