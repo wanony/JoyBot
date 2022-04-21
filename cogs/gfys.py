@@ -619,6 +619,9 @@ class Fun(commands.Cog):
         await interaction.response.send_message(embed=embed)
 
     # TODO implement this as slash
+    @discord.slash_command(name='',
+                           description="",
+                           guild_ids=[755143761922883584])
     @is_restricted()
     async def tag_link(self, ctx, *tags_or_links):
         """
@@ -741,6 +744,9 @@ class Fun(commands.Cog):
             await interaction.response.send_message(f"Nothing for tag `{tag}`")
 
     # TODO implement this command
+    @discord.slash_command(name='',
+                           description="",
+                           guild_ids=[755143761922883584])
     async def taggedimage(self, ctx, tag):
         """
         Sends a random image with the specified tag.
@@ -774,6 +780,9 @@ class Fun(commands.Cog):
             await ctx.send(f"Nothing for tag `{tag}`")
 
     # TODO implement this slash command
+    @discord.slash_command(name='',
+                           description="",
+                           guild_ids=[755143761922883584])
     @is_restricted()
     async def taggedgfy(self, ctx, tag):
         """
@@ -807,6 +816,9 @@ class Fun(commands.Cog):
             await ctx.send(f"Nothing for tag `{tag}`")
 
     # TODO implement this slash command
+    @discord.slash_command(name='',
+                           description="",
+                           guild_ids=[755143761922883584])
     @is_restricted()
     async def taggedfancam(self, ctx, tag):
         """Sends a random fancam with the specified tag."""
@@ -836,6 +848,9 @@ class Fun(commands.Cog):
             await ctx.send(f"Nothing for tag `{tag}`")
 
     # TODO implement this slash command
+    @discord.slash_command(name='',
+                           description="",
+                           guild_ids=[755143761922883584])
     @is_restricted()
     async def tag_updater(self, ctx, *args):
         """Returns a number of random links that do not have tags, for the purpose of tagging them.

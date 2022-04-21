@@ -46,6 +46,7 @@ class Owner(commands.Cog):
         """Initialise client."""
         self.disclient = disclient
 
+    # TODO test that all owner and mod commands are completely restricted
     @discord.slash_command(name='mergeusercont',
                            description="merge user contribution",
                            guild_ids=[joy_guild])
@@ -141,71 +142,114 @@ class Owner(commands.Cog):
                                     value=', '.join(failed))
         await ctx.response.send_message(embed=embed)
 
-    # TODO implement remaining owner commands, test these are restricted
     @commands.command()
-    @discord.slash_command(name='',
-                           description="",
+    @discord.slash_command(name='unloadcog',
+                           description="unload a cog",
                            guild_ids=[joy_guild])
     @is_owner()
-    async def unload(self, ctx, cog_name):
-        for cog in os.listdir("./cogs"):
-            if cog.endswith(".py"):
-                if cog[:-3] == cog_name:
-                    cog = f"cogs.{cog.replace('.py', '')}"
+    async def unload(self, interaction: discord.Interaction,
+                     cog: str = SlashOption(
+                         name="cog",
+                         description="cog to be unloaded",
+                         required=True
+                     )):
+        for c in os.listdir("./cogs"):
+            if c.endswith(".py"):
+                if c[:-3] == cog:
+                    c = f"cogs.{c.replace('.py', '')}"
                     try:
-                        self.disclient.unload_extension(cog)
+                        self.disclient.unload_extension(c)
                     except commands.ExtensionNotLoaded:
-                        await ctx.send('Failed to unload cog.')
-        await ctx.send('Unloaded cog!')
+                        await interaction.response.send_message(
+                            'Failed to unload cog.')
+        await interaction.response.send_message('Unloaded cog!')
 
     @commands.command()
-    @discord.slash_command(name='',
-                           description="",
+    @discord.slash_command(name='load',
+                           description="load a cog",
                            guild_ids=[joy_guild])
     @is_owner()
-    async def load(self, ctx, cog_name):
-        for cog in os.listdir("./cogs"):
-            if cog.endswith(".py"):
-                if cog[:-3] == cog_name:
-                    cog = f"cogs.{cog.replace('.py', '')}"
+    async def load(self, interaction: discord.Interaction, cog):
+        for c in os.listdir("./cogs"):
+            if c.endswith(".py"):
+                if c[:-3] == cog:
+                    c = f"cogs.{c.replace('.py', '')}"
                     try:
-                        self.disclient.load_extension(cog)
+                        self.disclient.load_extension(c)
                     except commands.ExtensionNotLoaded:
-                        await ctx.send('Failed to load cog.')
-        await ctx.send('Loaded cog!')
+                        await interaction.response.send_message(
+                            'Failed to load cog.')
+        await interaction.response.send_message('Loaded cog!')
+
+    @unload.on_autocomplete("cog")
+    @load.on_autocomplete("cog")
+    async def cog_picker(self, interaction: discord.Interaction, cog_name):
+        if not cog_name:
+            await interaction.response.send_autocomplete(
+                [c[:-3] for c in os.listdir("./cogs") if c.endswith(".py")]
+            )
+            return
+        get_near_cogs = [c[:-3] for c in os.listdir("./cogs")
+                         if c.endswith(".py") and c.startswith(cog_name)]
+        await interaction.response.send_autocomplete(get_near_cogs)
 
     @commands.command()
-    @discord.slash_command(name='',
-                           description="",
+    @discord.slash_command(name='perma',
+                           description="stop a user from adding to Joy",
                            guild_ids=[joy_guild])
     @is_owner()
-    async def perma_user(self, ctx, user_id):
+    async def perma_user(self, interaction: discord.Interaction,
+                         user_id: str = SlashOption(
+                             name="userid",
+                             description="user's id to perma",
+                             required=True
+                         )):
         """Stops user from added anything to the bot"""
         perma = perma_user_db(user_id)
         if perma:
-            await ctx.send(embed=success_embed("User successfully perma'd."))
+            await interaction.response.send_message(
+                embed=success_embed("User successfully perma'd."))
         else:
-            await ctx.send(embed=error_embed("Failed to perma user."))
+            await interaction.response.send_message(
+                embed=error_embed("Failed to perma user."))
 
     @commands.command()
-    @discord.slash_command(name='',
-                           description="",
+    @discord.slash_command(name='unperma',
+                           description="free user from perma",
                            guild_ids=[joy_guild])
     @is_owner()
-    async def remove_perma_user(self, ctx, user_id):
+    async def remove_perma_user(self, interaction: discord.Interaction,
+                                user_id: str = SlashOption(
+                                    name="userid",
+                                    description="user's id to unperma",
+                                    required=True
+                                )):
         """Removes user from perma ban"""
         unperma = remove_perma_user_db(user_id)
         if unperma:
-            await ctx.send(embed=success_embed("User un-perma'd."))
+            await interaction.response.send_message(
+                embed=success_embed("User un-perma'd."))
         else:
-            await ctx.send(embed=error_embed("Failed to un-perma user."))
+            await interaction.response.send_message(
+                embed=error_embed("Failed to un-perma user."))
 
     @commands.command()
     @discord.slash_command(name='listlinks',
                            description="list all links on idol",
                            guild_ids=[joy_guild])
     @is_owner()
-    async def list_links(self, ctx, group, idol):
+    async def list_links(self,
+                         interaction: discord.Interaction,
+                         group: str = SlashOption(
+                             name="group",
+                             description="group for idol",
+                             required=True
+                         ),
+                         idol: str = SlashOption(
+                             name="idol",
+                             description="idol to list",
+                             required=True
+                         )):
         links = gfy_v2_test(group, idol)
         num_of_links = len(links)
         embed = discord.Embed(
@@ -213,9 +257,9 @@ class Owner(commands.Cog):
             description=f"All {num_of_links} links of {links[0][2]}'s {links[0][3]}.",
             color=discord.Color.blurple()
         )
-        await ctx.send(embed=embed)
+        await interaction.response.send_message(embed=embed)
         for i, link in enumerate(links):
-            await ctx.send(f"{i + 1}. {link[-1]}")
+            await interaction.response.send_message(f"{i + 1}. {link[-1]}")
 
     # @commands.command()
     # @is_owner()

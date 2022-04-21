@@ -66,7 +66,7 @@ class Twitch(commands.Cog):
                         continue
                     for chan in channels:
                         channel = self.disclient.get_channel(int(chan))
-                        # set ping roles up in the future
+                        # TODO set ping roles up in the future
                         # gid = channel.guild.id
                         # rol = self.disclient.get_guild(gid).roles
                         # tr = discord.utils.get(rol, name="twitch")

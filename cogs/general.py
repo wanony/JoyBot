@@ -110,7 +110,7 @@ class General(commands.Cog):
                 await interaction.message.add_reaction(emoji='✉')
                 await interaction.message.author.send(embed=halp)
 
-    def category_helper(self, interaction):
+    def category_helper(self, interaction: discord.Interaction):
         if not check_user_is_mod(interaction):
             return [
                 category for category in self.disclient.cogs

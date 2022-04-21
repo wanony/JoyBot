@@ -118,6 +118,7 @@ class Reddit(commands.Cog):
             await reddit.close()
             await asyncio.sleep(600)
 
+    # TODO implement as is done in insta.py
     @commands.command()
     @commands.guild_only()
     @commands.has_permissions(administrator=True)

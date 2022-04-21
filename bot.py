@@ -9,7 +9,7 @@ intents = discord.Intents.all()
 
 executor = concurrent.futures.ThreadPoolExecutor()
 
-joy_guild = None  # set to joy guild
+joy_guild = None  # set to joy guild ID
 
 disclient = commands.Bot(
     intents=intents,

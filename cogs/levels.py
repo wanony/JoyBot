@@ -32,7 +32,7 @@ class Levels(commands.Cog):
         This leaderboard is made from all contributers across
         every server the bot is connected to.
         """
-        # TODO remove duplicate code harder
+        # TODO remove duplicate code, implement leaderboards as a class
         if number:
             number = int(number)
         else:
