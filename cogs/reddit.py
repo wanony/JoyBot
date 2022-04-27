@@ -1,5 +1,7 @@
 import nextcord as discord
 import asyncpraw
+from nextcord import SlashOption
+from nextcord.abc import GuildChannel
 from nextcord.ext import commands
 import asyncio
 from data import get_all_subreddits, get_channels_with_sub, remove_channel_from_subreddit, add_reddit_channel, \
@@ -118,89 +120,94 @@ class Reddit(commands.Cog):
             await reddit.close()
             await asyncio.sleep(600)
 
-    # TODO implement as is done in insta.py
-    @commands.command()
+    @discord.slash_command(
+        name="reddit",
+        description="Handle Reddit integration",
+        guild_ids=[755143761922883584]
+    )
     @commands.guild_only()
     @commands.has_permissions(administrator=True)
-    async def unfollow_subreddit(self, ctx, subreddit):
+    async def reddit_handler(self,
+                             interaction: discord.Interaction,
+                             action: str = SlashOption(
+                                 name="action",
+                                 description="required action",
+                                 choices=["follow", "unfollow", "list"],
+                                 required=True
+                             ),
+                             subreddit: str = SlashOption(
+                                 name="subreddit",
+                                 description="the subreddit to interact with",
+                                 required=False
+                             ),
+                             channel: GuildChannel = None,
+                             ):
         """Unfollow a previously followed subreddit.
         Example: `.unfollow_subreddit <subreddit_name>`"""
-        channel = ctx.channel.id
-        subreddit = subreddit.lower()
-        if '/r/' in subreddit:
-            subreddit = subreddit.split('/r/')[-1]
-        subreddit_id = get_subreddit_id(subreddit)
-        if not subreddit_id:
-            msg = f"{subreddit} is not found!"
-            await ctx.send(embed=error_embed(msg))
-            return
-        found = find_channel(channel)
-        if not found:
-            msg = f"{subreddit} is not found!"
-            await ctx.send(embed=error_embed(msg))
-            return
-        removed = remove_channel_from_subreddit(found[0], subreddit_id[0])
-        if removed:
-            msg = f"Unfollowed {subreddit} in this channel!"
-            await ctx.send(embed=success_embed(msg))
-        else:
-            msg = f"{subreddit} is not followed in this channel"
-            await ctx.send(embed=error_embed(msg))
-
-    @commands.command()
-    @commands.guild_only()
-    @commands.has_permissions(administrator=True)
-    async def follow_subreddit(self, ctx, subreddit):
-        """Add a subreddit to follow in this server!
-        The channel this command is invoked in will be used
-        to post the new submission to the sub.
-        Example: `.follow_subreddit <subreddit_name>`"""
-        channel = ctx.channel.id
-        subreddit = subreddit.lower()
-        if '/r/' in subreddit:
-            subreddit = subreddit.split('/r/')[-1]
-        subreddit_id = get_subreddit_id(subreddit)
-        if not subreddit_id:
-            add_reddit(subreddit)
-            subreddit_id = get_subreddit_id(subreddit)
-        add_channel(channel)
-        found = find_channel(channel)
-        added = add_reddit_channel(found[0], subreddit_id[0])
-        if added:
-            msg = f"Added {subreddit} to this channel!"
-            await ctx.send(embed=success_embed(msg))
-        else:
-            msg = f"Already added {subreddit} to this channel!"
-            await ctx.send(embed=error_embed(msg))
-
-    @commands.command(aliases=['subreddits'])
-    @commands.guild_only()
-    async def reddits(self, ctx):
-        """Returns a list of followed subreddits in this server."""
-        guild = ctx.guild
-        chans = get_all_reddit_channels_and_sub()
-        chan_dict = {}
-        for pair in chans:
-            if pair[0] not in chan_dict:
-                chan_dict.update({pair[0]: [pair[-1]]})
+        if action.lower() == "list":
+            guild = interaction.guild
+            chans = get_all_reddit_channels_and_sub()
+            chan_dict = {}
+            for pair in chans:
+                if pair[0] not in chan_dict:
+                    chan_dict.update({pair[0]: [pair[-1]]})
+                else:
+                    chan_dict[pair[0]].append(pair[-1])
+            msg = ''
+            for c in guild.channels:
+                if c.id in chan_dict:
+                    for reddit in chan_dict[c.id]:
+                        spacing = 39 - len(c.name + reddit)
+                        chan_str = f"`#{c.name}{' ' * spacing}{reddit}`\n"
+                        msg = msg + chan_str
+            if msg == '':
+                await interaction.response.send_message(
+                    embed=error_embed('No subreddits followed in this server!'))
             else:
-                chan_dict[pair[0]].append(pair[-1])
-        msg = ''
-        for channel in guild.channels:
-            if channel.id in chan_dict:
-                for reddit in chan_dict[channel.id]:
-                    spacing = 39 - len(channel.name + reddit)
-                    chan_str = f"`#{channel.name}{' ' * spacing}{reddit}`\n"
-                    msg = msg + chan_str
-        if msg == '':
-            await ctx.send(embed=error_embed('No subreddits followed in this server!'))
-        else:
-            add_to_start = f"`Channel Name{' ' * 19}Subreddit`\n"
-            msg = add_to_start + msg
-            embed = discord.Embed(title=f'Subreddits Followed in {guild.name}!',
-                                  description=msg,
-                                  color=discord.Color.blurple())
-            await ctx.send(embed=embed)
+                add_to_start = f"`Channel Name{' ' * 19}Subreddit`\n"
+                msg = add_to_start + msg
+                embed = discord.Embed(title=f'Subreddits Followed in {guild.name}!',
+                                      description=msg,
+                                      color=discord.Color.blurple())
+                await interaction.response.send_message(embed=embed)
+        elif action.lower() == "follow":
+            subreddit = subreddit.lower()
+            if '/r/' in subreddit:
+                subreddit = subreddit.split('/r/')[-1]
+            subreddit_id = get_subreddit_id(subreddit)
+            if not subreddit_id:
+                add_reddit(subreddit)
+                subreddit_id = get_subreddit_id(subreddit)
+            add_channel(channel.id)
+            found = find_channel(channel.id)
+            added = add_reddit_channel(found[0], subreddit_id[0])
+            if added:
+                msg = f"Added {subreddit} to this channel!"
+                await interaction.response.send_message(embed=success_embed(msg))
+            else:
+                msg = f"Already added {subreddit} to this channel!"
+                await interaction.response.send_message(embed=error_embed(msg))
+        elif action.lower() == "unfollow":
+            subreddit = subreddit.lower()
+            if '/r/' in subreddit:
+                subreddit = subreddit.split('/r/')[-1]
+            subreddit_id = get_subreddit_id(subreddit)
+            if not subreddit_id:
+                msg = f"{subreddit} is not found!"
+                await interaction.response.send_message(embed=error_embed(msg))
+                return
+            found = find_channel(channel.id)
+            if not found:
+                msg = f"{subreddit} is not found!"
+                await interaction.response.send_message(embed=error_embed(msg))
+                return
+            removed = remove_channel_from_subreddit(found[0], subreddit_id[0])
+            if removed:
+                msg = f"Unfollowed {subreddit} in this channel!"
+                await interaction.response.send_message(embed=success_embed(msg))
+            else:
+                msg = f"{subreddit} is not followed in this channel"
+                await interaction.response.send_message(embed=error_embed(msg))
 
 
 def setup(disclient):

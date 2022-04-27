@@ -6,7 +6,7 @@ from nextcord.ext import commands
 from random import SystemRandom
 import asyncio
 from time import time
-from embeds import error_embed, warning_embed, success_embed, restricted_embed
+from embeds import error_embed, warning_embed, success_embed
 
 # import lots from the datafile.
 from data import find_group_id, get_member_links_with_tag, get_member_links, find_member_id, get_all_alias_of_tag, \
@@ -14,10 +14,10 @@ from data import find_group_id, get_member_links_with_tag, get_member_links, fin
     get_tag_parent_from_alias, get_all_tag_names, add_tag, find_tag_id, add_tag_alias, add_link_tags, \
     add_link, get_link_id, add_link_to_member, find_user, add_user_contribution, add_user, \
     random_link_from_links, member_link_count, get_links_with_tag, get_groups, \
-    get_members_of_group_and_link_count, count_links_of_member, get_all_tags_on_member_and_count, \
+    get_members_of_group_and_link_count,  get_all_tags_on_member_and_count, \
     last_three_links, count_links, apis_dict, get_auditing_channels, remove_auditing_channel, find_restricted_user_db, \
-    find_perma_db, cache_dict, random_links_without_tags, get_guild_max_duration, gfy_v2_test, gfy_v2_test_tags, \
-    get_all_tag_alias_names, pick_groups, pick_group_members, pick_tags, pick_tags_on_idol
+    find_perma_db, cache_dict, get_guild_max_duration, gfy_v2_test, gfy_v2_test_tags, \
+    get_all_tag_alias_names, pick_groups, pick_group_members, pick_tags, pick_tags_on_idol, gfy_v2_test_tags_group_only
 
 
 # custom decorators
@@ -56,15 +56,20 @@ def links_with_tag(idol_id, *tags):
     return link_list, no_tag
 
 
-def send_gfy_error_formatting(group, idol):
-    g_id = find_group_id(group)
-    if not g_id:
-        return f'No group added named {group}!'
-    m_id = find_member_id(g_id[0], idol)
-    if not m_id:
-        return f'No idol named {idol} in {group}!'
+def send_gfy_error_formatting(group, idol=None):
+    if idol:
+        g_id = find_group_id(group)
+        if not g_id:
+            return f'No group added named {group}!'
+        m_id = find_member_id(g_id[0], idol)
+        if not m_id:
+            return f'No idol named {idol} in {group}!'
+        else:
+            return f"No content for `{idol}` in `{group}`!"
     else:
-        return f"No content for `{idol}` in `{group}`!"
+        g_id = find_group_id(group)
+        if not g_id:
+            return f'No group added named {group}!'
 
 
 def rows_of_links(group, idol):
@@ -74,12 +79,25 @@ def rows_of_links(group, idol):
     return rows
 
 
-def rows_of_links_with_tags(group, idol, tags):
+def rows_of_group_links(group):
     group = group.lower()
-    idol = idol.lower()
-    rows = []
-    for tag in tags:
-        rows.extend(gfy_v2_test_tags(group, idol, tag.lower()))
+    rows = gfy_v2_test(group)
+    return rows
+
+
+def rows_of_links_with_tags(group, tags, idol=None):
+    if idol:
+        group = group.lower()
+        idol = idol.lower()
+        rows = []
+        for tag in tags:
+            rows.extend(gfy_v2_test_tags(group, idol, tag.lower()))
+    else:
+        group = group.lower()
+        rows = []
+        for tag in tags:
+            # TODO TEST THIS
+            rows.extend(gfy_v2_test_tags_group_only(group, tag.lower()))
     return rows
 
 
@@ -472,7 +490,7 @@ class Fun(commands.Cog):
 
     def return_gfys(self, group, idol, tags=None):
         if tags:
-            rows = rows_of_links_with_tags(group, idol, tags)
+            rows = rows_of_links_with_tags(group, tags, idol)
             if not rows:
                 rows = rows_of_links(group, idol)
         else:
@@ -483,6 +501,22 @@ class Fun(commands.Cog):
         else:
             # handle error here
             error = send_gfy_error_formatting(group, idol)
+            if error:
+                return error_embed(error)
+
+    def return_group_gfys(self, group, tags=None):
+        if tags:
+            rows = rows_of_links_with_tags(group, tags)
+            if not rows:
+                rows = rows_of_group_links(group)
+        else:
+            rows = rows_of_group_links(group)
+        # row = (groupid, memberid, gromanname, mromanname, link)
+        if len(rows) >= 1:
+            return self.return_link_from_rows(rows)
+        else:
+            # handle error here
+            error = send_gfy_error_formatting(group)
             if error:
                 return error_embed(error)
 
@@ -520,7 +554,8 @@ class Fun(commands.Cog):
                      ),
                      idol: str = SlashOption(
                          name="idol",
-                         description="Enter the idol"
+                         description="Enter the idol",
+                         required=False
                      ),
                      tag: str = SlashOption(
                          name="tag",
@@ -531,11 +566,18 @@ class Fun(commands.Cog):
         Examples: `.gfy <group> <idol>`, `.gfy RV Joy`
         You can also add tags after the idol arguement"""
         group = group.lower()
-        idol = idol.lower()
-        if tag:
-            result = self.return_gfys(group, idol, [tag])
+        if idol:
+            idol = idol.lower()
+            if tag:
+                result = self.return_gfys(group, idol, [tag])
+            else:
+                result = self.return_gfys(group, idol)
         else:
-            result = self.return_gfys(group, idol)
+            # TODO handle sending a link without providing idols
+            if tag:
+                result = self.return_group_gfys(group, [tag])
+            else:
+                result = self.return_group_gfys(group)
         if isinstance(result, discord.Embed):
             # this is an error
             await interaction.response.send_message(embed=result)
@@ -618,92 +660,49 @@ class Fun(commands.Cog):
                               color=discord.Color.blurple())
         await interaction.response.send_message(embed=embed)
 
-    # TODO implement this as slash
-    @discord.slash_command(name='',
-                           description="",
+    @discord.slash_command(name='taglink',
+                           description="Add a tag to an existing link",
                            guild_ids=[755143761922883584])
     @is_restricted()
-    async def tag_link(self, ctx, *tags_or_links):
+    async def tag_link(self,
+                       interaction: discord.Interaction,
+                       tag: str = SlashOption(
+                           name="tag",
+                           description="the tag to add",
+                           required=True
+                       ),
+                       link: str = SlashOption(
+                           name="link",
+                           description="the link to tag",
+                           required=True
+                       )):
         """
         Adds tag to links previously added.
         Example: .addtag <link> <tag> <tag>
         Example: .addtag <link> <tag> <link> <tag>
         """
-        tags_list = tags_or_links
-        if not tags_list:
-            await ctx.send(error_embed("Not enough arguments provided!"))
-            return
-        currentlink = None
-        valid_links = (
-            "https://gfycat.com/",
-            "https://www.redgifs.com/",
-            "https://www.gifdeliverynetwork.com/",
-            "https://pbs.twimg.com/media/",
-            "https://youtu",
-            "https://www.youtu"
-        )
-        valid_fts = (".JPG", ".jpg", ".JPEG", ".jpeg", ".PNG", ".png")
         valid_tags = [x[0] for x in get_all_tag_alias_names()]
-        author = ctx.author.id
-        invalid_tags = []
-        duplicate_tags = []
-        tags_added = {}
-        for tag in tags_list:
-            if tag.startswith(valid_links):
-                currentlink = tag
-            elif tag.endswith(valid_fts):
-                currentlink = tag
-            else:
-                if not currentlink:
-                    continue
-                tag = tag.lower()
-                tag = get_tag_parent_from_alias(tag)[0]
-                if tag not in valid_tags:
-                    # check tag is a date format
-                    if tag.isdecimal() and len(tag) == 6:
-                        add_tag(tag, author)
-                        tag_id = find_tag_id(tag)
-                        add_tag_alias(tag_id, tag, author)
-                        added_tagged_link = add_link_tags(currentlink, tag)
-                        if added_tagged_link:
-                            if tag in tags_added:
-                                tags_added[tag] += 1
-                            else:
-                                tags_added.update({tag: 1})
-                    else:
-                        invalid_tags.append(tag)
-                        continue
-                else:
-                    added = add_link_tags(currentlink, tag)
-                    if added:
-                        if tag in tags_added:
-                            tags_added[tag] += 1
-                        else:
-                            tags_added.update({tag: 1})
-                    else:
-                        # update to duplicate tags in future
-                        duplicate_tags.append(tag)
-                    continue
-        embed = discord.Embed(title='Results:',
-                              color=discord.Color.blurple())
-        if tags_added:
-            lets = []
-            for key, value in tags_added.items():
-                lets.append(f"{key}: {value}")
-            embed.add_field(name=f"Added tagged links to: `{format_list(lets)}`.",
-                            value='\uFEFF',
-                            inline=False)
-        if duplicate_tags:
-            embed.add_field(name=f"Skipped adding duplicate link(s) to tags: `{', '.join(duplicate_tags)}` .",
-                            value='\uFEFF',
-                            inline=False)
-        if invalid_tags:
-            embed.add_field(name=f"The following tags are invalid: `{', '.join(invalid_tags)}` .",
-                            value='\uFEFF',
-                            inline=False)
-        if not invalid_tags and not tags_added and not duplicate_tags:
-            embed = error_embed("Something went wrong!")
-        await ctx.send(embed=embed)
+        author = interaction.user.id
+        tag = tag.lower()
+        tag = get_tag_parent_from_alias(tag)[0]
+        if tag not in valid_tags:
+            # check tag is a date format
+            if tag.isdecimal() and len(tag) == 6:
+                add_tag(tag, author)
+                tag_id = find_tag_id(tag)
+                add_tag_alias(tag_id, tag, author)
+                added_tagged_link = add_link_tags(link, tag)
+                if added_tagged_link:
+                    interaction.response.send_message(
+                        embed=success_embed(f'Added tag: {tag} to link {link}'))
+                    return
+        else:
+            added = add_link_tags(link, tag)
+            if added:
+                interaction.response.send_message(
+                    embed=success_embed(f'Added tag: {tag} to link {link}'))
+                return
+        await interaction.response.send_message(embed=error_embed(f'failed to add tag: {tag} to link!'))
 
     @discord.slash_command(name='tagged',
                            description='Get a gfy with a specific tag!',
@@ -743,19 +742,19 @@ class Fun(commands.Cog):
         else:
             await interaction.response.send_message(f"Nothing for tag `{tag}`")
 
-    # TODO implement this command
-    @discord.slash_command(name='',
-                           description="",
+    @discord.slash_command(name='taggedimage',
+                           description="get an image with a tag!",
                            guild_ids=[755143761922883584])
-    async def taggedimage(self, ctx, tag):
+    @is_restricted()
+    async def taggedimage(self, interaction: discord.Interaction,
+                          tag: str = SlashOption(
+                              name="tag",
+                              description="the tag you wish for"
+                          )):
         """
         Sends a random image with the specified tag.
         Example: .taggedimage <tag>
         """
-        if ctx.guild:
-            if find_restricted_user_db(ctx.guild.id, ctx.author.id):
-                await ctx.author.send(embed=restricted_embed(ctx.guild))
-                return
         tag = tag.lower()
         valid_fts = (".JPG", ".jpg", ".JPEG", ".jpeg", ".PNG", ".png")
         valid_tags = [x[0] for x in get_all_tag_alias_names()]
@@ -775,16 +774,20 @@ class Fun(commands.Cog):
             rand = crypto.randrange(len(refine) - 1)
             finale = refine[rand]
             self.recent_posts[tag].append(finale)
-            await ctx.send(f"Tagged `{tag}`, {finale}")
+            await interaction.response.send_message(f"Tagged `{tag}`, {finale}")
         else:
-            await ctx.send(f"Nothing for tag `{tag}`")
+            await interaction.response.send_message(f"Nothing for tag `{tag}`")
 
-    # TODO implement this slash command
-    @discord.slash_command(name='',
-                           description="",
+    @discord.slash_command(name='taggedgfy',
+                           description="get a tagged gfy",
                            guild_ids=[755143761922883584])
     @is_restricted()
-    async def taggedgfy(self, ctx, tag):
+    async def taggedgfy(self,
+                        interaction: discord.Interaction,
+                        tag: str = SlashOption(
+                            name="tag",
+                            description="the tag you wish for"
+                        )):
         """
         Sends a random gfy with the specified tag.
         Example: .taggedgfy <tag>
@@ -811,16 +814,20 @@ class Fun(commands.Cog):
             rand = crypto.randrange(len(refine) - 1)
             finale = refine[rand]
             self.recent_posts[tag].append(finale)
-            await ctx.send(f"Tagged `{tag}`, {finale}")
+            await interaction.response.send_message(f"Tagged `{tag}`, {finale}")
         else:
-            await ctx.send(f"Nothing for tag `{tag}`")
+            await interaction.response.send_message(f"Nothing for tag `{tag}`")
 
-    # TODO implement this slash command
-    @discord.slash_command(name='',
-                           description="",
+    @discord.slash_command(name='taggedfancam',
+                           description="get a tagged fancam",
                            guild_ids=[755143761922883584])
     @is_restricted()
-    async def taggedfancam(self, ctx, tag):
+    async def taggedfancam(self,
+                           interaction: discord.Interaction,
+                           tag: str = SlashOption(
+                               name="tag",
+                               description="the tag you wish for"
+                           )):
         """Sends a random fancam with the specified tag."""
         valid_links = (
             "https://youtu",
@@ -843,76 +850,26 @@ class Fun(commands.Cog):
             rand = crypto.randrange(len(refine) - 1)
             finale = refine[rand]
             self.recent_posts[tag].append(finale)
-            await ctx.send(f"Tagged `{tag}`, {finale}")
+            await interaction.response.send_message(f"Tagged `{tag}`, {finale}")
         else:
-            await ctx.send(f"Nothing for tag `{tag}`")
-
-    # TODO implement this slash command
-    @discord.slash_command(name='',
-                           description="",
-                           guild_ids=[755143761922883584])
-    @is_restricted()
-    async def tag_updater(self, ctx, *args):
-        """Returns a number of random links that do not have tags, for the purpose of tagging them.
-        Optional arguments of group, or idol
-        Examples:
-        .tag_updater 2
-        .tag_updater 4 RedVelvet
-        .tag_updater 4 RedVelvet Joy
-        .tag_updater <number_of_links, default=4> <group_name, optional> <idol_name, optional>"""
-        try:
-            int(args[0])
-            number_of_links = int(args[0])
-            group = args[1]
-            if len(args) >= 3:
-                idol = args[2]
-            else:
-                idol = None
-        except ValueError:
-            number_of_links = 4
-            group = args[0]
-            if len(args) >= 2:
-                idol = args[1]
-            else:
-                idol = None
-        if number_of_links > 4:
-            if ctx.guild:
-                await ctx.author.send(
-                    embed=warning_embed('Please refrain from using tag_updater for more than 4 links in a server!'))
-                number_of_links = 4
-        elif number_of_links > 30:
-            number_of_links = 30
-        links = random_links_without_tags(number_of_links, group, idol)
-        print(links)
-        # link is a tuple of 3 parts, 0: link, 1: member name, 2: group name
-        send = f"The following links have no tags assigned to them!\n"
-        if not links:
-            await ctx.send(embed=warning_embed('No links without tags!'))
-            return
-        if number_of_links <= 4:
-            for link in links:
-                # can send all links in one message
-                send = send + f"{link[2]}'s {link[1]}: {link[0]}\n"
-            await ctx.send(send)
-        else:
-            i = 0
-            for link in links:
-                send = send + f"{link[2]}'s {link[1]}: {link[0]}\n"
-                i += 1
-                if i == 4:
-                    await ctx.send(send)
-                    i = 0
-                    send = ''
-            if send:
-                await ctx.send(send)
+            await interaction.response.send_message(f"Nothing for tag `{tag}`")
 
     # --- Timer Commands --- #
 
+    # TODO take a good look at making this as easy as possible
+    # TODO also ensure that the idol value can be none
+    # TODO ensure autocomplete is added to all values
     @discord.slash_command(name='timer',
                            description="""Joy will send you links for a short duration.""",
                            guild_ids=[755143761922883584])
     @is_restricted()
-    async def _timer(self, interaction: discord.Interaction, duration, interval, group, idol, tags='none'):
+    async def _timer(self,
+                     interaction: discord.Interaction,
+                     duration,
+                     interval,
+                     group,
+                     idol,
+                     tags='none'):
         duration = int(duration)
         interval = int(interval)
         if interval < 10:
@@ -929,7 +886,7 @@ class Fun(commands.Cog):
                     duration = max_duration[0]
                     msg = f'\nDuration reduced to server max duration of `{max_duration[0]}`.'
         if tags:
-            links = rows_of_links_with_tags(group, idol, tags)
+            links = rows_of_links_with_tags(group, tags, idol)
         else:
             links = rows_of_links(group, idol)
         loops = (abs(duration) * 60) // abs(interval)
@@ -1158,6 +1115,10 @@ class Fun(commands.Cog):
 
     @tag_alias.on_autocomplete("tag")
     @tagged.on_autocomplete("tag")
+    @tag_link.on_autocomplete("tag")
+    @taggedimage.on_autocomplete("tag")
+    @taggedgfy.on_autocomplete("tag")
+    @taggedfancam.on_autocomplete("tag")
     async def _tag_picker(self, interaction: discord.Interaction, tag_name: str):
         await tag_picker(interaction, tag_name)
 
@@ -1188,7 +1149,6 @@ class Fun(commands.Cog):
                               color=discord.Color.blurple())
         await interaction.response.send_message(embed=embed)
 
-    # TODO update this to include ephemeral pagenation
     # @commands.command(aliases=['list'])
     # async def listlinks(self, ctx, group, idol=None):
     #     """

@@ -180,17 +180,27 @@ def delete_link_from_database(link):
     return rowcount > 0
 
 
-def gfy_v2_test(group, idol):
+def gfy_v2_test(group, idol=None):
     """Returns rows of GroupId, MemberId, GroupName, IdolName, Link"""
     cursor = db.cursor()
-    sql = """SELECT g.GroupId, m.MemberId, g.RomanName, m.RomanName, l.Link FROM links l
-             JOIN link_members lm on l.LinkId = lm.LinkId
-             JOIN members m on lm.MemberId = m.MemberId
-             JOIN member_aliases ma on m.MemberId = ma.MemberId
-             JOIN groupz g on g.GroupId = m.GroupId
-             JOIN groupz_aliases ga on ga.GroupId = g.GroupId
-             WHERE ga.Alias = %s AND ma.Alias = %s;"""
-    vals = (group, idol)
+    if idol:
+        sql = """SELECT g.GroupId, m.MemberId, g.RomanName, m.RomanName, l.Link FROM links l
+                 JOIN link_members lm on l.LinkId = lm.LinkId
+                 JOIN members m on lm.MemberId = m.MemberId
+                 JOIN member_aliases ma on m.MemberId = ma.MemberId
+                 JOIN groupz g on g.GroupId = m.GroupId
+                 JOIN groupz_aliases ga on ga.GroupId = g.GroupId
+                 WHERE ga.Alias = %s AND ma.Alias = %s;"""
+        vals = (group, idol)
+    else:
+        sql = """SELECT g.GroupId, m.MemberId, g.RomanName, m.RomanName, l.Link FROM links l
+                 JOIN link_members lm on l.LinkId = lm.LinkId
+                 JOIN members m on lm.MemberId = m.MemberId
+                 JOIN member_aliases ma on m.MemberId = ma.MemberId
+                 JOIN groupz g on g.GroupId = m.GroupId
+                 JOIN groupz_aliases ga on ga.GroupId = g.GroupId
+                 WHERE ga.Alias = %s"""
+        vals = (group,)
     try:
         cursor.execute(sql, vals)
     except Exception as e:
@@ -212,6 +222,27 @@ def gfy_v2_test_tags(group, idol, tag):
              JOIN tag_aliases ta on ta.TagId = lt.TagId
              WHERE ga.Alias = %s AND ma.Alias = %s AND ta.Alias = (%s);"""
     vals = (group, idol, tag)
+    try:
+        cursor.execute(sql, vals)
+    except Exception as e:
+        print(e)
+    result = cursor.fetchall()
+    cursor.close()
+    return result
+
+
+def gfy_v2_test_tags_group_only(group, tag):
+    cursor = db.cursor()
+    sql = """SELECT g.GroupId, m.MemberId, g.RomanName, m.RomanName, l.Link FROM links l
+             JOIN link_members lm on l.LinkId = lm.LinkId
+             JOIN members m on lm.MemberId = m.MemberId
+             JOIN member_aliases ma on m.MemberId = ma.MemberId
+             JOIN groupz g on g.GroupId = m.GroupId
+             JOIN groupz_aliases ga on ga.GroupId = g.GroupId
+             JOIN link_tags lt on lt.LinkId = l.LinkId
+             JOIN tag_aliases ta on ta.TagId = lt.TagId
+             WHERE ga.Alias = %s AND ta.Alias = (%s);"""
+    vals = (group, tag)
     try:
         cursor.execute(sql, vals)
     except Exception as e:
