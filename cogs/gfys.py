@@ -351,8 +351,7 @@ class Fun(commands.Cog):
     # --- Gfy/Link Commands --- #
 
     @discord.slash_command(name='addlink',
-                           description="Add a link and contribute to Joy's database!",
-                           guild_ids=[755143761922883584])
+                           description="Add a link and contribute to Joy's database!")
     @is_restricted()
     @is_perma()
     async def addlink(
@@ -601,8 +600,7 @@ class Fun(commands.Cog):
         return finale
 
     @discord.slash_command(name='gfy',
-                           description="Get a gfy of your favourite idol!",
-                           guild_ids=[755143761922883584])
+                           description="Get a gfy of your favourite idol!")
     @is_restricted()
     async def _gfyv2(self,
                      interaction: discord.Interaction,
@@ -645,8 +643,7 @@ class Fun(commands.Cog):
     # --- Random --- #
 
     @discord.slash_command(name='random',
-                           description="Get a random gfy",
-                           guild_ids=[755143761922883584])
+                           description="Get a random gfy")
     @is_restricted()
     async def random(self, interaction: discord.Interaction):
         """Returns a random link, luck of the draw!"""
@@ -673,8 +670,7 @@ class Fun(commands.Cog):
     # --- Tags --- #
 
     @discord.slash_command(name='tags',
-                           description="Returns a list of all tags",
-                           guild_ids=[755143761922883584])
+                           description="Returns a list of all tags")
     @is_restricted()
     async def tags(self, interaction: discord.Interaction):  # link=None
         """Returns a list of the tags!"""
@@ -687,8 +683,7 @@ class Fun(commands.Cog):
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
     @discord.slash_command(name='dates',
-                           description="Returns a list of all date tags",
-                           guild_ids=[755143761922883584])
+                           description="Returns a list of all date tags")
     @is_restricted()
     async def dates(self, interaction: discord.Interaction):
         date_list = [x[0] for x in get_all_tag_names() if len(x[0]) == 6 and x[0].isdecimal()]
@@ -699,8 +694,7 @@ class Fun(commands.Cog):
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
     @discord.slash_command(name='tagalias',
-                           description="Returns the aliases on a tag",
-                           guild_ids=[755143761922883584])
+                           description="Returns the aliases on a tag")
     @is_restricted()
     async def tag_alias(self, interaction: discord.Interaction,
                         tag: str = SlashOption(
@@ -719,8 +713,7 @@ class Fun(commands.Cog):
         await interaction.response.send_message(embed=embed)
 
     @discord.slash_command(name='taglink',
-                           description="Add a tag to an existing link",
-                           guild_ids=[755143761922883584])
+                           description="Add a tag to an existing link")
     @is_restricted()
     async def tag_link(self,
                        interaction: discord.Interaction,
@@ -763,8 +756,7 @@ class Fun(commands.Cog):
         await interaction.response.send_message(embed=error_embed(f'failed to add tag: {tag} to link!'))
 
     @discord.slash_command(name='tagged',
-                           description='Get a gfy with a specific tag!',
-                           guild_ids=[755143761922883584])
+                           description='Get a gfy with a specific tag!')
     @is_restricted()
     async def tagged(self, interaction: discord.Interaction,
                      tag: str = SlashOption(
@@ -801,8 +793,7 @@ class Fun(commands.Cog):
             await interaction.response.send_message(f"Nothing for tag `{tag}`")
 
     @discord.slash_command(name='taggedimage',
-                           description="get an image with a tag!",
-                           guild_ids=[755143761922883584])
+                           description="get an image with a tag!")
     @is_restricted()
     async def taggedimage(self, interaction: discord.Interaction,
                           tag: str = SlashOption(
@@ -837,8 +828,7 @@ class Fun(commands.Cog):
             await interaction.response.send_message(f"Nothing for tag `{tag}`")
 
     @discord.slash_command(name='taggedgfy',
-                           description="get a tagged gfy",
-                           guild_ids=[755143761922883584])
+                           description="get a tagged gfy")
     @is_restricted()
     async def taggedgfy(self,
                         interaction: discord.Interaction,
@@ -877,8 +867,7 @@ class Fun(commands.Cog):
             await interaction.response.send_message(f"Nothing for tag `{tag}`")
 
     @discord.slash_command(name='taggedfancam',
-                           description="get a tagged fancam",
-                           guild_ids=[755143761922883584])
+                           description="get a tagged fancam")
     @is_restricted()
     async def taggedfancam(self,
                            interaction: discord.Interaction,
@@ -918,8 +907,7 @@ class Fun(commands.Cog):
     # TODO also ensure that the idol value can be none
     # TODO ensure autocomplete is added to all values
     @discord.slash_command(name='timer',
-                           description="""Joy will send you links for a short duration.""",
-                           guild_ids=[755143761922883584])
+                           description="Joy will send you links for a short duration.")
     @is_restricted()
     async def _timer(self,
                      interaction: discord.Interaction,
@@ -1005,8 +993,7 @@ class Fun(commands.Cog):
             await asyncio.sleep(timer.interval)
 
     @discord.slash_command(name='viewtimers',
-                           description='View all of the info on your active timers',
-                           guild_ids=[755143761922883584])
+                           description='View all of the info on your active timers')
     @is_restricted()
     async def view_timers(self, interaction: discord.Interaction):
         author = interaction.user.id
@@ -1019,8 +1006,7 @@ class Fun(commands.Cog):
         await interaction.response.send_message(embed=error_embed(f"No timers active for {interaction.user.name}!"))
 
     @discord.slash_command(name='stoptimer',
-                           description="Stop a timer you previously created",
-                           guild_ids=[755143761922883584])
+                           description="Stop a timer you previously created")
     @is_restricted()
     async def stop_timer(self, interaction: discord.Interaction, timer_id):
         """
@@ -1048,8 +1034,7 @@ class Fun(commands.Cog):
         await interaction.response.send_message(f"No timers running for {interaction.user.name}")
 
     @discord.slash_command(name='forcestoptimer',
-                           description="Stop a members timers (all) in your server.",
-                           guild_ids=[755143761922883584])
+                           description="Stop a members timers (all) in your server.")
     @commands.has_permissions(manage_messages=True)
     @commands.guild_only()
     @is_restricted()
@@ -1076,8 +1061,7 @@ class Fun(commands.Cog):
 
     # @commands.command()
     @discord.slash_command(name='info',
-                           description="Get info on groups, a group, or an idol",
-                           guild_ids=[755143761922883584])
+                           description="Get info on groups, a group, or an idol")
     @is_restricted()
     async def info(
             self, interaction: discord.Interaction,
@@ -1230,8 +1214,7 @@ class Fun(commands.Cog):
         await interaction.response.send_autocomplete(get_near_tags)
 
     @discord.slash_command(name='totallinks',
-                           description="Get the total number of links added to Joy",
-                           guild_ids=[755143761922883584])
+                           description="Get the total number of links added to Joy")
     @is_restricted()
     async def totallinks(self, interaction: discord.Interaction):
         results = count_links()

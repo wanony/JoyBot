@@ -15,8 +15,7 @@ class Custom(commands.Cog):
         self.disclient = disclient
 
     @discord.slash_command(name='listcustom',
-                           description="See a list of custom commands",
-                           guild_ids=[755143761922883584])
+                           description="See a list of custom commands")
     async def command_list(self, interaction: discord.Interaction):
         """Sends a list of all the custom commands."""
         arrr = get_commands()
@@ -26,8 +25,7 @@ class Custom(commands.Cog):
             await interaction.response.send_message(f"`{format_list(arrr.keys())}`", ephemeral=True)
 
     @discord.slash_command(name='custom',
-                           description="customer user added commands",
-                           guild_ids=[755143761922883584])
+                           description="customer user added commands")
     async def custom_command(self,
                              interaction: discord.Interaction,
                              command: str = SlashOption(
@@ -49,8 +47,7 @@ class Custom(commands.Cog):
         return get_near_commands
 
     @discord.slash_command(name='addcustom',
-                           description="Get help regarding commands or command groups",
-                           guild_ids=[755143761922883584])
+                           description="Get help regarding commands or command groups")
     async def add_command(self,
                           interaction: discord.Interaction,
                           name: str = SlashOption(

@@ -107,8 +107,7 @@ class Twitter(commands.Cog):
 
     @discord.slash_command(
         name="twitter",
-        description="Handle Twitter integration",
-        guild_ids=[755143761922883584]
+        description="Handle Twitter integration"
     )
     @commands.guild_only()
     @commands.has_permissions(administrator=True)

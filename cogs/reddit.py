@@ -122,8 +122,7 @@ class Reddit(commands.Cog):
 
     @discord.slash_command(
         name="reddit",
-        description="Handle Reddit integration",
-        guild_ids=[755143761922883584]
+        description="Handle Reddit integration"
     )
     @commands.guild_only()
     @commands.has_permissions(administrator=True)

@@ -78,8 +78,7 @@ class Twitch(commands.Cog):
 
     @discord.slash_command(
         name="twitch",
-        description="Handle Twitch integration",
-        guild_ids=[755143761922883584]
+        description="Handle Twitch integration"
     )
     @commands.guild_only()
     @commands.has_permissions(administrator=True)

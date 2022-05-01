@@ -14,8 +14,7 @@ class General(commands.Cog):
         self.disclient = disclient
 
     @discord.slash_command(name='avatar',
-                           description="See a larger version of a user avatar",
-                           guild_ids=[755143761922883584, 783047562655301653])
+                           description="See a larger version of a user avatar")
     async def get_avatar(self, interaction: discord.Interaction,
                          member: discord.Member = SlashOption(name="user",
                                                               description="Select a user",
@@ -67,8 +66,7 @@ class General(commands.Cog):
 
     @discord.slash_command(
         name="report",
-        description="report a link on Joy",
-        guild_ids=[755143761922883584]
+        description="report a link on Joy"
     )
     async def report(self,
                      interaction: discord.Interaction,
@@ -97,8 +95,7 @@ class General(commands.Cog):
 
     @discord.slash_command(
         name="suggest",
-        description="suggest a new feature for Joy",
-        guild_ids=[755143761922883584]
+        description="suggest a new feature for Joy"
     )
     async def suggestion(self,
                          interaction: discord.Interaction,

@@ -6,7 +6,7 @@ from bot import executor
 from nextcord.ext import commands
 import urllib.request
 import datetime
-from data import apis_dict, default_prefix
+from data import apis_dict
 import pfycat
 import concurrent.futures
 from pathlib import Path
@@ -64,7 +64,6 @@ class Uploading(commands.Cog):
         description="upload a video to gfycat"
     )
     @commands.guild_only()  # force guild to attempt to avoid spam
-    # @is_mod()
     async def _upload_gfy(self, interaction: discord.Interaction, url=None):
         """Upload a video to gfycat!
         Either upload a discord attachment, or provide a valid video url!"""
@@ -75,7 +74,6 @@ class Uploading(commands.Cog):
             await interaction.response.send_message(
                 embed=error_embed('Make sure to attach a video or provide a valid video URL!'))
             return
-
         # if video is from a url, use urllib to download
         elif url is not None and 'http' in url:
             try:
@@ -95,7 +93,7 @@ class Uploading(commands.Cog):
 
             def func(future):
                 handle_upload_finish(interaction, future, interaction.user, self.disclient, filename)
-
+    #
             x.add_done_callback(func)
 
 
