@@ -7,14 +7,13 @@ name = "pypi"
 asyncpraw = "*"
 mysql-connector-python = "*"
 tweepy = "==3.8.0"
-pyshorteners = "*"
 instagram-private-api = "*"
 instagram-private-api-extensions = "*"
 twitchAPI = "*"
 pfycat = "*"
-nextcord = "2.0.0a10"
+#nextcord = "2.0.0a10"
 
 [dev-packages]
 
 [requires]
-python_version = "3.9.0"
+python_version = "3.9.5"
