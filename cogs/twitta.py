@@ -3,7 +3,6 @@ import nextcord as discord
 from nextcord import SlashOption
 from nextcord.abc import GuildChannel
 from nextcord.utils import escape_markdown
-import pyshorteners
 import tweepy
 from nextcord.ext import commands
 from data import apis_dict, get_twitter_users_from_db, add_twitter_channel_to_db, remove_twitter_user_from_db, \
@@ -214,10 +213,9 @@ class Twitter(commands.Cog):
         if "extended_entities" in tweet_data:
             if len(tweet_data["extended_entities"]["media"]) > 1:
                 images = []
-                short = pyshorteners.Shortener()
                 for media in tweet_data["extended_entities"]["media"]:
                     link = twitter_image_link_formatting(media["media_url_https"])
-                    images.append(short.tinyurl.short(link))
+                    images.append(link)
                 embed = discord.Embed(title=title,
                                       description=text,
                                       color=discord.Color.blue())

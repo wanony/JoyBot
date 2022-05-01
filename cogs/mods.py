@@ -10,7 +10,7 @@ from datetime import datetime
 # import lots of methods
 from data import add_channel, add_tag_alias_db, remove_tag_alias_db, add_group_alias_db, remove_group_alias_db, \
     add_cont_from_one_user_to_other, perma_user_db, remove_perma_user_db, delete_link_from_database, gfy_v2_test, \
-    find_member_id, pick_groups, get_group_aliases, pick_group_members, find_tags_on_link, pick_tags_on_link, pick_tags, \
+    pick_groups, get_group_aliases, pick_group_members, pick_tags_on_link, pick_tags, \
     pick_commands
 from data import remove_member_alias_db, add_member_alias_db, add_tag, find_group_id, add_group, remove_group
 from data import remove_moderator, add_moderator, get_members_of_group, add_member, remove_member, apis_dict
@@ -22,20 +22,14 @@ from embeds import success_embed, error_embed, permission_denied_embed
 from bot import joy_guild
 
 
-def is_owner():
-    def check_owner(ctx):
-        x = check_user_is_owner(ctx)
-        return True if x else False
-
-    return commands.check(check_owner)
+def is_owner(ctx):
+    x = check_user_is_owner(ctx)
+    return True if x else False
 
 
-def is_mod():
-    async def check_mod(ctx):
-        x = check_user_is_mod(ctx)
-        return True if x else False
-
-    return commands.check(check_mod)
+def is_mod(ctx):
+    x = check_user_is_mod(ctx)
+    return True if x else False
 
 
 class Owner(commands.Cog):
@@ -50,17 +44,21 @@ class Owner(commands.Cog):
     @discord.slash_command(name='mergeusercont',
                            description="merge user contribution",
                            guild_ids=[joy_guild])
-    @is_owner()
     async def merge_user_contribution(self, ctx, member1: discord.Member, member2: discord.Member):
         """Add contribution from first arguement to second argument"""
+        if not is_owner(ctx):
+            await ctx.response.send_message(embed=permission_denied_embed())
+            return
         add_cont_from_one_user_to_other(member1.id, member2.id)
-        ctx.response.send_message(embed=success_embed('Merged user contribution'))
+        await ctx.response.send_message(embed=success_embed('Merged user contribution'))
 
     @discord.slash_command(name='forcedeletelink',
                            description="force delete a link",
                            guild_ids=[joy_guild])
-    @is_owner()
-    async def force_delete_link(self, ctx, link):
+    async def force_delete_link(self, ctx: discord.Interaction, link):
+        if not is_owner(ctx):
+            await ctx.response.send_message(embed=permission_denied_embed())
+            return
         removed = delete_link_from_database(link)
         if removed:
             await ctx.response.send_message(embed=success_embed(f'Removed {link}!'))
@@ -71,9 +69,11 @@ class Owner(commands.Cog):
     @discord.slash_command(name='removemoderator',
                            description="remove a joy mod",
                            guild_ids=[joy_guild])
-    @is_owner()
     async def remove_moderator(self, ctx, member: discord.Member):
         """Add user to moderator list."""
+        if not is_owner(ctx):
+            await ctx.response.send_message(embed=permission_denied_embed())
+            return
         removed = remove_moderator(member.id)
         if removed:
             await ctx.response.send_message(embed=success_embed(f'{member} is no longer a moderator!'))
@@ -83,9 +83,11 @@ class Owner(commands.Cog):
     @discord.slash_command(name='addmoderator',
                            description="add a mod to joy",
                            guild_ids=[joy_guild])
-    @is_owner()
     async def add_moderator(self, ctx, member: discord.Member):
         """Add user to moderator list."""
+        if not is_owner(ctx):
+            await ctx.response.send_message(embed=permission_denied_embed())
+            return
         added = add_moderator(member.id)
         if added:
             await ctx.response.send_message(embed=success_embed(f'{member} is now a moderator!'))
@@ -95,64 +97,65 @@ class Owner(commands.Cog):
     @discord.slash_command(name='reloadcog',
                            description="reload a cog",
                            guild_ids=[joy_guild])
-    @is_owner()
     async def reload(self, ctx, cog_name=None):
         """Reload cog."""
+        if not is_owner(ctx):
+            await ctx.response.send_message(embed=permission_denied_embed())
+            return
         embed = discord.Embed(title='Reloading Results',
                               description='\uFEFF',
                               color=discord.Color.blurple())
         if cog_name is None:
-            async with ctx.typing():
-                reloaded = []
-                failed = []
-                for cog in os.listdir("./cogs"):
-                    if cog.endswith(".py"):
+            reloaded = []
+            failed = []
+            for cog in os.listdir("./cogs"):
+                if cog.endswith(".py"):
+                    try:
+                        cog = f"cogs.{cog.replace('.py', '')}"
+                        self.disclient.unload_extension(cog)
+                        self.disclient.load_extension(cog)
+                        reloaded.append(str(cog[5:]))
+                    except commands.ExtensionNotLoaded:
+                        failed.append(str(cog[5:]))
+            if reloaded:
+                embed.add_field(name="Reloaded:",
+                                value=', '.join(reloaded))
+            if failed:
+                embed.add_field(name="Failed to load:",
+                                value=', '.join(failed))
+        else:
+            reloaded = []
+            failed = []
+            for cog in os.listdir("./cogs"):
+                if cog.endswith('.py'):
+                    if cog[:-3] == cog_name:
+                        cog = f"cogs.{cog.replace('.py', '')}"
                         try:
-                            cog = f"cogs.{cog.replace('.py', '')}"
                             self.disclient.unload_extension(cog)
                             self.disclient.load_extension(cog)
                             reloaded.append(str(cog[5:]))
                         except commands.ExtensionNotLoaded:
                             failed.append(str(cog[5:]))
-                if reloaded:
-                    embed.add_field(name="Reloaded:",
-                                    value=', '.join(reloaded))
-                if failed:
-                    embed.add_field(name="Failed to load:",
-                                    value=', '.join(failed))
-        else:
-            async with ctx.typing():
-                reloaded = []
-                failed = []
-                for cog in os.listdir("./cogs"):
-                    if cog.endswith('.py'):
-                        if cog[:-3] == cog_name:
-                            cog = f"cogs.{cog.replace('.py', '')}"
-                            try:
-                                self.disclient.unload_extension(cog)
-                                self.disclient.load_extension(cog)
-                                reloaded.append(str(cog[5:]))
-                            except commands.ExtensionNotLoaded:
-                                failed.append(str(cog[5:]))
-                if reloaded:
-                    embed.add_field(name=f"Reloaded:",
-                                    value=', '.join(reloaded))
-                if failed:
-                    embed.add_field(name=f"Failed to load:",
-                                    value=', '.join(failed))
+            if reloaded:
+                embed.add_field(name=f"Reloaded:",
+                                value=', '.join(reloaded))
+            if failed:
+                embed.add_field(name=f"Failed to load:",
+                                value=', '.join(failed))
         await ctx.response.send_message(embed=embed)
 
-    @commands.command()
     @discord.slash_command(name='unloadcog',
                            description="unload a cog",
                            guild_ids=[joy_guild])
-    @is_owner()
     async def unload(self, interaction: discord.Interaction,
                      cog: str = SlashOption(
                          name="cog",
                          description="cog to be unloaded",
                          required=True
                      )):
+        if not is_owner(interaction):
+            await interaction.response.send_message(embed=permission_denied_embed())
+            return
         for c in os.listdir("./cogs"):
             if c.endswith(".py"):
                 if c[:-3] == cog:
@@ -164,12 +167,13 @@ class Owner(commands.Cog):
                             'Failed to unload cog.')
         await interaction.response.send_message('Unloaded cog!')
 
-    @commands.command()
     @discord.slash_command(name='load',
                            description="load a cog",
                            guild_ids=[joy_guild])
-    @is_owner()
     async def load(self, interaction: discord.Interaction, cog):
+        if not is_owner(interaction):
+            await interaction.response.send_message(embed=permission_denied_embed())
+            return
         for c in os.listdir("./cogs"):
             if c.endswith(".py"):
                 if c[:-3] == cog:
@@ -184,6 +188,9 @@ class Owner(commands.Cog):
     @unload.on_autocomplete("cog")
     @load.on_autocomplete("cog")
     async def cog_picker(self, interaction: discord.Interaction, cog_name):
+        if not is_owner(interaction):
+            await interaction.response.send_message(embed=permission_denied_embed())
+            return
         if not cog_name:
             await interaction.response.send_autocomplete(
                 [c[:-3] for c in os.listdir("./cogs") if c.endswith(".py")]
@@ -193,11 +200,9 @@ class Owner(commands.Cog):
                          if c.endswith(".py") and c.startswith(cog_name)]
         await interaction.response.send_autocomplete(get_near_cogs)
 
-    @commands.command()
     @discord.slash_command(name='perma',
                            description="stop a user from adding to Joy",
                            guild_ids=[joy_guild])
-    @is_owner()
     async def perma_user(self, interaction: discord.Interaction,
                          user_id: str = SlashOption(
                              name="userid",
@@ -205,6 +210,9 @@ class Owner(commands.Cog):
                              required=True
                          )):
         """Stops user from added anything to the bot"""
+        if not is_owner(interaction):
+            await interaction.response.send_message(embed=permission_denied_embed())
+            return
         perma = perma_user_db(user_id)
         if perma:
             await interaction.response.send_message(
@@ -213,11 +221,9 @@ class Owner(commands.Cog):
             await interaction.response.send_message(
                 embed=error_embed("Failed to perma user."))
 
-    @commands.command()
     @discord.slash_command(name='unperma',
                            description="free user from perma",
                            guild_ids=[joy_guild])
-    @is_owner()
     async def remove_perma_user(self, interaction: discord.Interaction,
                                 user_id: str = SlashOption(
                                     name="userid",
@@ -225,6 +231,9 @@ class Owner(commands.Cog):
                                     required=True
                                 )):
         """Removes user from perma ban"""
+        if not is_owner(interaction):
+            await interaction.response.send_message(embed=permission_denied_embed())
+            return
         unperma = remove_perma_user_db(user_id)
         if unperma:
             await interaction.response.send_message(
@@ -233,11 +242,9 @@ class Owner(commands.Cog):
             await interaction.response.send_message(
                 embed=error_embed("Failed to un-perma user."))
 
-    @commands.command()
     @discord.slash_command(name='listlinks',
                            description="list all links on idol",
                            guild_ids=[joy_guild])
-    @is_owner()
     async def list_links(self,
                          interaction: discord.Interaction,
                          group: str = SlashOption(
@@ -250,6 +257,9 @@ class Owner(commands.Cog):
                              description="idol to list",
                              required=True
                          )):
+        if not is_owner(interaction):
+            await interaction.response.send_message(embed=permission_denied_embed())
+            return
         links = gfy_v2_test(group, idol)
         num_of_links = len(links)
         embed = discord.Embed(
@@ -262,7 +272,6 @@ class Owner(commands.Cog):
             await interaction.response.send_message(f"{i + 1}. {link[-1]}")
 
     # @commands.command()
-    # @is_owner()
     # async def link_duplicate_members(self, ctx, group_one, member_one, group_two, member_two):
     #     """Create a link between two members links, therefore allowing their links to seamlessly be accessed
     #     no matter what group they are referenced from. For example, if one idol is part of two different groups,
@@ -280,7 +289,6 @@ class Owner(commands.Cog):
     #     pass
     #
     # @commands.command()
-    # @is_owner()
     # async def unlink_duplicate_members(self, ctx, group_one, member_one, group_two, member_two):
     #     pass
 
@@ -297,11 +305,13 @@ class Moderation(commands.Cog):
         name="addgroup",
         description="add a new group to Joy"
     )
-    @is_mod()
     async def add_group(self,
                         interaction: discord.Interaction,
                         group: str):
         """Adds a group"""
+        if not is_mod(interaction):
+            await interaction.response.send_message(embed=permission_denied_embed())
+            return
         group = group.lower()
         success = add_group(group, interaction.user.id)
         if success:
@@ -317,7 +327,6 @@ class Moderation(commands.Cog):
         name="addgroupalias",
         description="add an alias to a group"
     )
-    @is_mod()
     async def add_group_alias(self,
                               interaction: discord.Interaction,
                               group: str = SlashOption(
@@ -335,6 +344,9 @@ class Moderation(commands.Cog):
         passed through in one command, but only one group.
         Example: .add_group_alias redvelvet rv
         Example: .add_group_alias <group> <alias1> <alias2>"""
+        if not is_mod(interaction):
+            await interaction.response.send_message(embed=permission_denied_embed())
+            return
         group = group.lower()
         alias = alias.lower()
         added = add_group_alias_db(group, alias, interaction.user.id)
@@ -350,7 +362,6 @@ class Moderation(commands.Cog):
         name="deletegroupalias",
         description="delete group alias"
     )
-    @is_mod()
     async def delete_group_alias(self,
                                  interaction: discord.Interaction,
                                  group: str = SlashOption(
@@ -367,6 +378,9 @@ class Moderation(commands.Cog):
         A list of aliases can be passed through in one command, but only one group.
         Example: .remove_group_alias redvelvet rv
         Example: .remove_group_alias <group> <alias1> <alias2>"""
+        if not is_mod(interaction):
+            await interaction.response.send_message(embed=permission_denied_embed())
+            return
         group = group.lower()
         alias = alias.lower()
         removed = remove_group_alias_db(group, alias)
@@ -382,7 +396,6 @@ class Moderation(commands.Cog):
         name="addidol",
         description="add an idol to a group!"
     )
-    @is_mod()
     async def add_idols(self,
                         interaction: discord.Interaction,
                         group: str = SlashOption(
@@ -396,6 +409,9 @@ class Moderation(commands.Cog):
                             required=True
                         )):
         """Adds an idol to an already existing group"""
+        if not is_mod(interaction):
+            await interaction.response.send_message(embed=permission_denied_embed())
+            return
         group = group.lower()
         idol = idol.lower()
         members = get_members_of_group(group)
@@ -419,7 +435,6 @@ class Moderation(commands.Cog):
         name="addidolalias",
         description="add an alias to an idol"
     )
-    @is_mod()
     async def add_idol_alias(self,
                              interaction: discord.Interaction,
                              group: str = SlashOption(
@@ -442,6 +457,9 @@ class Moderation(commands.Cog):
         Please ensure you use the members name, and not an alias for the second argument.
         Example: .add_idol_alias redvelvet joy j
         Example: .add_idol_alias <group> <idol> <alias1> <alias2>"""
+        if not is_mod(interaction):
+            await interaction.response.send_message(embed=permission_denied_embed())
+            return
         group = group.lower()
         idol = idol.lower()
         alias = alias.lower()
@@ -458,7 +476,6 @@ class Moderation(commands.Cog):
         name="deleteidolalias",
         description="remove alias from an idol"
     )
-    @is_mod()
     async def delete_idol_alias(self,
                                 interaction: discord.Interaction,
                                 group: str = SlashOption(
@@ -481,6 +498,9 @@ class Moderation(commands.Cog):
         Please ensure you use the members name, and not an alias for the second argument.
         Example: .remove_idol_alias redvelvet joy j
         Example: .remove_idol_alias <group> <idol> <alias1> <alias2>"""
+        if not is_mod(interaction):
+            await interaction.response.send_message(embed=permission_denied_embed())
+            return
         group = group.lower()
         idol = idol.lower()
         alias = alias.lower()
@@ -498,7 +518,6 @@ class Moderation(commands.Cog):
         name="removetag",
         description="Remove a tag from a link"
     )
-    @is_mod()
     async def remove_tag(self,
                          interaction: discord.Interaction,
                          link: str = SlashOption(
@@ -511,6 +530,9 @@ class Moderation(commands.Cog):
                              description="tag to remove from link",
                              required=True
                          )):
+        if not is_mod(interaction):
+            await interaction.response.send_message(embed=permission_denied_embed())
+            return
         tag = tag.lower()
         remove = remove_tag_from_link(link, tag)
         if remove:
@@ -525,9 +547,11 @@ class Moderation(commands.Cog):
         name="createtag",
         description="Create a new tag for use"
     )
-    @is_mod()
     async def create_tag(self, interaction: discord.Interaction, tag):
         """Adds a new tag, which will be available for use."""
+        if not is_mod(interaction):
+            await interaction.response.send_message(embed=permission_denied_embed())
+            return
         tag = tag.lower()
         added = add_tag(tag, interaction.user.id)
         add_tag_alias_db(tag, tag, interaction.user.id)
@@ -542,7 +566,6 @@ class Moderation(commands.Cog):
         name="deletetag",
         description="Deletes a tag from Joy entirely"
     )
-    @is_mod()
     async def delete_tag(self,
                          interaction: discord.Interaction,
                          tag: str = SlashOption(
@@ -550,6 +573,9 @@ class Moderation(commands.Cog):
                              description="tag to be deleted",
                              required=True
                          )):
+        if not is_mod(interaction):
+            await interaction.response.send_message(embed=permission_denied_embed())
+            return
         tag = tag.lower()
         removed = remove_tag(tag)
         if removed:
@@ -563,7 +589,6 @@ class Moderation(commands.Cog):
         name="addtagalias",
         description="add an alias to a tag"
     )
-    @is_mod()
     async def add_tag_alias(self,
                             interaction: discord.Interaction,
                             tag: str = SlashOption(
@@ -581,6 +606,9 @@ class Moderation(commands.Cog):
         Please ensure you use the tag name, and not an alias for the first argument.
         Example: .add_tag_alias <tag> <alias>
         Example: .add_tag_alias <tag> <alias1> <alias2>"""
+        if not is_mod(interaction):
+            await interaction.response.send_message(embed=permission_denied_embed())
+            return
         alias = alias.lower()
         added = add_tag_alias_db(tag, alias, interaction.user.id)
         if added:
@@ -595,7 +623,6 @@ class Moderation(commands.Cog):
         name="deletetagalias",
         description="Deletes an alias from a tag"
     )
-    @is_mod()
     async def delete_tag_alias(self,
                                interaction: discord.Interaction,
                                tag: str = SlashOption(
@@ -613,6 +640,9 @@ class Moderation(commands.Cog):
         Please ensure you use the tag name, and not an alias for the first argument.
         Example: .delete_tag_alias <tag> <alias>
         Example: .delete_tag_alias <tag> <alias1> <alias2>"""
+        if not is_mod(interaction):
+            await interaction.response.send_message(embed=permission_denied_embed())
+            return
         tag = tag.lower()
         alias = alias.lower()
         removed = remove_tag_alias_db(tag, alias)
@@ -628,7 +658,6 @@ class Moderation(commands.Cog):
         name="deletelink",
         description="deletes a link from joy"
     )
-    @is_mod()
     async def delete_link(self,
                           interaction: discord.Interaction,
                           group: str = SlashOption(
@@ -650,6 +679,9 @@ class Moderation(commands.Cog):
         Deletes link(s) from an idol.
         Example: .delete_link <group> <idol> <link> <link> <link>
         """
+        if not is_mod(interaction):
+            await interaction.response.send_message(embed=permission_denied_embed())
+            return
         group = group.lower()
         idol = idol.lower()
         if '-' in link:
@@ -667,7 +699,6 @@ class Moderation(commands.Cog):
         name="deletegroup",
         description="deletes a group from joy"
     )
-    @is_mod()
     async def delete_group(self,
                            interaction: discord.Interaction,
                            group: str = SlashOption(
@@ -679,6 +710,9 @@ class Moderation(commands.Cog):
         Deletes an entire group and all idols within
         Example: .delete_group <group>
         """
+        if not is_mod(interaction):
+            await interaction.response.send_message(embed=permission_denied_embed())
+            return
         group = group.lower()
         removed = remove_group(group)
         if removed:
@@ -692,7 +726,6 @@ class Moderation(commands.Cog):
         name="deleteidol",
         description="deletes an idol from a group"
     )
-    @is_mod()
     async def delete_idols(self,
                            interaction: discord.Interaction,
                            group: str = SlashOption(
@@ -709,6 +742,9 @@ class Moderation(commands.Cog):
         Deletes all idol(s) specified in a group
         Example: .delete_idols <group> <idol_1> <idol_2>
         """
+        if not is_mod(interaction):
+            await interaction.response.send_message(embed=permission_denied_embed())
+            return
         group = group.lower()
         g_id = find_group_id(group)
         if not g_id:
@@ -729,7 +765,6 @@ class Moderation(commands.Cog):
         name="addauditing",
         description="add Joy auditing to a channel"
     )
-    @is_mod()
     async def add_auditing(self,
                            interaction: discord.Interaction,
                            channel: GuildChannel = SlashOption(
@@ -739,6 +774,9 @@ class Moderation(commands.Cog):
         """Adds auditing from this channel, as links are added to
         the bot, they will also be posted here so all new additions
         can be viewed."""
+        if not is_mod(interaction):
+            await interaction.response.send_message(embed=permission_denied_embed())
+            return
         add_channel(channel.id)
         added = add_auditing_channel(channel.id)
         if added:
@@ -752,7 +790,6 @@ class Moderation(commands.Cog):
         name="removeauditing",
         description="remove Joy auditing from a channel"
     )
-    @is_mod()
     async def remove_auditing(self,
                               interaction: discord.Interaction,
                               channel: GuildChannel = SlashOption(
@@ -760,6 +797,9 @@ class Moderation(commands.Cog):
                                   description="channel to remove auditing from"
                               )):
         """Removes auditing from this channel!"""
+        if not is_mod(interaction):
+            await interaction.response.send_message(embed=permission_denied_embed())
+            return
         removed = remove_auditing_channel(channel.id)
         if removed:
             des = 'Removed this channel from the auditing list!'
@@ -772,7 +812,6 @@ class Moderation(commands.Cog):
         name="deletecommand",
         description="remove Joy auditing from a channel"
     )
-    @is_mod()
     async def delete_command(self,
                              interaction: discord.Interaction,
                              command: str = SlashOption(
@@ -781,6 +820,9 @@ class Moderation(commands.Cog):
                                  required=True
                              )):
         """Removes a custom command created previously."""
+        if not is_mod(interaction):
+            await interaction.response.send_message(embed=permission_denied_embed())
+            return
         command = command.lower()
         removed = remove_command(command)
         if removed:
@@ -850,7 +892,7 @@ class Moderation(commands.Cog):
             return
         get_near_commands = [command for command in pick_commands(near=command_name)
                              if command.lower().startswith(command_name.lower())]
-        return get_near_commands
+        await interaction.response.send_autocomplete(get_near_commands)
 
 
 async def moderation_auditing(disclient, author, action):

@@ -5,7 +5,6 @@ from nextcord import SlashOption
 from nextcord.ext import commands
 from random import SystemRandom
 import asyncio
-from time import time
 from embeds import error_embed, warning_embed, success_embed
 
 # import lots from the datafile.
@@ -101,53 +100,103 @@ def rows_of_links_with_tags(group, tags, idol=None):
     return rows
 
 
-def format_timer_args(args):
-    no_interval = False
-    no_duration = False
-    try:
-        interval = int(args[1])
-    except ValueError:
-        no_interval = True
-        interval = 10
-    try:
-        duration = int(args[0])
-    except ValueError:
-        duration = 1
-        no_duration = True
-    if no_duration and no_interval:
-        group = args[0].lower()
-        idol = args[1].lower()
-        tags = args[2:]
-    elif no_interval:
-        group = args[1].lower()
-        idol = args[2].lower()
-        tags = args[3:]
-    else:
-        interval = int(args[1])
-        group = args[2].lower()
-        idol = args[3].lower()
-        tags = args[4:]
-    if interval < 10:
-        interval = 10
-    if duration > 30:
-        duration = 30
-    elif duration <= 0:
-        duration = 1
-    return duration, interval, group, idol, tags
-
-
 class Timer:
-    def __init__(self, _id, author, loops, interval, channel, info, guild_id=None):
-        self.id = _id
+    def __init__(self, author,
+                 loops,
+                 interval,
+                 channel,
+                 identifier,
+                 group,
+                 idol,
+                 duration,
+                 msg,
+                 tags=None,
+                 guild_id=None):
+        self.identifier = identifier
         self.author = author
         self.loops = loops
         self.interval = interval
         self.channel = channel
-        self.information = info
         self.guild_id = guild_id
+        self.group = group
+        self.idol = idol
+        self.duration = duration
+        self.msg = msg
+        self.tags = tags
 
     def destroy(self):
         self.loops = 0
+
+    async def end_message(self):
+        await self.channel.send(
+            embed=discord.Embed(title=f"Timer: `{self.identifier}` of {self.group}'s {self.idol} has ended!",
+                                description='',
+                                color=discord.Color.blurple()))
+
+
+class AuthorTimerList:
+    def __init__(self, author):
+        self.author = author
+        self.timer_count = 1
+        self.timers = []
+
+    def add_timer(self, author, loops, interval, channel, interaction, group, idol, duration, msg, tags=None):
+        if interaction.guild:
+            timer = Timer(author,
+                          loops,
+                          interval,
+                          channel,
+                          self.timer_count,
+                          group,
+                          idol,
+                          duration,
+                          msg,
+                          tags,
+                          interaction.guild_id)
+        else:
+            timer = Timer(author,
+                          loops,
+                          interval,
+                          channel,
+                          self.timer_count,
+                          group,
+                          idol,
+                          duration,
+                          msg,
+                          tags)
+        self.timer_count += 1
+        self.timers.append(timer)
+        return timer
+
+    def destroy_all_timers(self):
+        self.timer_count -= len(self.timers)
+        for timer in self.timers:
+            timer.destroy()
+        self.timers = []
+
+    def destroy_timer(self, timer_id):
+        for timer in self.timers:
+            if timer.identifier == timer_id:
+                self.timers.remove(timer)
+                timer.destroy()
+                self.timer_count -= 1
+                return timer
+        return
+
+    def get_timers_info(self, author_name):
+        info = []
+        print(self.timers)
+        for timer in self.timers:
+            if timer.tags:
+                creation_info = f"{timer.group} - {timer.idol}: {' '.join(timer.tags)}"
+            else:
+                creation_info = f"{timer.group} - {timer.idol}"
+            info.append(f"""ID: `{timer.identifier}`\nCreation Information: `{creation_info}`
+                        \nRemaining Duration: `{timedelta(seconds=(timer.loops * timer.interval))}`\n""")
+        msg = "\n".join(info)
+        return discord.Embed(title=f"Active Timers for {author_name}",
+                             description=msg,
+                             colour=discord.Color.blurple())
 
 
 async def get_links_helper(interaction: discord.Interaction, group, idol, tags):
@@ -201,6 +250,15 @@ async def idol_picker(interaction: discord.Interaction, idol_name: str):
     await interaction.response.send_autocomplete(get_near_groups)
 
 
+async def idol_picker_timer(interaction: discord.Interaction, idol_name: str):
+    group = interaction.data['options'][2]['value']  # don't ask
+    if not idol_name:
+        await interaction.response.send_autocomplete(pick_group_members(group))
+        return
+    get_near_groups = [idol for idol in pick_group_members(group) if idol.lower().startswith(idol_name.lower())]
+    await interaction.response.send_autocomplete(get_near_groups)
+
+
 async def tag_picker(interaction: discord.Interaction, tag_name: str):
     if not tag_name:
         await interaction.response.send_autocomplete(pick_tags())
@@ -217,7 +275,7 @@ class Fun(commands.Cog):
     def __init__(self, disclient):
         """Initialise client."""
         self.disclient = disclient
-        self.timers = []
+        self.author_timers = []
         self.recent_posts = cache_dict["gfys"]["recent_posts"]
         self.VALID_LINK_GFY = ("https://gfycat.com",
                                "https://www.redgifs.com",
@@ -877,8 +935,7 @@ class Fun(commands.Cog):
         tags = tags.split(" ")
         if tags[0].lower() == 'none':
             tags = None
-        creation_info = f"{group} - {idol}" if not tags else f"{group} - {idol}: {' '.join(tags)}"
-        msg = ''
+        msg = None
         if interaction.guild:
             max_duration = get_guild_max_duration(interaction.guild_id)
             if max_duration:
@@ -894,27 +951,56 @@ class Fun(commands.Cog):
             loops = len(links)
         author = interaction.user.id
         channel = interaction.channel
-        _id = time()  # improve this to be more user-friendly, like "name 1"
-        msg = f"{group}'s {idol} for {duration} minute(s)! {msg}\nTimer ID: `{_id}`"
-        await interaction.response.send_message(embed=discord.Embed(title='Starting Timer!',
-                                                                    description=msg,
-                                                                    color=discord.Color.blurple()))
-        if interaction.guild:
-            timer = Timer(_id, author, loops, interval, channel, creation_info, interaction.guild_id)
+        for author_timer_list in self.author_timers:
+            if author_timer_list.author == author:
+                timer = author_timer_list.add_timer(author,
+                                                    loops,
+                                                    interval,
+                                                    channel,
+                                                    interaction,
+                                                    group,
+                                                    idol,
+                                                    duration,
+                                                    msg,
+                                                    tags)
+                if msg:
+                    msg = f"{timer.group}'s {timer.idol} for {timer.duration} minute(s)! {msg}\n" \
+                          f"Timer ID: `{timer.identifier}`"
+                else:
+                    msg = f"{timer.group}'s {timer.idol} for {timer.duration} minute(s)!" \
+                          f"\nTimer ID: `{timer.identifier}`"
+                await interaction.response.send_message(embed=discord.Embed(title='Starting Timer!',
+                                                        description=msg,
+                                                        color=discord.Color.blurple()))
+                await self.timer_helper(timer, links)
+                return  # author already has timers running
+        author_timer_list: AuthorTimerList = AuthorTimerList(author)
+        self.author_timers.append(author_timer_list)
+        timer = author_timer_list.add_timer(author,
+                                            loops,
+                                            interval,
+                                            channel,
+                                            interaction,
+                                            group,
+                                            idol,
+                                            duration,
+                                            msg,
+                                            tags)
+        if msg:
+            msg = f"{timer.group}'s {timer.idol} for {timer.duration} minute(s)! {msg}\nTimer ID: `{timer.identifier}`"
         else:
-            timer = Timer(_id, author, loops, interval, channel, creation_info)
-        self.timers.append(timer)
+            msg = f"{timer.group}'s {timer.idol} for {timer.duration} minute(s)!\nTimer ID: `{timer.identifier}`"
+        await interaction.response.send_message(embed=discord.Embed(title='Starting Timer!',
+                                                description=msg,
+                                                color=discord.Color.blurple()))
         await self.timer_helper(timer, links)
 
-    async def timer_helper(self, timer, links):
+    async def timer_helper(self, timer: Timer, links):
         while timer.loops > 0:
             await timer.channel.send(self.return_link_from_rows(links))
             timer.loops -= 1
             if timer.loops <= 0:
-                await timer.channel.send(embed=discord.Embed(title='Timer Finished!',
-                                                             description='',
-                                                             color=discord.Color.blurple()))
-                del timer
+                await timer.end_message()
                 return
             await asyncio.sleep(timer.interval)
 
@@ -924,20 +1010,13 @@ class Fun(commands.Cog):
     @is_restricted()
     async def view_timers(self, interaction: discord.Interaction):
         author = interaction.user.id
-        user_timers = []
-        for timer in self.timers:
-            if timer.author == author:
-                user_timers.append(f"ID: `{timer.id}`\nCreation Information: `{timer.information}`"
-                                   f"\nRemaining Duration: `{timedelta(seconds=(timer.loops * timer.interval))}`\n")
-        if not user_timers:
-            await interaction.response.send_message(embed=error_embed(f"No timers active for {interaction.user.name}!"))
-            return
+        for author_timer in self.author_timers:
+            if author_timer.author == author:
+                e = author_timer.get_timers_info(interaction.user.name)
+                await interaction.response.send_message(embed=e)
+                return
 
-        msg = "\n".join(user_timers)
-        embed = discord.Embed(title=f"Active Timers for {interaction.user.name}",
-                              description=msg,
-                              color=discord.Color.blurple())
-        await interaction.response.send_message(embed=embed)
+        await interaction.response.send_message(embed=error_embed(f"No timers active for {interaction.user.name}!"))
 
     @discord.slash_command(name='stoptimer',
                            description="Stop a timer you previously created",
@@ -949,17 +1028,27 @@ class Fun(commands.Cog):
         You can stop all timers with: .stop all
         """
         author = interaction.user.id
-        for timer in self.timers:
-            if timer.id == float(timer_id) and timer.author == author:
-                timer.destroy()
-                del timer
-                await interaction.response.send_message("Timer successfully stopped!")
-                return
-        await interaction.response.send_message(f"No timer found with ID: {timer_id} from {interaction.user.name}!",
-                                                ephemeral=True)
+        for author_timer in self.author_timers:
+            if author_timer.author == author:
+                if timer_id.lower() == 'all':
+                    author_timer.destroy_all_timers()
+                    await interaction.response.send_message(
+                        f"Destroyed all timers for {interaction.user.name}"
+                    )
+                    return
+                else:
+                    timer = author_timer.destroy_timer(int(timer_id))
+                    if timer:
+                        await interaction.response.send_message(
+                            f"Timer: `{timer.identifier}` of {timer.group}'s - {timer.idol} successfully stopped.")
+                    else:
+                        await interaction.response.send_message(
+                            f"No timer found with ID: {timer_id} from {interaction.user.name}!", ephemeral=True)
+                    return
+        await interaction.response.send_message(f"No timers running for {interaction.user.name}")
 
     @discord.slash_command(name='forcestoptimer',
-                           description="Stop a members timers in your server.",
+                           description="Stop a members timers (all) in your server.",
                            guild_ids=[755143761922883584])
     @commands.has_permissions(manage_messages=True)
     @commands.guild_only()
@@ -970,10 +1059,13 @@ class Fun(commands.Cog):
         .force_stop @<user>
         .force_stop <User ID>"""
         destroyed = 0
-        for timer in self.timers:
-            if timer.author == member.id and timer.guild_id == interaction.guild_id:
-                timer.destroy()
-                destroyed += 1
+        for author_timer in self.author_timers:
+            if author_timer.author == member.id:
+                for timer in author_timer:
+                    if timer.guild_id == interaction.guild_id:
+                        timer.destroy()
+                        del timer
+                        destroyed += 1
         if destroyed > 0:
             await interaction.response.send_message(f"Successfully destroyed {destroyed} timers from {member.mention}.")
         else:
@@ -1104,6 +1196,7 @@ class Fun(commands.Cog):
     @info.on_autocomplete("group")
     @_gfyv2.on_autocomplete("group")
     @addlink.on_autocomplete("group")
+    @_timer.on_autocomplete("group")
     async def _group(self, interaction: discord.Interaction, group_name: str):
         await group_picker(interaction, group_name)
 
@@ -1112,6 +1205,10 @@ class Fun(commands.Cog):
     @addlink.on_autocomplete("idol")
     async def _idol_picker(self, interaction: discord.Interaction, idol_name: str):
         await idol_picker(interaction, idol_name)
+
+    @_timer.on_autocomplete("idol")
+    async def _idol_picker_timer(self, interaction: discord.Interaction, idol_name: str):
+        await idol_picker_timer(interaction, idol_name)
 
     @tag_alias.on_autocomplete("tag")
     @tagged.on_autocomplete("tag")

@@ -3,10 +3,8 @@ import re
 import nextcord as discord
 from nextcord.ext import commands
 
-from cogs.mods import is_mod
-from data import set_guild_prefix_db, add_banned_word, remove_restricted_user, add_restricted_user, check_user_is_mod, \
-    add_linked_channel_db, set_guild_max_timer_db
-from embeds import error_embed, success_embed, permission_denied_embed
+from data import remove_restricted_user, add_restricted_user, set_guild_max_timer_db
+from embeds import error_embed, success_embed
 
 
 class Server(commands.Cog):
