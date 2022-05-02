@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 
 import nextcord as discord
+import nextcord.errors
 from nextcord import SlashOption
 from nextcord.ext import commands
 from random import SystemRandom
@@ -579,13 +580,20 @@ class Fun(commands.Cog):
 
     def return_link_from_rows(self, rows):
         """x: row: (gid, mid, gname, mname, link)"""
+        links = []
         group = rows[0][2]
         idol = rows[0][3]
-        self.add_to_recent_posts(group, idol)
-        links = [
-            x[-1] for x in rows if x[-1] not in self.recent_posts[x[2]][x[3]] and x[-1].startswith(self.VALID_LINK_GFY)]
+        for x in rows:
+            group = x[2]
+            idol = x[3]
+            self.add_to_recent_posts(group, idol)
+            if x[-1] not in self.recent_posts[x[2]][x[3]]:
+                if x[-1].startswith(self.VALID_LINK_GFY):
+                    links.append(x[-1])
         if not links:
             links = [x[-1] for x in rows if x[-1].startswith(self.VALID_LINK_GFY)]
+            group = links[0][2]
+            idol = links[0][3]
             self.recent_posts[group][idol] = []
         crypto = SystemRandom()
         try:
@@ -629,7 +637,6 @@ class Fun(commands.Cog):
             else:
                 result = self.return_gfys(group, idol)
         else:
-            # TODO handle sending a link without providing idols
             if tag:
                 result = self.return_group_gfys(group, [tag])
             else:
@@ -938,7 +945,7 @@ class Fun(commands.Cog):
         if len(links) < loops:
             loops = len(links)
         author = interaction.user.id
-        channel = interaction.channel
+        channel = await self.disclient.fetch_channel(interaction.channel_id)
         for author_timer_list in self.author_timers:
             if author_timer_list.author == author:
                 timer = author_timer_list.add_timer(author,
@@ -985,7 +992,9 @@ class Fun(commands.Cog):
 
     async def timer_helper(self, timer: Timer, links):
         while timer.loops > 0:
-            await timer.channel.send(self.return_link_from_rows(links))
+            print(timer.channel)
+            channel = timer.channel
+            await channel.send(self.return_link_from_rows(links))
             timer.loops -= 1
             if timer.loops <= 0:
                 await timer.end_message()
@@ -1333,23 +1342,27 @@ class Fun(commands.Cog):
         be made by mods, author names will be omitted in those.
         """
         dt = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        main_audcha = self.disclient.get_channel(apis_dict["auditing_channel"])
+        main_audcha = await self.disclient.fetch_channel(apis_dict["auditing_channel"])
         s = f'Time Added: `{dt}`\nUser ID: `{author.id}`\nGroup: `{group}`\nIdol: `{idol}`\nLink: {link}'
         embed = discord.Embed(title=s,
                               color=discord.Color.blurple())
         embed.set_footer(text=f"Added by {author}",
                          icon_url=author.avatar.url)
-        await main_audcha.send(embed=embed)
-        await main_audcha.send(link)
+        try:
+            await main_audcha.send(embed=embed)
+            await main_audcha.send(link)
+        except Exception as e:
+            print("can't send to auditing channel")
+            print(e)
         aud_chas = get_auditing_channels()
         if aud_chas:
             list_of_chas = [x[0] for x in aud_chas]
             for chan in list_of_chas:
-                channel = self.disclient.get_channel(int(chan))
+                channel = await self.disclient.fetch_channel(int(chan))
                 fstr = f'Added: `{group}`, `{idol}`: {link}'
                 try:
                     await channel.send(fstr)
-                except AttributeError:
+                except AttributeError or nextcord.errors.Forbidden:
                     print("channel deleted")
                     remove_auditing_channel(chan)
 

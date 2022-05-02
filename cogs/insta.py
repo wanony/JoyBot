@@ -39,7 +39,7 @@ def handle_upload_finish(future: concurrent.futures.Future, disclient: discord.C
 
 async def finish_upload(embed, channels, disclient, url_to_path_pairs):
     for channel in channels:
-        chan = disclient.get_channel(channel)
+        chan = disclient.fetch_channel(channel)
         await chan.send(embed=embed)
         links = url_to_path_pairs  # list of urls
         # i = 0

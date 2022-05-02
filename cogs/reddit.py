@@ -65,7 +65,7 @@ class Reddit(commands.Cog):
                             self.recent_posts.update({subs: {}})
                         if str(channels) not in self.recent_posts[subs]:
                             self.recent_posts[subs].update({str(channels): []})
-                        channel = self.disclient.get_channel(int(channels))
+                        channel = self.disclient.fetch_channel(int(channels))
                         channels = str(channels)
                         if perm not in self.recent_posts[subs][channels]:
                             self.recent_posts[subs][channels].append(perm)

@@ -1195,7 +1195,7 @@ def add_channel(discord_id):
     try:
         cursor.execute(sql, value)
     except mysql.connector.errors.IntegrityError:
-        return
+        pass
     db.commit()
     cursor.close()
 
@@ -1233,7 +1233,10 @@ def add_auditing_channel(discord_id):
             SELECT ChannelId FROM channels 
             WHERE channels.Channel = %s"""
     value = (discord_id,)
-    cursor.execute(sql, value)
+    try:
+        cursor.execute(sql, value)
+    except mysql.connector.errors.IntegrityError:
+        pass
     rowcount = cursor.rowcount
     db.commit()
     cursor.close()

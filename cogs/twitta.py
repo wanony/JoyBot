@@ -247,7 +247,7 @@ class Twitter(commands.Cog):
         """Sends tweet out to channels that are following that user"""
         channels = get_twitter_channels_following_user(twitter_id)
         for channel in channels:
-            channel = self.disclient.get_channel(int(channel))
+            channel = await self.disclient.fetch_channel(int(channel))
             if isinstance(tweet, tuple):
                 await channel.send(embed=tweet[0])
                 await channel.send('\n'.join(tweet[1]))
