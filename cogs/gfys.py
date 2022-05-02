@@ -1358,7 +1358,11 @@ class Fun(commands.Cog):
         if aud_chas:
             list_of_chas = [x[0] for x in aud_chas]
             for chan in list_of_chas:
-                channel = await self.disclient.fetch_channel(int(chan))
+                try:
+                    channel = await self.disclient.fetch_channel(int(chan))
+                except Exception as e:
+                    print("probably forbidden")
+                    continue
                 fstr = f'Added: `{group}`, `{idol}`: {link}'
                 try:
                     await channel.send(fstr)
