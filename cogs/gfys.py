@@ -1157,6 +1157,8 @@ class Fun(commands.Cog):
             a = f'{g_name} {m_name.title()} Information'
             d = hide_links([x[0] for x in last_three_links(m_id)])
             untagged_count = int(link_count) - total_tagged_links
+            if untagged_count < 0:
+                untagged_count = 0
             if is_tagged:
                 c = format_list(is_tagged)
                 if pic_links_count > 1 or pic_links_count == 0:
