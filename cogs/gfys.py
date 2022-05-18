@@ -594,7 +594,10 @@ class Fun(commands.Cog):
             for x in rows:
                 if x[-1].startswith(self.VALID_LINK_GFY):
                     links.append(x[-1])
-                self.recent_posts[x[3]][x[4]] = []
+                group = x[3]
+                idol = x[4]
+                self.add_to_recent_posts(group, idol)
+                self.recent_posts[group][idol] = []
         crypto = SystemRandom()
         try:
             rand = crypto.randrange(len(links) - 1)
