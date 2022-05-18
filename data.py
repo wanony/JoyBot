@@ -113,7 +113,7 @@ def pick_commands(near=None):
     else:
         sql = "SELECT CommandName FROM custom_commands ORDER BY CommandName LIMIT 25;"
         cursor.execute(sql)
-    result = cursor.fetchall()
+    result = [x[0] for x in cursor.fetchall()]
     cursor.close()
     return result
 

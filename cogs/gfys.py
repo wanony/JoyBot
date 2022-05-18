@@ -581,8 +581,8 @@ class Fun(commands.Cog):
     def return_link_from_rows(self, rows):
         """x: row: (gid, mid, gname, mname, link)"""
         links = []
-        group = rows[0][2]
-        idol = rows[0][3]
+        group = rows[0][3]
+        idol = rows[0][4]
         for x in rows:
             group = x[2]
             idol = x[3]
@@ -591,10 +591,10 @@ class Fun(commands.Cog):
                 if x[-1].startswith(self.VALID_LINK_GFY):
                     links.append(x[-1])
         if not links:
-            links = [x[-1] for x in rows if x[-1].startswith(self.VALID_LINK_GFY)]
-            group = links[0][2]
-            idol = links[0][3]
-            self.recent_posts[group][idol] = []
+            for x in rows:
+                if x[-1].startswith(self.VALID_LINK_GFY):
+                    links.append(x[-1])
+                self.recent_posts[x[3]][x[4]] = []
         crypto = SystemRandom()
         try:
             rand = crypto.randrange(len(links) - 1)
@@ -1055,7 +1055,7 @@ class Fun(commands.Cog):
         destroyed = 0
         for author_timer in self.author_timers:
             if author_timer.author == member.id:
-                for timer in author_timer:
+                for timer in author_timer.timers:
                     if timer.guild_id == interaction.guild_id:
                         timer.destroy()
                         del timer
