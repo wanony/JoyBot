@@ -25,7 +25,8 @@ class General(commands.Cog):
             member = member
         else:
             member = interaction.user
-        embed = discord.Embed(colour=member.colour)
+        # embed = discord.Embed(colour=member.colour)
+        embed = discord.Embed(colour=discord.Color.blurple())
         embed.set_author(name=member)
         embed.set_footer(text=f"requested by {interaction.user.name}",
                          icon_url=interaction.user.display_avatar.url)
@@ -51,7 +52,8 @@ class General(commands.Cog):
         cont = user[2]
         cr_at = member.created_at.strftime("%a, %#d %B %Y, %I:%M%p UTC")
         jo_at = member.joined_at.strftime("%a, %#d %B %Y, %I:%M%p UTC")
-        embed = discord.Embed(colour=member.colour)
+        # embed = discord.Embed(colour=member.colour)
+        embed = discord.Embed(colour=discord.Color.blurple())
         embed.set_author(name=member)
         embed.set_thumbnail(url=member.display_avatar.url)
         embed.set_footer(text=f"Requested by {interaction.user}",
