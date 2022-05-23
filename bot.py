@@ -5,7 +5,8 @@ import os
 from nextcord.ext import commands
 from data import apis_dict, add_guild_db, write_cache
 
-intents = discord.Intents.all()
+# intents = discord.Intents(members=True, guilds=True, presences=True)
+intents = discord.Intents(presences=True)
 
 executor = concurrent.futures.ThreadPoolExecutor()
 
