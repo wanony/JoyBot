@@ -252,7 +252,7 @@ async def idol_picker(interaction: discord.Interaction, idol_name: str):
 
 
 async def idol_picker_timer(interaction: discord.Interaction, idol_name: str):
-    group = interaction.data['options'][2]['value']  # don't ask
+    group = interaction.data['options'][1]['value']  # don't ask
     if not idol_name:
         await interaction.response.send_autocomplete(pick_group_members(group))
         return
@@ -922,11 +922,13 @@ class Fun(commands.Cog):
     async def _timer(self,
                      interaction: discord.Interaction,
                      duration,
-                     interval,
                      group,
                      idol,
+                     interval=10,
                      tags='none'):
         duration = int(duration)
+        if not interval:
+            interval = 10
         interval = int(interval)
         if interval < 10:
             interval = 10
