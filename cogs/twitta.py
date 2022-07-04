@@ -259,4 +259,5 @@ class Twitter(commands.Cog):
 
 
 def setup(disclient):
-    disclient.add_cog(Twitter(disclient))
+    # disclient.add_cog(Twitter(disclient))
+    pass
