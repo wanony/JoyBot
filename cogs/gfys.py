@@ -431,6 +431,9 @@ class Fun(commands.Cog):
             elif link.startswith("https://www.youtu"):
                 currentlink = link
                 last_added = None
+            elif link.startswith("https://imgur.com/") or link.startswith("https://i.imgur.com/"):
+                currentlink = link
+                last_added = None
             elif link.endswith(fts):
                 currentlink = link
                 last_added = None
