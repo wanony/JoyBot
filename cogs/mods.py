@@ -897,7 +897,7 @@ class Moderation(commands.Cog):
 
 async def moderation_auditing(disclient, author, action):
     """Posts moderator actions to the mod auditing channel in the discord."""
-    mod_audcha = disclient.get_channel(apis_dict["mod_audit_channel"])
+    mod_audcha = await disclient.fetch_channel(apis_dict["mod_audit_channel"])
     dt = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     s = f'`{dt}`: `{author}`:\n{action}'
     embed = discord.Embed(title=s,

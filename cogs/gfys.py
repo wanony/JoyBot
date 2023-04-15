@@ -406,7 +406,7 @@ class Fun(commands.Cog):
         duplicate_links = 0
         added_links = 0
         valid_tags = [x[0] for x in get_all_tag_alias_names()]
-        fts = (".JPG", ".jpg", ".JPEG", ".jpeg", ".PNG", ".png")
+        fts = (".JPG", ".jpg", ".JPEG", ".jpeg", ".PNG", ".png", ".gif")
         for link in links:
             if link.endswith("/"):
                 link = link[:-1]
@@ -430,6 +430,12 @@ class Fun(commands.Cog):
                 last_added = None
             elif link.startswith("https://www.youtu"):
                 currentlink = link
+                last_added = None
+            elif "discordapp" in link and link.endswith("gif"):
+                split = link.split("/")
+                if split[2] == "media.discordapp.net":
+                    split[2] = "cdn.discordapp.com"
+                currentlink = "/".join(split)
                 last_added = None
             elif link.endswith(fts):
                 currentlink = link
