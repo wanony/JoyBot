@@ -1,8 +1,11 @@
+## No longer maintained
+Joy has outgrown this implementation and is now using JDA, Java and Kotlin. The code for Joy's new implementation is no longer open source. Join the [Discord](https://discord.gg/jmhgVbvau9) to stay up-to-date.
+
 # JoyBot
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/73ccb10ee6d84e85be71a1c397a7c1f8)](https://www.codacy.com/gh/wanony/PublicBot/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=wanony/PublicBot&amp;utm_campaign=Badge_Grade)
 [![Discord Server](https://discord.com/api/guilds/741066661221761135/embed.png)](https://discord.gg/bJvqnhg)
 
-A free and open source Discord bot using [nextcord](https://github.com/nextcord/nextcord) and powered by a MySQL/MariaDB Database. Joy's main focus is storing and accessing embeddable links on the fly. Links stored in the bot are accessable between all servers and in direct messages!
+A free and open source Discord bot using [nextcord](https://github.com/nextcord/nextcord) and powered by a MariaDB Database. Joy's main focus is storing and accessing embeddable links on the fly. Links stored in the bot are accessable between all servers and in direct messages!
 
 The main goal of the Joy Discord bot is to maximise the interaction in Discord servers.
 
@@ -33,7 +36,7 @@ If you'd like to add Joy to your own server, join the Joy Discord Server!
 [![Discord Server](https://discord.com/api/guilds/741066661221761135/embed.png)](https://discord.gg/bJvqnhg)
 -  [Discord Invite Link](https://discord.gg/jmhgVbvau9)
 
-Currently, Joy is under the conversion to slash commands, with a planned update date of March 31st!
+~~Currently, Joy is under the conversion to slash commands, with a planned update date of March 31st!~~
 
 # Joy's Commands
 
